@@ -1,10 +1,11 @@
 // /pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import InstructiveLogo from '../assets/instructive_logo.svg'; // ✅ update path if needed
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const navigate = useNavigate();
 
    const goHome = () => navigate('/app/home', { replace: true });
@@ -59,6 +60,7 @@ const LoginPage: React.FC = () => {
           Sign in to continue to your account
         </p>
 
+        
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
@@ -76,9 +78,8 @@ const LoginPage: React.FC = () => {
                 border: '2px solid #e5e7eb',
                 borderRadius: '12px',
                 outline: 'none',
-                transition: 'all 0.3s',
                 backgroundColor: '#f9fafb',
-                boxSizing: 'border-box'
+                transition: 'all 0.3s',
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#a855f7';
@@ -107,9 +108,8 @@ const LoginPage: React.FC = () => {
                 border: '2px solid #e5e7eb',
                 borderRadius: '12px',
                 outline: 'none',
-                transition: 'all 0.3s',
                 backgroundColor: '#f9fafb',
-                boxSizing: 'border-box'
+                transition: 'all 0.3s',
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#a855f7';
@@ -136,15 +136,17 @@ const LoginPage: React.FC = () => {
               borderRadius: '12px',
               cursor: 'pointer',
               transition: 'all 0.3s',
-              boxShadow: '0 4px 6px rgba(168, 85, 247, 0.3)'
+              boxShadow: '0 4px 6px rgba(168, 85, 247, 0.3)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 12px rgba(168, 85, 247, 0.4)';
+              e.currentTarget.style.boxShadow =
+                '0 8px 12px rgba(168, 85, 247, 0.4)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 6px rgba(168, 85, 247, 0.3)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 6px rgba(168, 85, 247, 0.3)';
             }}
           >
             Sign In
