@@ -1,5 +1,5 @@
 
-// Color constants
+// Color constants Open
 const COLORS = {
   buttonGradientStart: "#a78bfa",
   buttonGradientEnd: "#ec4899",
