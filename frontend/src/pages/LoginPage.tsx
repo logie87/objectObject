@@ -1,4 +1,4 @@
-//import React from 'react'; Welcome
+//import React from 'react'; sign
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InstructiveLogo from '../assets/instructive_logo.svg'; // ✅ update path if needed
@@ -58,15 +58,7 @@ const LoginPage: React.FC = () => {
 
         
 
-        <p
-          style={{
-            color: '#6b7280',
-            marginBottom: '32px',
-          }}
-        >
-          Sign in to continue to your account
-        </p>
-
+        
         <form onSubmit={handleSubmit}>
           {/* Email Input */}
           <div style={{ marginBottom: '24px' }}>
