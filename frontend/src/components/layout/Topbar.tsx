@@ -5,7 +5,11 @@ export default function Topbar(){
   return (
     <header className="topbar">
       <div className="logo" style={{minWidth:180}}>
-        <div className="logo-badge" />
+        <img
+          src="/icon.png"            // served from public/
+          alt="Instructive logo"
+          className="logo-img"
+        />
         <div>Instructive</div>
       </div>
 
