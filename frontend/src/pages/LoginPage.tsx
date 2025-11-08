@@ -1,16 +1,16 @@
-//import React from 'react'; sign
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import InstructiveLogo from '../assets/instructive_logo.svg'; // ✅ update path if needed
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+   const goHome = () => navigate('/app/home', { replace: true });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/home');
+    goHome();
   };
 
   return (
@@ -57,26 +57,14 @@ const LoginPage: React.FC = () => {
         />
 
         <form onSubmit={handleSubmit}>
-          {/* Email Input */}
           <div style={{ marginBottom: '24px' }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '8px',
-              }}
-            >
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
               Email
             </label>
             <input
               type="email"
               value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEmail(e.target.value)
-              }
-              required
+              onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
               style={{
                 width: '100%',
@@ -99,26 +87,14 @@ const LoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Password Input */}
           <div style={{ marginBottom: '32px' }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '8px',
-              }}
-            >
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
               Password
             </label>
             <input
               type="password"
               value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPassword(e.target.value)
-              }
-              required
+              onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               style={{
                 width: '100%',
@@ -141,14 +117,14 @@ const LoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Login Button */}
           <button
             type="submit"
+            onClick={goHome}
             style={{
               width: '100%',
               padding: '14px',
               fontSize: '16px',
-              fontWeight: '600',
+              fontWeight: 600,
               color: 'white',
               background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
               border: 'none',
