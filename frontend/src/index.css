@@ -74,7 +74,7 @@ button,input{font:inherit}
 
 .nav-btn{
   width:100%; display:flex; align-items:center; gap:12px;
-  padding:12px 14px; border:none; background:transparent; color:#fff; border-radius:12px; cursor:pointer;
+  padding:12px 14px; border:none; background:transparent; color: var(--text-400); border-radius:12px; cursor:pointer;
 }
 .nav-btn.active{background:rgba(255,255,255,.22); box-shadow:var(--shadow-sm)}
 .nav-label{font-weight:600}
