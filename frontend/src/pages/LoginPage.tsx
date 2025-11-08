@@ -1,5 +1,4 @@
-
-//import React from 'react';
+// /pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,9 +7,11 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+   const goHome = () => navigate('/app/home', { replace: true });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/home');
+    goHome();
   };
 
   return (
@@ -27,7 +28,6 @@ const LoginPage: React.FC = () => {
       top: 0,
       left: 0
     }}>
-      {/* Login Card */}
       <div style={{
         backgroundColor: 'white',
         borderRadius: '24px',
@@ -37,7 +37,6 @@ const LoginPage: React.FC = () => {
         maxWidth: '420px',
         margin: '20px'
       }}>
-        {/* Logo/Icon */}
         <div style={{
           width: '80px',
           height: '80px',
@@ -53,41 +52,22 @@ const LoginPage: React.FC = () => {
           </svg>
         </div>
 
-        <h2 style={{
-          fontSize: '32px',
-          fontWeight: 'bold',
-          color: '#1f2937',
-          textAlign: 'center',
-          marginBottom: '8px'
-        }}>
+        <h2 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', textAlign: 'center', marginBottom: '8px' }}>
           Welcome Back
         </h2>
-        
-        <p style={{
-          color: '#6b7280',
-          textAlign: 'center',
-          marginBottom: '32px'
-        }}>
+        <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '32px' }}>
           Sign in to continue to your account
         </p>
 
         <form onSubmit={handleSubmit}>
-          {/* Email Input */}
           <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
               Email
             </label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              required
               placeholder="you@example.com"
               style={{
                 width: '100%',
@@ -111,22 +91,14 @@ const LoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Password Input */}
           <div style={{ marginBottom: '32px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
               Password
             </label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              required
               placeholder="••••••••"
               style={{
                 width: '100%',
@@ -150,14 +122,14 @@ const LoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Login Button */}
           <button
             type="submit"
+            onClick={goHome}
             style={{
               width: '100%',
               padding: '14px',
               fontSize: '16px',
-              fontWeight: '600',
+              fontWeight: 600,
               color: 'white',
               background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
               border: 'none',
@@ -184,4 +156,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-

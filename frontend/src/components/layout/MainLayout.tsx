@@ -1,11 +1,15 @@
 import { Outlet } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import Topbar from "./Topbar";
 
-export default function MainLayout() {
+export default function MainLayout(){
   return (
-    <div>
-      <header>Header</header>
-      <Outlet /> {/* Page content goes here */}
-      <footer>Footer</footer>
+    <div className="app-shell">
+      <Topbar />
+      <Sidebar />
+      <main className="content">
+        <Outlet />
+      </main>
     </div>
   );
 }
