@@ -178,23 +178,6 @@ const LoginPage: React.FC = () => {
             Sign In
           </button>
         </form>
-
-        {/* Footer Text */}
-        <p style={{
-          color: '#6b7280',
-          fontSize: '14px',
-          textAlign: 'center',
-          marginTop: '24px'
-        }}>
-          Don't have an account?{' '}
-          <span style={{
-            color: '#a855f7',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
-            Sign up
-          </span>
-        </p>
       </div>
     </div>
   );
