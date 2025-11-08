@@ -39,7 +39,7 @@ const LoginPage: React.FC = () => {
           boxShadow:
             '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
           width: '100%',
-          maxWidth: '420px',
+          maxWidth: '460px',
           margin: '20px',
           textAlign: 'center',
         }}
@@ -49,16 +49,13 @@ const LoginPage: React.FC = () => {
           src={InstructiveLogo}
           alt="Instructive Logo"
           style={{
-            width: '160px',
+            width: '280px', // ✅ increased from 160px to 280px
             height: 'auto',
-            margin: '0 auto 32px',
+            margin: '0 auto 40px', // ✅ added a bit more spacing
             display: 'block',
           }}
         />
 
-        
-
-        
         <form onSubmit={handleSubmit}>
           {/* Email Input */}
           <div style={{ marginBottom: '24px' }}>
