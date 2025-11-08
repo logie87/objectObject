@@ -9,7 +9,7 @@ const COLORS = {
   pieEmpty: "#e5e7eb",
   buttonGradientStart: "#a78bfa",
   buttonGradientEnd: "#ec4899",
-  cardBg: "#ffffff",
+  cardBg: "var(--surface-100)",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
   mainText: "#374151",
