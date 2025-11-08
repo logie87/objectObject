@@ -1,92 +1,84 @@
-
-//import React from 'react';
+//import React from 'react'; sign
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import InstructiveLogo from '../assets/instructive_logo.svg'; // ✅ update path if needed
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     navigate('/home');
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      minHeight: '100vh',
-      width: '100vw',
-      margin: 0,
-      padding: 0,
-      background: 'linear-gradient(135deg, #a78bfa 0%, #a855f7 50%, #ec4899 100%)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'fixed',
-      top: 0,
-      left: 0
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        minHeight: '100vh',
+        width: '100vw',
+        margin: 0,
+        padding: 0,
+        background:
+          'linear-gradient(135deg, #a78bfa 0%, #a855f7 50%, #ec4899 100%)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+      }}
+    >
       {/* Login Card */}
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '24px',
-        padding: '48px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        width: '100%',
-        maxWidth: '420px',
-        margin: '20px'
-      }}>
-        {/* Logo/Icon */}
-        <div style={{
-          width: '80px',
-          height: '80px',
-          background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
-          borderRadius: '20px',
-          margin: '0 auto 32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <svg style={{ width: '40px', height: '40px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </div>
-
-        <h2 style={{
-          fontSize: '32px',
-          fontWeight: 'bold',
-          color: '#1f2937',
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '24px',
+          padding: '48px',
+          boxShadow:
+            '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          width: '100%',
+          maxWidth: '420px',
+          margin: '20px',
           textAlign: 'center',
-          marginBottom: '8px'
-        }}>
-          Welcome Back
-        </h2>
+        }}
+      >
+        {/* Company Logo */}
+        <img
+          src={InstructiveLogo}
+          alt="Instructive Logo"
+          style={{
+            width: '160px',
+            height: 'auto',
+            margin: '0 auto 32px',
+            display: 'block',
+          }}
+        />
+
         
-        <p style={{
-          color: '#6b7280',
-          textAlign: 'center',
-          marginBottom: '32px'
-        }}>
-          Sign in to continue to your account
-        </p>
 
+        
         <form onSubmit={handleSubmit}>
           {/* Email Input */}
           <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '8px',
+              }}
+            >
               Email
             </label>
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setEmail(e.target.value)
+              }
               required
               placeholder="you@example.com"
               style={{
@@ -96,9 +88,8 @@ const LoginPage: React.FC = () => {
                 border: '2px solid #e5e7eb',
                 borderRadius: '12px',
                 outline: 'none',
-                transition: 'all 0.3s',
                 backgroundColor: '#f9fafb',
-                boxSizing: 'border-box'
+                transition: 'all 0.3s',
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#a855f7';
@@ -113,19 +104,23 @@ const LoginPage: React.FC = () => {
 
           {/* Password Input */}
           <div style={{ marginBottom: '32px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '8px',
+              }}
+            >
               Password
             </label>
             <input
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPassword(e.target.value)
+              }
               required
               placeholder="••••••••"
               style={{
@@ -135,9 +130,8 @@ const LoginPage: React.FC = () => {
                 border: '2px solid #e5e7eb',
                 borderRadius: '12px',
                 outline: 'none',
-                transition: 'all 0.3s',
                 backgroundColor: '#f9fafb',
-                boxSizing: 'border-box'
+                transition: 'all 0.3s',
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#a855f7';
@@ -164,15 +158,17 @@ const LoginPage: React.FC = () => {
               borderRadius: '12px',
               cursor: 'pointer',
               transition: 'all 0.3s',
-              boxShadow: '0 4px 6px rgba(168, 85, 247, 0.3)'
+              boxShadow: '0 4px 6px rgba(168, 85, 247, 0.3)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 12px rgba(168, 85, 247, 0.4)';
+              e.currentTarget.style.boxShadow =
+                '0 8px 12px rgba(168, 85, 247, 0.4)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 6px rgba(168, 85, 247, 0.3)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 6px rgba(168, 85, 247, 0.3)';
             }}
           >
             Sign In
@@ -184,4 +180,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-
