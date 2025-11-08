@@ -1,0 +1,46 @@
+{
+  "student": {
+    "student_name": "Alex Johnson",
+    "grade": "9",
+    "date_of_birth": "14/03/2011",
+    "teacher": "Ms. Taylor",
+    "pen": "123456789",
+    "school": "Riverside Secondary",
+    "designation": "DYSLEXIA; ADHD-INATTENTIVE",
+    "iep_date": "07/11/2025"
+  },
+  "performance_progress": "Alex is a verbally strong, engaged student who participates well in class discussions when prompted.\nHe demonstrates solid conceptual understanding but reads below grade level and tires quickly with dense text.\nHe benefits from structured routines, chunked tasks, and visual supports.",
+  "education_goals": {
+    "academic": "By June 2026, Alex will improve comprehension of grade 9 texts with support, demonstrating at least 80% on\nteacher-created comprehension tasks when provided with text-to-speech and guided questions.",
+    "social": "Alex will appropriately ask for help or clarification when confused in 4 out of 5 observed opportunities.",
+    "behavioural": "Alex will begin assigned tasks within 3 minutes and remain on task for 15–20 minutes with no more than one prompt\nin 4 out of 5 observed classes.",
+    "communicative": "Alex will clearly explain his thinking using sentence starters or visual organizers during class discussions and\nsmall group work.",
+    "physical": "No significant physical or mobility needs at this time."
+  },
+  "accommodations": {
+    "instructional": "Provide step-by-step instructions.\nPre-teach key vocabulary with visuals.\nAllow Alex to respond orally or with bullet points for longer written tasks.",
+    "environmental": "Preferential seating away from high-traffic areas.\nAccess to a quiet space or hallway for tests as needed.",
+    "assessment": "1.5x time on tests and in-class quizzes.\nAllow use of word processor and spell-check.\nReduce copying from the board.",
+    "technology": "Access to laptop for writing tasks.\nUse of text-to-speech for readings.\nUse of speech-to-text for longer written responses."
+  },
+  "assessments": "Psychoeducational assessment (May 2024) indicates average cognitive ability with significant weaknesses in basic\nreading and written expression. School data shows improved performance when technology, guided notes, and\nadditional time are provided.",
+  "transition_goals": "Short-term: build independence using assistive technology and requesting accommodations.\nLong-term: prepare Alex for senior courses and post-secondary options that match his interests in technology and design.",
+  "participants": [
+    {
+      "name": "Ms. Taylor",
+      "role": "Classroom Teacher"
+    },
+    {
+      "name": "Mr. Chen",
+      "role": "Learning Support Teacher"
+    },
+    {
+      "name": "Alex Johnson",
+      "role": "Student"
+    },
+    {
+      "name": "Mrs. Johnson",
+      "role": "Parent/Guardian"
+    }
+  ]
+}
