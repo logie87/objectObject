@@ -1,0 +1,45 @@
+/* Entire page layout */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+.home-container {
+  display: flex;
+  height: 100vh; /* full viewport height */
+}
+
+/* Sidebar on left */
+.sidebar {
+  width: 200px;
+  background-color: #1E90FF; /* blue */
+  color: white;
+  padding: 20px;
+}
+
+/* Main content (top bar + content) */
+.main-content {
+  flex: 1; /* takes remaining width */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top bar on top */
+.topbar {
+  height: 60px;
+  background-color: #4682B4; /* different blue */
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+/* Content area fills rest of the space */
+.content-area {
+  flex: 1; /* fills remaining vertical space */
+  background-color: white;
+  padding: 20px;
+  overflow: auto;
+}

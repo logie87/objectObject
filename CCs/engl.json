@@ -1,0 +1,140 @@
+{
+  "subject": "English Language Arts",
+  "grade_bands": {
+    "K-9": {
+      "source": "BC ELA K-9 Classroom Assessment Resource Package",
+      "criteria_categories": {
+        "engaging_and_questioning": {
+          "description": "Interest in texts, purpose for reading/listening, use of questions and connections.",
+          "grades": {
+            "K-1": [
+              "Listen and respond to stories and texts.",
+              "Notice that texts have a purpose.",
+              "Make simple connections to own experiences."
+            ],
+            "2-3": [
+              "Choose texts for a purpose.",
+              "Ask meaningful questions about texts.",
+              "Connect background knowledge to understanding."
+            ],
+            "4-5": [
+              "Locate information from multiple sources.",
+              "Ask clarifying questions to extend thinking."
+            ],
+            "6-7": [
+              "Organize and assess information from multiple sources.",
+              "Ask critical questions to extend thinking."
+            ],
+            "8-9": [
+              "Evaluate and synthesize information from multiple sources.",
+              "Question, speculate, and problem solve to extend thinking."
+            ]
+          }
+        },
+        "processing": {
+          "description": "Decoding, comprehension strategies, text structures.",
+          "grades": {
+            "K-1": [
+              "Use early reading strategies to make meaning.",
+              "Recognize basic print concepts."
+            ],
+            "2-3": [
+              "Use strategies to access text and expand word knowledge."
+            ],
+            "4-5": [
+              "Use strategies to access text and expand knowledge."
+            ],
+            "6-7": [
+              "Use strategies to interpret increasingly complex texts."
+            ],
+            "8-9": [
+              "Apply strategies to guide inquiry across varied texts and formats."
+            ]
+          }
+        },
+        "analyzing": {
+          "description": "Interpretation, synthesis, and evaluation of texts.",
+          "grades": {
+            "K-3": [
+              "Make predictions and connections between self, text, and world."
+            ],
+            "4-5": [
+              "Use multiple strategies to examine ideas relevant to a purpose."
+            ],
+            "6-7": [
+              "Investigate ideas, infer meaning, and use information for new tasks."
+            ],
+            "8-9": [
+              "Synthesize ideas from multiple sources and assess relevance."
+            ]
+          }
+        },
+        "recognizing_identity_and_voice": {
+          "description": "Identity, perspective, respect for diverse voices.",
+          "grades": {
+            "K-1": [
+              "Connect stories to personal experiences, family, and community."
+            ],
+            "2-3": [
+              "Recognize that texts reflect family, community, and culture."
+            ],
+            "4-5": [
+              "Recognize how language and identity are connected."
+            ],
+            "6-7": [
+              "Consider multiple contexts, values, and perspectives."
+            ],
+            "8-9": [
+              "Appreciate diverse perspectives and adjust communication for audience."
+            ]
+          }
+        },
+        "constructing_and_creating": {
+          "description": "Creating, refining, and sharing original texts.",
+          "grades": {
+            "K-1": [
+              "Experiment with print and orally share simple stories."
+            ],
+            "2-3": [
+              "Create and share stories with beginnings, middles, and ends."
+            ],
+            "4-5": [
+              "Experiment with forms and ideas to create original texts."
+            ],
+            "6-7": [
+              "Plan and refine texts for engagement, clarity, and impact."
+            ],
+            "8-9": [
+              "Use process to create purposeful texts for a range of audiences."
+            ]
+          }
+        }
+      }
+    },
+    "10-12": {
+      "source": "BC ELA 10-12 Classroom Assessment Resource Package",
+      "criteria_categories": {
+        "connecting_and_questioning": {
+          "description": "Engagement with texts, inquiry, and meaningful connections.",
+          "applies_to": ["10", "11", "12"]
+        },
+        "processing": {
+          "description": "Strategies to analyze complex texts; inquiry and research processes.",
+          "applies_to": ["10", "11", "12"]
+        },
+        "analyzing_and_interpreting": {
+          "description": "Analysis of textual elements, synthesis of sources, evaluation of bias and reliability.",
+          "applies_to": ["10", "11", "12"]
+        },
+        "valuing_identity_and_voice": {
+          "description": "Understanding identity, power, perspective; respectful dialogue.",
+          "applies_to": ["10", "11", "12"]
+        },
+        "constructing_and_creating": {
+          "description": "Designing, crafting, and refining texts for specific audiences and purposes.",
+          "applies_to": ["10", "11", "12"]
+        }
+      }
+    }
+  }
+}

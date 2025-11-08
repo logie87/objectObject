@@ -1,0 +1,80 @@
+{
+  "subject": "Social Studies",
+  "grade_bands": {
+    "K-9": {
+      "source": "BC Social Studies K-9 Classroom Assessment Resource Package",
+      "criteria_categories": {
+        "inquiry_and_questioning": {
+          "description": "Posing questions, identifying issues, planning inquiries.",
+          "grades": {
+            "K-3": ["Share ideas in guided inquiries; ask simple questions."],
+            "4": ["Ask questions; identify simple problems or issues."],
+            "5-6": ["Identify issues and develop simple action or inquiry plans."],
+            "7-8": ["Develop inquiry plans with support; search for information from various sources."],
+            "9": ["Develop focused inquiry questions; conduct guided independent research."]
+          }
+        },
+        "evidence_and_interpretation": {
+          "description": "Using sources, perspectives, and inferences.",
+          "grades": {
+            "K-3": [
+              "Ask about and interpret familiar images/objects.",
+              "Recognize that people can see things differently."
+            ],
+            "4-5": [
+              "Infer from historical sources; recognize perspectives in sources."
+            ],
+            "6-7": [
+              "Ask about origin, content, purpose; consider time and place.",
+              "Assess credibility at a basic level."
+            ],
+            "8-9": [
+              "Assess value, credibility, and limitations of sources.",
+              "Identify explicit/implicit judgments and differing accounts."
+            ]
+          }
+        },
+        "analysis": {
+          "description": "Significance, continuity & change, cause & consequence.",
+          "grades": {
+            "K-3": [
+              "Sequence events; notice change and sameness; identify simple causes."
+            ],
+            "4-5": [
+              "Explain why something is important; distinguish expected/unexpected consequences."
+            ],
+            "6-7": [
+              "Sequence historical events; argue significance; compare perspectives."
+            ],
+            "8-9": [
+              "Use criteria to judge significance; analyze multiple causes and consequences; identify turning points."
+            ]
+          }
+        },
+        "ethics_and_decision_making": {
+          "description": "Ethical judgment and responses to historical and current issues.",
+          "grades": {
+            "K-3": ["Identify fair/unfair; suggest ways to make things fair."],
+            "4-5": ["Make simple ethical judgments; suggest lessons from events."],
+            "6-7": ["Consider context; judge actions and decisions; suggest appropriate responses."],
+            "8-9": [
+              "Recognize complexity of ethics in decisions.",
+              "Make supported ethical judgments; assess responses and limitations of 'lessons from the past'."
+            ]
+          }
+        },
+        "communication_and_justification": {
+          "description": "Narratives, arguments, and effective communication.",
+          "grades": {
+            "K-3": ["Share ideas using images, talk, and simple text."],
+            "4-6": ["Form simple narratives and explanations using multiple formats."],
+            "7-9": [
+              "Develop and communicate narratives and arguments using appropriate media.",
+              "Choose effective forms to communicate to different audiences."
+            ]
+          }
+        }
+      }
+    }
+  }
+}
