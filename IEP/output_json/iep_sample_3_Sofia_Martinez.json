@@ -1,0 +1,46 @@
+{
+  "student": {
+    "student_name": "Sofia Martinez",
+    "grade": "10",
+    "date_of_birth": "27/05/2009",
+    "teacher": "Mr. Singh",
+    "pen": "741852963",
+    "school": "Mountainview Secondary",
+    "designation": "LEARNING DISABILITY - WRITTEN EXPRESSION; ELL",
+    "iep_date": "07/11/2025"
+  },
+  "performance_progress": "Sofia is a dedicated student who attends regularly and completes assignments. She demonstrates strong oral comprehension and ideas but struggles to organize and edit written work independently. English is her second language; she benefits from visuals, sentence frames, and exemplars.",
+  "education_goals": {
+    "academic": "By June 2026, Sofia will plan, draft, and revise multi-paragraph compositions using graphic organizers and assistive technology, achieving at least 70% on 4 out of 5 major assignments.",
+    "social": "Sofia will participate in peer feedback sessions by giving one constructive comment and one positive comment in 4 out of 5 observed tasks.",
+    "behavioural": "Sofia will submit major assignments by the negotiated due date in 4 out of 5 cases with supports.",
+    "communicative": "Sofia will use subject-specific vocabulary in spoken and written responses with visual prompts in 4 out of 5 opportunities.",
+    "physical": "No identified physical needs."
+  },
+  "accommodations": {
+    "instructional": "Provide sentence frames and exemplars.\nUse graphic organizers for planning.\nPre-teach key vocabulary with visuals.",
+    "environmental": "Quiet workspace for extended writing.\nCheck-ins at start and mid-point of work periods.",
+    "assessment": "Allow use of word processor with spell-check.\nProvide extended time and chunked deadlines.\nUse rubrics shared in advance.",
+    "technology": "Laptop with word prediction.\nAccess to translation support for key terms when appropriate."
+  },
+  "assessments": "School-based learning assessment (Jan 2025) shows average reasoning skills and significant difficulty with written expression and spelling under time pressure.",
+  "transition_goals": "Short-term: build confidence in written tasks using structured supports.\nLong-term: prepare for post-secondary pathways that value her bilingual skills.",
+  "participants": [
+    {
+      "name": "Mr. Singh",
+      "role": "English Teacher"
+    },
+    {
+      "name": "Ms. Kaur",
+      "role": "Learning Support Teacher"
+    },
+    {
+      "name": "Sofia Martinez",
+      "role": "Student"
+    },
+    {
+      "name": "Ms. Martinez",
+      "role": "Parent/Guardian"
+    }
+  ]
+}
