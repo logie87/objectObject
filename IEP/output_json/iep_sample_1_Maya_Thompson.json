@@ -1,0 +1,46 @@
+{
+  "student": {
+    "student_name": "Maya Thompson",
+    "grade": "6",
+    "date_of_birth": "02/11/2013",
+    "teacher": "Mr. Patel",
+    "pen": "987654321",
+    "school": "Evergreen Elementary",
+    "designation": "AUTISM LEVEL 1; ANXIETY",
+    "iep_date": "07/11/2025"
+  },
+  "performance_progress": "Maya is a creative, curious student who contributes thoughtful ideas during class discussions. She benefits from predictable routines and visual schedules. She can become overwhelmed by noise and unexpected changes, which may result in withdrawal or tearfulness. Maya demonstrates strong understanding in math and science when instructions are broken down into clear steps.",
+  "education_goals": {
+    "academic": "By June 2026, Maya will follow multi-step written and visual directions to complete grade 6 math and science tasks with at least 80% accuracy in 4 out of 5 teacher observations when provided with checklists and visual supports.",
+    "social": "Maya will participate in partner or small-group activities by sharing one idea or response in 4 out of 5 structured opportunities.",
+    "behavioural": "Maya will use a self-regulation strategy (break card, breathing, or movement) when she feels overwhelmed in 4 out of 5 observed instances.",
+    "communicative": "Maya will communicate her needs (e.g., \"I need a break,\" \"I don't understand\") using sentence starters or visual cue cards in 4 out of 5 opportunities.",
+    "physical": "No significant gross motor needs; benefits from occasional movement breaks."
+  },
+  "accommodations": {
+    "instructional": "Use step-by-step instructions with visual checklists.\nProvide concrete examples and model tasks.\nOffer choices for how to demonstrate learning (oral, visual, written).",
+    "environmental": "Preferential seating away from high-traffic and loud peers.\nAccess to a quiet workspace or sensory-friendly area when needed.",
+    "assessment": "Provide extra time on quizzes and assignments.\nAllow oral responses or alternative formats.\nChunk longer assessments into smaller sections.",
+    "technology": "Access to laptop or tablet for writing tasks.\nUse of visual schedule apps and timers.\nNoise-reducing headphones available as needed."
+  },
+  "assessments": "School-based observations indicate strengths in pattern recognition and problem-solving, with challenges in sensory regulation and written output. Previous OT consult (Oct 2024) recommended sensory tools and structured transitions.",
+  "transition_goals": "Short-term: build independence using visual schedules and self-advocacy.\nLong-term: support Maya's interest in coding and science clubs through scaffolded participation.",
+  "participants": [
+    {
+      "name": "Mr. Patel",
+      "role": "Classroom Teacher"
+    },
+    {
+      "name": "Ms. Rivera",
+      "role": "Learning Support Teacher"
+    },
+    {
+      "name": "Maya Thompson",
+      "role": "Student"
+    },
+    {
+      "name": "Mr. and Mrs. Thompson",
+      "role": "Parents/Guardians"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "student": {
+    "student_name": "Ava Johnson",
+    "grade": "3",
+    "date_of_birth": "05/04/2017",
+    "teacher": "Mr. Lewis",
+    "pen": "258369147",
+    "school": "Lakeside Elementary",
+    "designation": "DYSLEXIA",
+    "iep_date": "07/11/2025"
+  },
+  "performance_progress": "Ava is a friendly, imaginative student who enjoys stories and class discussions. She struggles with decoding, sight word recognition, and spelling, which impacts her confidence. She benefits from explicit phonics instruction and books at her level.",
+  "education_goals": {
+    "academic": "By June 2026, Ava will accurately decode one-syllable and common two-syllable words using taught phonics patterns in connected text with 90% accuracy in 4 out of 5 trials.",
+    "social": "Ava will participate in partner reading or small-group literacy tasks 4 out of 5 sessions.",
+    "behavioural": "Ava will attempt unfamiliar reading tasks using strategies (chunking, tapping sounds) before seeking help in 4 out of 5 opportunities.",
+    "communicative": "Ava will share her ideas orally using complete sentences, even when written output is scaffolded by adult support.",
+    "physical": "No physical needs identified."
+  },
+  "accommodations": {
+    "instructional": "Provide structured, multisensory phonics program.\nUse guided reading groups at instructional level.\nPre-teach vocabulary and allow oral responses.",
+    "environmental": "Quiet, supportive reading space.\nPreferential seating close to instruction.",
+    "assessment": "Allow extra time and reduced reading load.\nProvide options to demonstrate understanding orally or with pictures.",
+    "technology": "Access to text-to-speech.\nUse of decodable e-books."
+  },
+  "assessments": "School-based reading assessment (Oct 2024) indicates significant decoding delays; progress shown with targeted intervention.",
+  "transition_goals": "Short-term: increase reading confidence with just-right texts.\nLong-term: close foundational reading gaps to support later grade content.",
+  "participants": [
+    {
+      "name": "Mr. Lewis",
+      "role": "Classroom Teacher"
+    },
+    {
+      "name": "Ms. Wong",
+      "role": "Learning Support Teacher"
+    },
+    {
+      "name": "Ava Johnson",
+      "role": "Student"
+    },
+    {
+      "name": "Mrs. Johnson",
+      "role": "Parent/Guardian"
+    }
+  ]
+}

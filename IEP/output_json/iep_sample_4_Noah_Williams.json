@@ -1,0 +1,46 @@
+{
+  "student": {
+    "student_name": "Noah Williams",
+    "grade": "8",
+    "date_of_birth": "10/01/2012",
+    "teacher": "Ms. Fraser",
+    "pen": "369258147",
+    "school": "Cedar Ridge Middle School",
+    "designation": "INTELLECTUAL DISABILITY - MILD",
+    "iep_date": "07/11/2025"
+  },
+  "performance_progress": "Noah is a kind, cooperative student who enjoys hands-on learning and routine. He reads and completes math tasks significantly below grade level and requires direct teaching, repetition, and visual supports. Noah benefits from small-group instruction and clear, concrete language.",
+  "education_goals": {
+    "academic": "By June 2026, Noah will accurately solve addition, subtraction, and multiplication questions with numbers to 100 using visual supports with at least 80% accuracy in 4 out of 5 trials.",
+    "social": "Noah will initiate or respond to greetings and simple conversations with peers in 4 out of 5 observed opportunities.",
+    "behavioural": "Noah will follow classroom routines (entry, transitions, packing up) with no more than one prompt in 4 out of 5 days.",
+    "communicative": "Noah will express preferences and ask simple questions using complete sentences in structured activities.",
+    "physical": "No significant physical needs."
+  },
+  "accommodations": {
+    "instructional": "Use concrete materials and visuals.\nProvide repeated practice and immediate feedback.\nModify reading and math tasks to functional levels.",
+    "environmental": "Preferential seating near teacher.\nAccess to small-group support.",
+    "assessment": "Use simplified language and reduced items.\nAllow oral responses.\nTrack progress through observation checklists.",
+    "technology": "Use of tablet for interactive math and reading apps.\nVisual schedule tools."
+  },
+  "assessments": "Psychological assessment (Mar 2023) indicates mild intellectual disability with strength in social relatedness and routine-based tasks.",
+  "transition_goals": "Short-term: increase independence with daily routines.\nLong-term: develop functional academic and life skills to support community participation.",
+  "participants": [
+    {
+      "name": "Ms. Fraser",
+      "role": "Classroom Teacher"
+    },
+    {
+      "name": "Mr. Lopez",
+      "role": "Learning Support Teacher"
+    },
+    {
+      "name": "Noah Williams",
+      "role": "Student"
+    },
+    {
+      "name": "Mr. and Mrs. Williams",
+      "role": "Parents/Guardians"
+    }
+  ]
+}

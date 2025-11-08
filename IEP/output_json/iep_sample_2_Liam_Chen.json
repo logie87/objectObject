@@ -1,0 +1,46 @@
+{
+  "student": {
+    "student_name": "Liam Chen",
+    "grade": "4",
+    "date_of_birth": "19/08/2015",
+    "teacher": "Ms. O'Neil",
+    "pen": "456123789",
+    "school": "Parkview Elementary",
+    "designation": "ADHD-COMBINED; GIFTED",
+    "iep_date": "07/11/2025"
+  },
+  "performance_progress": "Liam is an enthusiastic and highly verbal student who shows advanced abilities in math reasoning and problem-solving. He struggles with impulsivity, calling out, and sustaining attention for non-preferred tasks. Written output is brief and rushed without support.",
+  "education_goals": {
+    "academic": "By June 2026, Liam will complete assigned math and language arts tasks with at least 80% accuracy while using agreed self-monitoring strategies in 4 out of 5 days.",
+    "social": "Liam will wait his turn to speak and raise his hand in whole-class discussions in 4 out of 5 observed opportunities.",
+    "behavioural": "Liam will use a cue (visual or non-verbal) from the teacher to redirect his focus within 1 minute in 4 out of 5 instances.",
+    "communicative": "Liam will explain problem-solving steps using math vocabulary in both oral and written formats with teacher support.",
+    "physical": "No significant physical needs; benefits from movement and flexible seating."
+  },
+  "accommodations": {
+    "instructional": "Provide clear, time-limited tasks.\nOffer challenge/extension problems for enrichment.\nUse graphic organizers to support planning before writing.",
+    "environmental": "Flexible seating options (wobble stool, standing desk).\nPreferential seating close to teacher for prompts.",
+    "assessment": "Shortened written tasks where appropriate.\nAllow oral responses or scribe for longer assessments.\nExtra time as needed.",
+    "technology": "Access to laptop for typing longer responses.\nUse of timers and organizational tools."
+  },
+  "assessments": "Teacher reports and attention checklist (2024-2025) indicate significant inattention and impulsivity impacting work completion; academic scores above grade level in math, at grade level in reading.",
+  "transition_goals": "Short-term: increase Liam's independence using checklists and timers.\nLong-term: support executive functioning skills for upper elementary and beyond.",
+  "participants": [
+    {
+      "name": "Ms. O'Neil",
+      "role": "Classroom Teacher"
+    },
+    {
+      "name": "Mr. James",
+      "role": "Learning Support Teacher"
+    },
+    {
+      "name": "Liam Chen",
+      "role": "Student"
+    },
+    {
+      "name": "Ms. Chen",
+      "role": "Parent/Guardian"
+    }
+  ]
+}
