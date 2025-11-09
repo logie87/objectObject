@@ -1,6 +1,6 @@
 import React from "react";
 
-// Color constants
+// Color constants Edit
 const COLORS = {
   readingBadgeBg: "rgba(251, 191, 191, 0.15)",
   readingBadgeText: "#ef4444",
