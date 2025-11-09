@@ -1,16 +1,49 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// --- minimal inline auth (uses your API URL env) ---
+const API_BASE =
+  import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ||
+  'https://refused-football-telling-guarantees.trycloudflare.com';
+
+async function sha256Hex(input: string): Promise<string> {
+  const enc = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function doLogin(email: string, password: string) {
+  const passwordHash = await sha256Hex(password);
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: passwordHash }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json() as { access_token: string; token_type: string };
+  localStorage.setItem('token', data.access_token);
+  localStorage.setItem('userEmail', email.toLowerCase());
+}
+
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const navigate = useNavigate();
 
-   const goHome = () => navigate('/app/home', { replace: true });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    goHome();
+    setErr(null);
+    setBusy(true);
+    try {
+      await doLogin(email.trim(), password);
+      navigate('/app/home', { replace: true });
+    } catch (ex: any) {
+      setErr(typeof ex?.message === 'string' ? ex.message : 'Login failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -54,13 +87,26 @@ const LoginPage: React.FC = () => {
         <h2 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', textAlign: 'center', marginBottom: '8px' }}>
           Welcome Back
         </h2>
-        <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '32px' }}>
+        <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '16px' }}>
           Sign in to continue to your account
         </p>
 
-        
+        {err && (
+          <div style={{
+            marginBottom: 16,
+            padding: '10px 12px',
+            borderRadius: 12,
+            border: '1px solid #fecaca',
+            background: '#fef2f2',
+            color: '#b91c1c',
+            fontSize: 14
+          }}>
+            {err}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
               Email
             </label>
@@ -69,6 +115,7 @@ const LoginPage: React.FC = () => {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
+              required
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -90,7 +137,7 @@ const LoginPage: React.FC = () => {
             />
           </div>
 
-          <div style={{ marginBottom: '32px' }}>
+          <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
               Password
             </label>
@@ -99,6 +146,7 @@ const LoginPage: React.FC = () => {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
+              required
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -122,7 +170,7 @@ const LoginPage: React.FC = () => {
 
           <button
             type="submit"
-            onClick={goHome}
+            disabled={busy}
             style={{
               width: '100%',
               padding: '14px',
@@ -132,22 +180,22 @@ const LoginPage: React.FC = () => {
               background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
               border: 'none',
               borderRadius: '12px',
-              cursor: 'pointer',
+              cursor: busy ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s',
               boxShadow: '0 4px 6px rgba(168, 85, 247, 0.3)',
+              opacity: busy ? 0.8 : 1
             }}
             onMouseEnter={(e) => {
+              if (busy) return;
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow =
-                '0 8px 12px rgba(168, 85, 247, 0.4)';
+              e.currentTarget.style.boxShadow = '0 8px 12px rgba(168, 85, 247, 0.4)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow =
-                '0 4px 6px rgba(168, 85, 247, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(168, 85, 247, 0.3)';
             }}
           >
-            Sign In
+            {busy ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
       </div>
