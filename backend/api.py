@@ -117,6 +117,7 @@ def init_user_db():
         """
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE,
             pwd   TEXT NOT NULL
         );
@@ -160,7 +161,7 @@ def _safe_filename(name: str) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    return datetime.now().isoformat(timespec="seconds") + "Z"
 
 
 # ============================================================
