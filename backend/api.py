@@ -996,6 +996,318 @@ async def get_curriculum_resource(course: str, unit: str, filename: str, user=De
         },
     )
 
+# ===================== SEARCH ROUTES =====================
+from functools import lru_cache
+from urllib.parse import quote_plus
+
+# --- Search data models ---
+class SearchItem(BaseModel):
+    kind: str              # 'report' | 'library' | 'student' | 'course' | 'unit' | 'resource' | 'function'
+    id: str
+    title: str
+    subtitle: Optional[str] = None
+    route: Optional[str] = None     # where to navigate (SPA route)
+    api_file: Optional[str] = None  # if present, front-end should fetch blob and open
+    score: float = 0.0              # simple relevance score
+
+# --- Local helpers for reading existing stores without importing routes ---
+REPORTS_DIR   = DATA_DIR / "reports"
+REPORTS_INDEX = REPORTS_DIR / "index.json"
+CURR_DIR      = DATA_DIR / "curriculum"  # /course/unit/resource.pdf
+
+def _load_json_safe(path: Path, default):
+    try:
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        logger.warning(f"search/_load_json_safe error: {e}")
+    return default
+
+def _reports_list() -> List[dict]:
+    # Shape aligned with earlier Reports feature (id, title, filename, size, uploaded_at, category, course, unit)
+    idx = _load_json_safe(REPORTS_INDEX, {"reports": {}})
+    items = []
+    for rid, meta in idx.get("reports", {}).items():
+        # Skip index files accidentally placed in reports dir
+        if str(meta.get("filename", "")).lower() == "index.json":
+            continue
+        # tolerate sparse fields
+        meta["id"] = rid
+        items.append(meta)
+    # sort newest first
+    items.sort(key=lambda m: m.get("uploaded_at", ""), reverse=True)
+    return items
+
+def _library_list() -> List[dict]:
+    data = _load_index()  # existing library helper
+    docs = [m for m in data.get("docs", {}).values()]
+    # filter out index.json if it sneaked in
+    docs = [d for d in docs if str(d.get("filename","")).lower() != "index.json"]
+    docs.sort(key=lambda d: d.get("uploaded_at",""), reverse=True)
+    return docs
+
+def _students_list() -> List[dict]:
+    # Prefer index.json if present, else scan files in data/students
+    base = STU_DIR
+    items = []
+    try:
+        data = _students_load()  # respects STU_INDEX if present
+        for s in data.get("students", {}).values():
+            items.append(s)
+    except Exception:
+        # fallback to per-file scan
+        for p in base.glob("*.json"):
+            try:
+                j = _load_json_safe(p, {})
+                if "student" in j:
+                    s = j["student"]
+                    items.append({"id": p.stem, "name": s.get("student_name")})
+            except Exception:
+                continue
+    return items
+
+def _curriculum_scan() -> List[dict]:
+    """Scan data/curriculum/<course>/<unit>/* for resources."""
+    out = []
+    if not CURR_DIR.exists():
+        return out
+    for course_dir in CURR_DIR.iterdir():
+        if not course_dir.is_dir():
+            continue
+        course = course_dir.name
+        for unit_dir in course_dir.iterdir():
+            if not unit_dir.is_dir():
+                continue
+            unit = unit_dir.name
+            for f in unit_dir.iterdir():
+                if f.suffix.lower() not in (".pdf",):  # only PDFs for now
+                    continue
+                # Ignore index files if any
+                if f.name.lower() == "index.json":
+                    continue
+                out.append({
+                    "course": course,
+                    "unit": unit,
+                    "filename": f.name,
+                    "path": str(f.relative_to(CURR_DIR)),
+                })
+    return out
+
+@lru_cache(maxsize=1)
+def _function_catalog() -> List[dict]:
+    # Lightweight "what can I do" mapping -> routes
+    return [
+        {"id": "open-reports", "title": "Open Reports", "route": "/app/reports"},
+        {"id": "open-library", "title": "Open Library", "route": "/app/library"},
+        {"id": "manage-students", "title": "Manage Students", "route": "/app/students"},
+        {"id": "browse-curriculum", "title": "Browse Curriculum", "route": "/app/curriculum"},
+        {"id": "student-reports", "title": "Students: View report outputs", "route": "/app/reports"},
+        {"id": "upload-library", "title": "Upload worksheet to Library", "route": "/app/library"},
+    ]
+
+def _score(q: str, text: str) -> float:
+    ql = q.lower().strip()
+    tl = (text or "").lower()
+    if not ql:
+        return 0.1
+    if ql == tl:
+        return 2.0
+    if ql in tl:
+        return 1.0 + min(0.9, len(ql) / max(10, len(tl)))
+    # token overlap
+    qset = set(ql.split())
+    tset = set(tl.split())
+    inter = len(qset & tset)
+    return 0.3 * inter
+
+def _route_curriculum(course: str, unit: Optional[str] = None, open_path: Optional[str] = None) -> str:
+    # SPA route with qs hints the Curriculum page understands
+    qs = []
+    if course: qs.append(f"course={quote_plus(course)}")
+    if unit:   qs.append(f"unit={quote_plus(unit)}")
+    if open_path: qs.append(f"open={quote_plus(open_path)}")
+    return "/app/curriculum" + (("?" + "&".join(qs)) if qs else "")
+
+@app.get("/search")
+async def search(s: str, limit: int = 8, user=Depends(verify_jwt)) -> List[SearchItem]:
+    """Federated search over reports, library, students, curriculum + function catalog."""
+    q = s.strip()
+    items: List[SearchItem] = []
+
+    # Reports
+    for r in _reports_list():
+        title = r.get("title") or r.get("filename") or r.get("id")
+        cat   = r.get("category") or ""
+        course = r.get("course") or ""
+        unit = r.get("unit") or ""
+        text = " ".join([title, cat, course, unit])
+        sc = _score(q, text)
+        if sc <= 0: 
+            continue
+        items.append(SearchItem(
+            kind="report",
+            id=r["id"],
+            title=title,
+            subtitle=" • ".join([p for p in [cat, course, unit] if p]),
+            route=None,
+            api_file=f"/reports/{r['id']}/file",
+            score=sc + 0.2  # slight boost for concrete artifacts
+        ))
+
+    # Library docs
+    for d in _library_list():
+        title = d.get("title") or d.get("filename") or d.get("id")
+        text = " ".join([title] + (d.get("tags") or []))
+        sc = _score(q, text)
+        if sc <= 0:
+            continue
+        items.append(SearchItem(
+            kind="library",
+            id=d["id"],
+            title=title,
+            subtitle="Library PDF",
+            api_file=f"/library/{d['id']}/file",
+            score=sc
+        ))
+
+    # Students
+    for srow in _students_list():
+        nm = srow.get("name") or srow.get("student_name") or srow.get("id")
+        sc = _score(q, nm or "")
+        if sc <= 0:
+            continue
+        items.append(SearchItem(
+            kind="student",
+            id=str(srow.get("id") or nm),
+            title=nm,
+            subtitle="Student",
+            route="/app/students",
+            score=sc + 0.1
+        ))
+
+    # Curriculum: courses / units / resources
+    # Courses
+    seen_courses = set()
+    for rec in _curriculum_scan():
+        seen_courses.add(rec["course"])
+    for course in seen_courses:
+        sc = _score(q, course)
+        if sc > 0:
+            items.append(SearchItem(
+                kind="course",
+                id=course,
+                title=course,
+                subtitle="Course",
+                route=_route_curriculum(course=course),
+                score=sc
+            ))
+    # Units + Resources
+    for rec in _curriculum_scan():
+        unit = rec["unit"]
+        course = rec["course"]
+        fname = rec["filename"]
+        unit_sc = _score(q, f"{course} {unit}")
+        file_sc = _score(q, f"{course} {unit} {fname}")
+        if unit_sc > 0:
+            items.append(SearchItem(
+                kind="unit",
+                id=f"{course}/{unit}",
+                title=f"{unit}",
+                subtitle=f"{course}",
+                route=_route_curriculum(course=course, unit=unit),
+                score=unit_sc
+            ))
+        if file_sc > 0:
+            items.append(SearchItem(
+                kind="resource",
+                id=f"{course}/{unit}/{fname}",
+                title=fname,
+                subtitle=f"{course} • {unit}",
+                route=_route_curriculum(course=course, unit=unit, open_path=rec["path"]),
+                score=file_sc + 0.15
+            ))
+
+    # Functions (generic actions -> pages)
+    for f in _function_catalog():
+        sc = _score(q, f["title"])
+        if sc <= 0:
+            continue
+        items.append(SearchItem(
+            kind="function",
+            id=f["id"],
+            title=f["title"],
+            subtitle="Action",
+            route=f["route"],
+            score=sc * 0.8
+        ))
+
+    # Rank & cut
+    items.sort(key=lambda it: it.score, reverse=True)
+    return items[:max(1, min(20, limit))]
+
+@app.get("/search/suggest")
+async def search_suggest(s: Optional[str] = "", limit: int = 6, user=Depends(verify_jwt)) -> List[SearchItem]:
+    """Lightweight suggest: prefix match across functions + top artifacts."""
+    q = (s or "").strip()
+    out: List[SearchItem] = []
+
+    # If no query: show a mixed starter set
+    if not q:
+        # top functions
+        for f in _function_catalog()[:3]:
+            out.append(SearchItem(kind="function", id=f["id"], title=f["title"], route=f["route"], score=1.0))
+        # latest reports
+        for r in _reports_list()[:3]:
+            out.append(SearchItem(kind="report", id=r["id"], title=r.get("title") or r.get("filename") or r["id"],
+                                  subtitle=(r.get("category") or ""), api_file=f"/reports/{r['id']}/file", score=0.9))
+        return out[:limit]
+
+    # With query
+    # prefer exact-ish startswith for each domain, then fall back to /search top-ks
+    ql = q.lower()
+    # functions
+    for f in _function_catalog():
+        if f["title"].lower().startswith(ql):
+            out.append(SearchItem(kind="function", id=f["id"], title=f["title"], route=f["route"], score=2))
+    # students
+    for srow in _students_list():
+        nm = (srow.get("name") or srow.get("student_name") or "").lower()
+        if nm.startswith(ql):
+            out.append(SearchItem(kind="student", id=str(srow.get("id") or nm), title=srow.get("name") or srow.get("student_name"),
+                                  subtitle="Student", route="/app/students", score=1.8))
+    # reports
+    for r in _reports_list():
+        title = (r.get("title") or r.get("filename") or "").lower()
+        if title.startswith(ql):
+            out.append(SearchItem(kind="report", id=r["id"], title=r.get("title") or r.get("filename"),
+                                  subtitle=r.get("category") or "", api_file=f"/reports/{r['id']}/file", score=1.7))
+    # curriculum resources
+    for rec in _curriculum_scan():
+        fname = rec["filename"].lower()
+        if fname.startswith(ql):
+            out.append(SearchItem(kind="resource", id=rec["path"], title=rec["filename"],
+                                  subtitle=f"{rec['course']} • {rec['unit']}",
+                                  route=_route_curriculum(course=rec["course"], unit=rec["unit"], open_path=rec["path"]),
+                                  score=1.6))
+
+    if len(out) >= limit:
+        out.sort(key=lambda x: x.score, reverse=True)
+        return out[:limit]
+
+    # fill using /search ranking
+    more = await search(q, limit=limit)
+    seen = {(x.kind, x.id) for x in out}
+    for m in more:
+        if (m.kind, m.id) in seen:
+            continue
+        out.append(m)
+        if len(out) >= limit:
+            break
+    out.sort(key=lambda x: x.score, reverse=True)
+    return out[:limit]
+
+
 
 # ============================================================
 # ========================== MAIN ============================

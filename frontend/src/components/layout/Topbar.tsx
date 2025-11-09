@@ -12,33 +12,35 @@ type Me = {
   avatar_url: string;
 };
 
+type SearchItem = {
+  kind: 'report' | 'library' | 'student' | 'course' | 'unit' | 'resource' | 'function';
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  route?: string | null;
+  api_file?: string | null; // when present, open via blob
+};
+
 export default function Topbar(){
   const { logout } = useAuth();
   const navigate = useNavigate();
 
   const [me, setMe] = useState<Me | null>(null);
-  const [avatarSrc, setAvatarSrc] = useState<string>(''); // blob URL
+  const [avatarSrc, setAvatarSrc] = useState<string>('');
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Search state
   const [q, setQ] = useState('');
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState<number>(-1);
+  const [suggestions, setSuggestions] = useState<SearchItem[]>([]);
 
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const searchWrapRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const suggestions = [
-    'Find outcomes about fractions',
-    'IEP accommodations: extended time',
-    'Recent reports',
-    'Upload worksheet to Library',
-    'Students: Alex Student',
-    'BC Guidelines: assessment accommodations',
-  ];
-
+  // --- bootstrap me + avatar
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -58,6 +60,7 @@ export default function Topbar(){
     return () => { mounted = false; };
   }, []);
 
+  // --- click outside menus/suggest
   useEffect(() => {
     function onDocClick(e: MouseEvent){
       const t = e.target as Node;
@@ -86,11 +89,65 @@ export default function Topbar(){
     navigate('/', { replace: true });
   }
 
-  function onSearchSubmit() {
-    // Placeholder for now
-    alert(q ? `Search: ${q}` : 'Search clicked (no query)');
+  // --- search helpers
+  async function runSearch(query: string): Promise<SearchItem[] | null> {
+    const s = query.trim();
+    if (!s) return null;
+    try {
+      const res = await apiGet<SearchItem[]>(`/search?s=${encodeURIComponent(s)}&limit=10`);
+      return res;
+    } catch {
+      return null;
+    }
+  }
+
+  async function openItem(item: SearchItem) {
     setSuggestOpen(false);
     setActiveIdx(-1);
+    // If we have a direct file endpoint -> open blob in new tab
+    if (item.api_file) {
+      try {
+        const url = await apiGetBlobUrl(item.api_file);
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      } catch {
+        // fall back to route if possible
+      }
+    }
+    // Navigate to route if present; else best-effort page by kind
+    const route = item.route || routeByKind(item);
+    if (route) {
+      window.location.assign(route);
+    }
+  }
+
+  function routeByKind(it: SearchItem): string | null {
+    switch (it.kind) {
+      case 'student': return '/app/students';
+      case 'report':  return '/app/reports';
+      case 'library': return '/app/library';
+      case 'course':
+      case 'unit':
+      case 'resource': return it.route || '/app/curriculum';
+      case 'function': return it.route || '/app';
+      default: return '/app';
+    }
+  }
+
+  async function onSearchSubmit() {
+    const s = q.trim();
+    if (!s) {
+      setSuggestOpen(false);
+      setActiveIdx(-1);
+      return;
+    }
+    const results = await runSearch(s);
+    if (results && results.length) {
+      await openItem(results[0]);
+    } else {
+      // default: send to curriculum with q as hint
+      window.location.assign(`/app/curriculum?q=${encodeURIComponent(s)}`);
+    }
   }
 
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -98,28 +155,92 @@ export default function Topbar(){
       setSuggestOpen(true);
       return;
     }
-    if (!suggestOpen) return;
+    if (!suggestOpen) {
+      if (e.key === 'Enter') onSearchSubmit();
+      return;
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIdx((i) => (i + 1) % suggestions.length);
+      setActiveIdx((i) => (i + 1) % Math.max(1, suggestions.length));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveIdx((i) => (i - 1 + suggestions.length) % suggestions.length);
+      setActiveIdx((i) => (i - 1 + Math.max(1, suggestions.length)) % Math.max(1, suggestions.length));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const pick = activeIdx >= 0 ? suggestions[activeIdx] : q;
-      setQ(pick);
-      onSearchSubmit();
+      const pick = activeIdx >= 0 && suggestions[activeIdx] ? suggestions[activeIdx] : null;
+      if (pick) {
+        openItem(pick);
+      } else {
+        onSearchSubmit();
+      }
     } else if (e.key === 'Escape') {
       setSuggestOpen(false);
       setActiveIdx(-1);
     }
   }
 
-  function pickSuggestion(s: string) {
-    setQ(s);
-    onSearchSubmit();
+  // --- live suggestions (debounced)
+  useEffect(() => {
+    let gone = false;
+    const t = setTimeout(async () => {
+      try {
+        const res = await apiGet<SearchItem[]>(`/search/suggest?s=${encodeURIComponent(q)}&limit=6`);
+        if (!gone) setSuggestions(res || []);
+      } catch {
+        if (!gone) setSuggestions([]);
+      }
+    }, 150);
+    return () => { gone = true; clearTimeout(t); };
+  }, [q]);
+
+  function pickSuggestion(item: SearchItem) {
+    setQ(item.title);
+    openItem(item);
   }
+
+  const KindGlyph = ({ kind }: { kind: SearchItem['kind'] }) => {
+    const color = '#6b7280';
+    switch (kind) {
+      case 'report':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke={color} fill="none" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+        );
+      case 'library':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke={color} fill="none" strokeWidth="2">
+            <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20" />
+            <path d="M4 19.5V4.5A2.5 2.5 0 0 1 6.5 2H18" />
+          </svg>
+        );
+      case 'student':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke={color} fill="none" strokeWidth="2">
+            <circle cx="12" cy="7" r="4" />
+            <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+          </svg>
+        );
+      case 'course':
+      case 'unit':
+      case 'resource':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke={color} fill="none" strokeWidth="2">
+            <path d="M3 6h18" />
+            <path d="M3 12h18" />
+            <path d="M3 18h18" />
+          </svg>
+        );
+      default:
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke={color} fill="none" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        );
+    }
+  };
 
   return (
     <header
@@ -131,24 +252,19 @@ export default function Topbar(){
         gap: 12,
       }}
     >
-      {/* Left: logo above the sidebar column */}
-      <div className="logo" style={{ minWidth: 180 }}>
+      {/* Left: logo */}
+      <div className="logo" style={{ minWidth: 180, cursor: 'pointer' }} onClick={() => window.location.assign('/app')}>
         <img src="/icon.png" alt="instructive logo" className="logo-img" />
         <div>Instructive</div>
       </div>
 
       {/* Right: search + user menu */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {/* Search: revert proportions, keep circle icon at right */}
+        {/* Search */}
         <div
           ref={searchWrapRef}
           className="search"
-          style={{
-            margin: 0,
-            flex: 1,
-            position: 'relative',
-            paddingRight: 44, // reserve room for the circular icon button
-          }}
+          style={{ margin: 0, flex: 1, position: 'relative', paddingRight: 44 }}
           onClick={() => {
             setSuggestOpen(true);
             inputRef.current?.focus();
@@ -160,15 +276,15 @@ export default function Topbar(){
             onChange={(e) => setQ(e.target.value)}
             onFocus={() => setSuggestOpen(true)}
             onKeyDown={onInputKeyDown}
-            placeholder="Search outcomes, activities, IEPs, reports"
+            placeholder="Search students, resources, reports, library…"
             aria-autocomplete="list"
             aria-expanded={suggestOpen}
             aria-controls="search-suggest"
           />
-          {/* Small circular icon button (no text) */}
+          {/* Circular icon button */}
           <button
             aria-label="Search"
-            onMouseDown={(e) => e.preventDefault()} // keep focus on input
+            onMouseDown={(e) => e.preventDefault()}
             onClick={(e) => { e.stopPropagation(); onSearchSubmit(); }}
             style={{
               position: 'absolute',
@@ -225,7 +341,7 @@ export default function Topbar(){
                 const active = i === activeIdx;
                 return (
                   <div
-                    key={s}
+                    key={`${s.kind}:${s.id}`}
                     role="option"
                     aria-selected={active}
                     onMouseEnter={() => setActiveIdx(i)}
@@ -238,35 +354,38 @@ export default function Topbar(){
                       padding: '10px 12px',
                       cursor: 'pointer',
                       background: active ? '#eef2ff' : '#fff',
-                      borderBottom: i === suggestions.length - 1 ? 'none' : '1px solid #f1f5f9'
+                      borderBottom: i === suggestions.length - 1 ? 'none' : '1px solid #f1f5f9',
+                      display: 'grid',
+                      gridTemplateColumns: '20px 1fr auto',
+                      alignItems: 'center',
+                      gap: 10
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <svg
-                        className="icon-24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                      </svg>
-                      <span>{s}</span>
+                    <KindGlyph kind={s.kind} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {s.title}
+                      </div>
+                      {!!s.subtitle && (
+                        <div style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {s.subtitle}
+                        </div>
+                      )}
                     </div>
+                    <span className="badge flat" style={{ color: '#6b7280' }}>
+                      {s.kind}
+                    </span>
                   </div>
                 );
               })}
               <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280', background: '#fafafa' }}>
-                Press ↑/↓ to navigate • Enter to search • Esc to close
+                Press ↑/↓ to navigate • Enter to open • Esc to close
               </div>
             </div>
           )}
         </div>
 
-        {/* User button in top-right */}
+        {/* User menu */}
         <div style={{ position: 'relative' }}>
           <button
             ref={btnRef}
@@ -288,7 +407,6 @@ export default function Topbar(){
                 style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
               />
             ) : (
-              // Generic user icon (white on dark circle)
               <div
                 aria-hidden
                 style={{
@@ -346,7 +464,6 @@ export default function Topbar(){
                 Settings
               </button>
 
-              {/* Toggle: Show setup on login */}
               <div
                 style={{
                   display: 'flex',
@@ -388,7 +505,6 @@ export default function Topbar(){
                 </label>
               </div>
 
-              {/* Logout (red) */}
               <button
                 className="btn flat"
                 style={{
