@@ -43,21 +43,20 @@ class CLApp:
         return conn
 
     def init_db(self):
-        conn = self.get_db()
-        c = conn.cursor()
-        c.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL UNIQUE,
-                pwd   TEXT NOT NULL
-            );
-            """
-        )
-        conn.commit()
-        conn.close()
-        self.logger.info(f"Database initialized at {DB_PATH}")
+        try:
+            with open("db_schema.sql", "r") as f:
+                sql_script = f.read()
+            conn = self.get_db()
+            c = conn.cursor()
+            c.executescript(sql_script)
+            conn.commit()
+            self.logger.info(f"Database initialized at {DB_PATH}")
+        except sqlite3.Error as e:
+            self.logger.info(f"SQLite error: {e}")
+        except FileNotFoundError:
+            self.logger.info(f"SQL file not found at: './db_schema.sql'")
+        finally:
+            conn.close()
 
     def signup(self, name: str, email: str, password: str):
         password = self.hash_password(password)

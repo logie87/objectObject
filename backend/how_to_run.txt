@@ -1,1 +1,4 @@
 uvicorn api:app --reload --port 8000
+
+but why not just run `py api.py`
+The logic above is written inside of the script.

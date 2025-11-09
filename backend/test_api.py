@@ -1,65 +1,20 @@
-from pathlib import Path
+#
+# NOTE: ONLY RUN AFTER RUNNING `python cli.py`
+# NOTE: You don't need to signup any user as default is email: "a@a.a"; pass: "a".
+#
 import requests
-import sqlite3
-
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "instuctive.db"
 
 BASE_URL = (
     "http://127.0.0.1:8000"  # Update this if the server runs on a different host/port
 )
 
 
-def get_db():
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            pwd   TEXT NOT NULL
-        );
-        """
-    )
-    conn.commit()
-    conn.close()
-
-
-def insert_test_user():
-    init_db()
-    name = "User 1"
-    email = "testuser@example.com"
-    password = "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2"
-    conn = get_db()
-    c = conn.cursor()
-    try:
-        c.execute(
-            "INSERT INTO users (name, email, pwd) VALUES (?, ?, ?);",
-            (name, email.lower(), password),
-        )
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
-
-
 def test_login_success():
     response = requests.post(
         f"{BASE_URL}/auth/login",
         json={
-            "email": "testuser@example.com",
-            "password": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2",
+            "email": "a@a.a",
+            "password": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
         },
     )
     assert response.status_code == 200
@@ -74,7 +29,7 @@ def test_login_failure():
     response = requests.post(
         f"{BASE_URL}/auth/login",
         json={
-            "email": "testuser@example.com",
+            "email": "a@a.a",
             "password": "wrongpassword",
         },
     )
@@ -93,7 +48,7 @@ def test_secret_with_valid_token():
     assert response.status_code == 200
     data = response.json()
     print(f"Secret endpoint response with valid token: {data}")
-    assert data == {"message": "Welcome, testuser@example.com!"}
+    assert data == {"message": "Welcome, a@a.a!"}
 
 
 def test_secret_with_invalid_token():
@@ -108,7 +63,6 @@ def test_secret_with_invalid_token():
 
 
 if __name__ == "__main__":
-    insert_test_user()
     test_login_success()
     test_login_failure()
     test_secret_with_valid_token()

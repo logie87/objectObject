@@ -113,17 +113,21 @@ def get_db():
 def init_user_db():
     conn = get_db()
     c = conn.cursor()
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            pwd   TEXT NOT NULL
-        );
-        """
-    )
-    conn.commit()
+    c.execute("SELECT * FROM users;")
+    u = c.fetchall()
+    if not u:
+        try:
+            with open("db_schema.sql", "r") as f:
+                sql_script = f.read()
+            conn = get_db()
+            c = conn.cursor()
+            c.executescript(sql_script)
+            conn.commit()
+            logger.info(f"Database initialized at {DB_PATH}")
+        except sqlite3.Error as e:
+            logger.error(f"SQLite error: {e}")
+        except FileNotFoundError:
+            logger.critical(f"SQL file not found at: './db_schema.sql'")
     conn.close()
     logger.info("User database initialized.")
 
@@ -266,6 +270,24 @@ async def login(req: LoginRequest):
 async def secret(user=Depends(verify_jwt)):
     logger.info(f"User accessed /secret: {user['email']}, {user['sub']}, {user['iat']}")
     return {"message": f"Welcome, {user['email']}!"}
+
+
+# ============================================================
+# ======================= HOME ROUTES ========================
+# ============================================================
+
+
+@app.post("/is_new")
+async def is_new(user=Depends(verify_jwt)):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT is_new FROM users WHERE id = ?;", (user["sub"],))
+    is_new = bool(int(c.fetchone()[0]))
+    if is_new:
+        c.execute("UPDATE users SET is_new = 0 WHERE id = ?;", (user["sub"],))
+        conn.commit()
+    conn.close()
+    return {"isFirstLogin": is_new}
 
 
 # ============================================================
