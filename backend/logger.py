@@ -41,7 +41,7 @@ class SimpleAppLogger:
         handler.suffix = "%Y-%m-%d"
         handler.extMatch = r"^\d{4}-\d{2}-\d{2}$"
         formatter = logging.Formatter(
-            "%(asctime)s - %(filename)s:%(funcName)s - [%(levelname)s] - %(message)s"
+            "%(asctime)s - (%(name)s - %(filename)s:%(funcName)s) - [%(levelname)s] - %(message)s"
         )
         handler.setFormatter(formatter)
         logger = logging.getLogger()

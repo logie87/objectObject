@@ -25,9 +25,10 @@ from pydantic import BaseModel, EmailStr
 # ============================================================
 # ======================= CONFIG =============================
 # ============================================================
-LOG_PATH = "logs"
 
-DB_PATH = "instuctive.db"
+dirname = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(dirname, "instuctive.db")
+LOG_PATH = os.path.join(dirname, "logs")
 JWT_SECRET = os.environ.get(
     "JWT_SECRET",
     "48XDWJdPQUg34NkVdK2BwvrscDYyzuhKqZmSxYNk4xAgvL2T5rxrfwWFzKqnhsT6Y5jELHJe7KJQvmHSW6rSPNu7TQnwewYu33J9",
@@ -40,7 +41,9 @@ app = FastAPI()
 # ========================= LOGGING ==========================
 # ============================================================
 
-logger = SimpleAppLogger(LOG_PATH, "instructive_api", logging.INFO)
+logging.getLogger("watchfiles.main").level = logging.ERROR
+
+logger = SimpleAppLogger(LOG_PATH, "instructive_api", logging.INFO).get_logger()
 
 # ============================================================
 # ====================== MODELS ==============================
@@ -90,8 +93,13 @@ def init_db():
 # ============================================================
 
 
-def create_jwt(user_id, email: str):
-    payload = {"sub": str(user_id), "email": email, "iat": int(time.time())}
+def create_jwt(id, name, email: str):
+    payload = {
+        "sub": str(id),
+        "name": name,
+        "email": email,
+        "iat": int(time.time()),
+    }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
 
 
@@ -111,7 +119,11 @@ def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://instructive-ui.vercel.app/"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://instructive-ui.vercel.app/",
+        "localhost",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
@@ -124,13 +136,13 @@ async def login(req: LoginRequest):
     password = req.password
 
     if len(password) != 64:
-        raise HTTPException(status_code=400, detail="Invalid password hash length")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     conn = get_db()
     c = conn.cursor()
 
     c.execute(
-        "SELECT id, email FROM users WHERE email = ? AND pwd = ?;",
+        "SELECT id, name, email FROM users WHERE email = ? AND pwd = ?;",
         (email, password),
     )
     user = c.fetchone()
@@ -144,9 +156,9 @@ async def login(req: LoginRequest):
     # if not hmac.compare_digest(stored_hash, client_hash):
     #     raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    id, email = user
+    id, name, email = user
 
-    token = create_jwt(id, email)
+    token = create_jwt(id, name, email)
     logger.info(f"User '{email}' logged in successfully.")
 
     return {"access_token": token, "token_type": "bearer"}
@@ -157,7 +169,9 @@ async def login(req: LoginRequest):
 
 @app.get("/secret")
 async def secret(user=Depends(verify_jwt)):
-    logger.info(f"User accessed /secret: {user['email']}, {user['sub']}, {user['iat']}")
+    logger.info(
+        f"User accessed /secret: {user['email']}, {user['sub']}, {user['name']}, {user['iat']}"
+    )
     return {"message": f"Welcome, {user['email']}!"}
 
 

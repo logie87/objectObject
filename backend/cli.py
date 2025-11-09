@@ -20,8 +20,10 @@ DB_PATH = "instuctive.db"
 
 class CLApp:
     def __init__(self):
+        self.logger = SimpleAppLogger(
+            LOG_PATH, "instructive_api", logging.INFO
+        ).get_logger()
         self.init_db()
-        self.logger = SimpleAppLogger(LOG_PATH, "instructive_api", logging.INFO)
 
     def hash_password(self, password: str) -> str:
         alg = hashlib.sha256()
@@ -71,7 +73,7 @@ class CLApp:
         finally:
             conn.close()
 
-    def cli_signup(self, name: str, email: str, password: str):
+    def cli_signup(self):
         """Signup ONLY available through CLI"""
 
         while True:
@@ -127,3 +129,8 @@ class CLApp:
             except EOFError:
                 print("\nCtrl+D detected. Exiting application...")
                 break
+
+
+if __name__ == "__main__":
+    app = CLApp()
+    app.main()

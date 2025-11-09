@@ -6,3 +6,8 @@ frontend/package-lock.json
 venv/
 
 *.log
+
+.vscode
+.pytest_cache
+
+*/__pycache__
