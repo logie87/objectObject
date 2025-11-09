@@ -1,5 +1,3 @@
-// src/pages/HomePage.tsx — drop-in replacement using simple redirects to /app/*
-
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiGetBlobUrl } from "../lib/api";
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { apiGet, apiPut } from "../lib/api";
+import { apiGet } from "../lib/api";
 
 const COLORS = {
   readingBadgeBg: "rgba(251, 191, 191, 0.15)",

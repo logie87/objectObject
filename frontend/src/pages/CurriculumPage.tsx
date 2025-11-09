@@ -1,5 +1,3 @@
-// src/pages/CurriculumPage.tsx  — drop-in replacement
-
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPost, apiGetBlobUrl } from "../lib/api";
 
