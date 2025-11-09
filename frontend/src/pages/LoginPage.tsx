@@ -1,56 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import InstructiveLogo from '../assets/instructive_logo.svg'; 
-
-// --- minimal inline auth (uses your API URL env) ---
-// const API_BASE =
-//   import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ||
-//   'https://refused-football-telling-guarantees.trycloudflare.com';
-
-// async function sha256Hex(input: string): Promise<string> {
-//   const enc = new TextEncoder().encode(input);
-//   const buf = await crypto.subtle.digest('SHA-256', enc);
-//   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-// }
-
-// async function doLogin(email: string, password: string) {
-//   const passwordHash = await sha256Hex(password);
-//   const res = await fetch(`${API_BASE}/auth/login`, {
-//     method: 'POST',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify({ email, password: passwordHash }),
-//   });
-//   if (!res.ok) throw new Error(await res.text());
-//   const data = await res.json() as { access_token: string; user_name: string; token_type: string };
-//   localStorage.setItem('authToken', data.access_token);
-//   localStorage.setItem('userName', data.user_name)
-//   localStorage.setItem('userEmail', email.toLowerCase());
-// }
+import InstructiveLogo from '../assets/instructive_logo.svg';
 
 const LoginPage: React.FC = () => {
-  
-  const { isAuthenticated } = useAuth();
-
+  const { isAuthenticated, login } = useAuth();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
   const navigate = useNavigate();
-  
-  if (isAuthenticated) {
-    navigate('/app/home', { replace: true });
-  }
-  
-  const { login } = useAuth();
-  
+  const location = useLocation() as any;
+  const redirectTo = location.state?.from?.pathname || '/app/home';
+
+  // IMPORTANT: never navigate during render; do it in an effect
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAuthenticated, navigate, redirectTo]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
     setBusy(true);
     try {
       await login(email.trim(), password);
-      navigate('/app/home', { replace: true });
+      // Redirect happens via the effect once isAuthenticated flips to true
     } catch (ex: any) {
       setErr(typeof ex?.message === 'string' ? ex.message : 'Login failed');
     } finally {
@@ -81,9 +58,6 @@ const LoginPage: React.FC = () => {
         maxWidth: '420px',
         margin: '20px'
       }}>
-        
-
-
         {err && (
           <div style={{
             marginBottom: 16,
@@ -98,21 +72,15 @@ const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* Company Logo */}
-          <img
+        <img
           src={InstructiveLogo}
           alt="Instructive Logo"
-          style={{
-            width: '280px', 
-            height: 'auto',
-            margin: '0 auto 40px', 
-            display: 'block',
-          }}
+          style={{ width: 280, height: 'auto', margin: '0 auto 40px', display: 'block' }}
         />
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 8 }}>
               Email
             </label>
             <input
@@ -124,9 +92,9 @@ const LoginPage: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                fontSize: '16px',
+                fontSize: 16,
                 border: '2px solid #e5e7eb',
-                borderRadius: '12px',
+                borderRadius: 12,
                 outline: 'none',
                 backgroundColor: '#f9fafb',
                 transition: 'all 0.3s',
@@ -142,8 +110,8 @@ const LoginPage: React.FC = () => {
             />
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 8 }}>
               Password
             </label>
             <input
@@ -155,9 +123,9 @@ const LoginPage: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                fontSize: '16px',
+                fontSize: 16,
                 border: '2px solid #e5e7eb',
-                borderRadius: '12px',
+                borderRadius: 12,
                 outline: 'none',
                 backgroundColor: '#f9fafb',
                 transition: 'all 0.3s',
@@ -178,26 +146,17 @@ const LoginPage: React.FC = () => {
             disabled={busy}
             style={{
               width: '100%',
-              padding: '14px',
-              fontSize: '16px',
+              padding: 14,
+              fontSize: 16,
               fontWeight: 600,
               color: 'white',
               background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: 12,
               cursor: busy ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s',
               boxShadow: '0 4px 6px rgba(168, 85, 247, 0.3)',
               opacity: busy ? 0.8 : 1
-            }}
-            onMouseEnter={(e) => {
-              if (busy) return;
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 12px rgba(168, 85, 247, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 6px rgba(168, 85, 247, 0.3)';
             }}
           >
             {busy ? 'Signing in…' : 'Sign In'}

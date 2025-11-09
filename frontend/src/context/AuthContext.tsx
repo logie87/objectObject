@@ -1,7 +1,17 @@
-import React, { createContext, useContext, useState, useEffect, type JSX } from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || 'https://refused-football-telling-guarantees.trycloudflare.com';
+const TOKEN_KEY = 'authToken';
+
+type AuthContextType = {
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ||
+  'https://refused-football-telling-guarantees.trycloudflare.com';
 
 async function sha256Hex(input: string): Promise<string> {
   const enc = new TextEncoder().encode(input);
@@ -9,47 +19,39 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-interface AuthContextType {
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => JSX.Element;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('userToken'));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+
+  // keep a single source of truth
+  const isAuthenticated = useMemo(() => !!token, [token]);
 
   useEffect(() => {
-    // Check for a token or other authentication indicator on mount
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setIsAuthenticated(true);
-    }
+    // Sync token state with localStorage changes across tabs
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === TOKEN_KEY) setToken(localStorage.getItem(TOKEN_KEY));
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const login = async (email: string, password: string) => {
     const passwordHash = await sha256Hex(password);
     const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: passwordHash }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: passwordHash }),
     });
     if (!res.ok) throw new Error(await res.text());
-    const data = await res.json() as { access_token: string; user_name: string; token_type: string };
-    localStorage.setItem('authToken', data.access_token);
-    localStorage.setItem('userName', data.user_name)
+    const data = await res.json() as { access_token: string; token_type: string };
+    localStorage.setItem(TOKEN_KEY, data.access_token);
     localStorage.setItem('userEmail', email.toLowerCase());
-    setIsAuthenticated(true);
+    setToken(data.access_token);
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userName');
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem('userEmail');
-    setIsAuthenticated(false);
-
-    return <Navigate to="/" replace />;
+    setToken(null);
   };
 
   return (
@@ -60,9 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };

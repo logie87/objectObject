@@ -2,8 +2,10 @@ export const API_BASE =
   import.meta.env.VITE_API_URL?.replace(/\/+$/, "") ||
   "https://refused-football-telling-guarantees.trycloudflare.com";
 
+const TOKEN_KEY = "authToken";
+
 function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -41,7 +43,6 @@ export async function apiPostForm<T>(path: string, fd: FormData): Promise<T> {
   return r.json();
 }
 
-// File download with auth, returns a blob URL you can open
 export async function apiGetBlobUrl(path: string): Promise<string> {
   const r = await fetch(`${API_BASE}${path}`, { headers: { ...authHeaders() } });
   if (!r.ok) throw new Error(await r.text());
