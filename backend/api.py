@@ -337,7 +337,7 @@ async def me_avatar(user=Depends(verify_jwt)):
             },
         )
     # no avatar -> 204 No Content
-    return Response(status_code=204, headers={
+    return Response(status_code=404, headers={
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
         "Pragma": "no-cache",
         "Expires": "0",
