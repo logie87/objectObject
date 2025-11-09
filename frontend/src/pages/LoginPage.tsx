@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import InstructiveLogo from '../assets/instructive_logo.svg';
+
+
+
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState<string>('');

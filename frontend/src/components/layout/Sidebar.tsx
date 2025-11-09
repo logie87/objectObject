@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 
 function Icon({d}:{d:string}) {
   return (
-    <svg className="icon-24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="icon-24" viewBox="0 0 24 24" fill="none" stroke="var(--text-300)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d={d}/>
     </svg>
   );

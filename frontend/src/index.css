@@ -1,6 +1,9 @@
 :root{
-  --bg:#f6f7fb; --panel:#fff; --text:#0f172a; --muted:#6b7280;
-  --primaryA:#a78bfa; --primaryB:#a855f7; --primaryC:#ec4899;
+  --surface-100: #fefcfa;--surface-200: #faf7f1; --surface-300: #f8f3ea; --surface-400: #f3e9da; --surface-500: #f0e4d1; --surface-600: #dacfbe; --surface-700: #aaa294; --surface-800: #847d73; --surface-900: #656058;
+  --text-100:#b5b7bc; --text-200:#92959c; --text-300:#60646e; --text-400:#414652; --text:#111827;
+  
+  --panel:#fff;  --muted:#6b7280;
+  --primaryA:#a78bfa; --primaryB:#c56e6e; --primaryC:#ec4899;
   --radius-lg:16px; --radius-xl:24px;
   --shadow-sm:0 1px 2px rgba(0,0,0,.06);
   --shadow-md:0 8px 20px rgba(0,0,0,.08);
@@ -9,7 +12,14 @@
 
 *{box-sizing:border-box}
 html,body,#root{height:100%}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+html,body{
+  margin:0;
+  padding:0;
+  background:var(--surface-100);
+  color:var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
 a{color:inherit;text-decoration:none}
 button,input{font:inherit}
 
@@ -26,17 +36,25 @@ button,input{font:inherit}
 /* Sidebar: keep icons strictly white, no color */
 .sidebar{
   grid-area:sidebar;
-  background:linear-gradient(135deg,var(--primaryA),var(--primaryB) 50%,var(--primaryC));
-  color:#fff; padding:20px 14px; overflow:auto;
+  background:linear-gradient(135deg,var(--surface-100),var(--surface-100) 50%,var(--surface-100));
+  border: 1px solid var(--surface-900);
+  padding:20px 14px; overflow:auto; margin: .5rem; border-radius: 15px;
 }
 
 /* Topbar full width above sidebar */
-.topbar{
-  grid-area:topbar; position:sticky; top:0; z-index:10;
-  background:var(--panel); border-bottom:1px solid #e5e7eb;
-  display:flex; align-items:center; gap:16px; padding:0 20px;
-  height:72px;
-  box-shadow:0 2px 10px rgba(0,0,0,.04);
+.topbar {
+  grid-area: topbar;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--panel);
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: center; /* centers items horizontally */
+  align-items: center;
+  height: 72px;
+  padding: 0 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
 
 .content{grid-area:content; overflow:auto; padding:24px}
@@ -51,9 +69,17 @@ button,input{font:inherit}
 .btn.primary{background:linear-gradient(135deg,var(--primaryA),var(--primaryC))}
 .btn:focus-visible{outline:3px solid rgba(167,139,250,.5)}
 
-.search{
-  flex:1; display:flex; align-items:center; gap:10px; background:#f3f4f6;
-  border:1px solid #e5e7eb; border-radius:16px; padding:10px 14px; max-width:1000px;
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  margin: 2rem;
+  padding: 10px 14px;
+  width: 100%;
+  /* max-width: 600px; optional: controls search bar width */
 }
 .search input{flex:1;border:none;background:transparent;outline:none}
 
@@ -64,9 +90,9 @@ button,input{font:inherit}
 
 .nav-btn{
   width:100%; display:flex; align-items:center; gap:12px;
-  padding:12px 14px; border:none; background:transparent; color:#fff; border-radius:12px; cursor:pointer;
+  padding:12px 14px; border:none; background:transparent; color: var(--text-400); border-radius:12px; cursor:pointer;
 }
-.nav-btn.active{background:rgba(255,255,255,.22); box-shadow:var(--shadow-sm)}
+.nav-btn.active{background:var(--surface-600); box-shadow:var(--shadow-sm)}
 .nav-label{font-weight:600}
 
 .header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:4px 0 18px}
