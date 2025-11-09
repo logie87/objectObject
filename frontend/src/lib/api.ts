@@ -33,6 +33,19 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
   return r.json();
 }
 
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  const r = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders(),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
 export async function apiPostForm<T>(path: string, fd: FormData): Promise<T> {
   const r = await fetch(`${API_BASE}${path}`, {
     method: "POST",
