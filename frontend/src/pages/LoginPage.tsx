@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import InstructiveLogo from '../assets/instructive_logo.svg'; 
 
 // --- minimal inline auth (uses your API URL env) ---
 const API_BASE =
@@ -69,27 +70,8 @@ const LoginPage: React.FC = () => {
         maxWidth: '420px',
         margin: '20px'
       }}>
-        <div style={{
-          width: '80px',
-          height: '80px',
-          background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
-          borderRadius: '20px',
-          margin: '0 auto 32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <svg style={{ width: '40px', height: '40px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </div>
+        
 
-        <h2 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', textAlign: 'center', marginBottom: '8px' }}>
-          Welcome Back
-        </h2>
-        <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '16px' }}>
-          Sign in to continue to your account
-        </p>
 
         {err && (
           <div style={{
@@ -104,6 +86,18 @@ const LoginPage: React.FC = () => {
             {err}
           </div>
         )}
+
+        {/* Company Logo */}
+          <img
+          src={InstructiveLogo}
+          alt="Instructive Logo"
+          style={{
+            width: '280px', 
+            height: 'auto',
+            margin: '0 auto 40px', 
+            display: 'block',
+          }}
+        />
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
