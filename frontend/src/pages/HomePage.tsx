@@ -129,56 +129,8 @@ export default function HomePage() {
     <div>
       <div className="header">
         <h1>Welcome</h1>
-        <div className="sub">Quick start • Live data from Library / Students / Reports</div>
       </div>
 
-      {/* Quick Actions — every button goes to an implemented page */}
-      <div
-        className="grid"
-        style={{ gridTemplateColumns: "repeat(3, minmax(240px, 1fr))", marginBottom: 24 }}
-      >
-        <button
-          className="card"
-          onClick={() => go("/app/curriculum")}
-          style={{ textAlign: "left", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}
-        >
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>Curriculum</div>
-          <div style={{ color: "var(--muted)" }}>
-            Browse units and open resources • alignment badges where available
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <span className="badge warn">Resources: {snapshot.total}</span>
-          </div>
-        </button>
-
-        <button
-          className="card"
-          onClick={() => go("/app/students")}
-          style={{ textAlign: "left", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}
-        >
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>Students</div>
-          <div style={{ color: "var(--muted)" }}>
-            Manage IEP data and view/edit student profiles
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <span className="badge good">{students.length} loaded</span>
-          </div>
-        </button>
-
-        <button
-          className="card"
-          onClick={() => go("/app/reports")}
-          style={{ textAlign: "left", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}
-        >
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>Reports</div>
-          <div style={{ color: "var(--muted)" }}>
-            Open generated PDFs by category or recency
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <span className="badge bad">{reports.length} recent</span>
-          </div>
-        </button>
-      </div>
 
       {/* Main split: snapshot + right quick open */}
       <div className="panel" style={{ padding: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}>

@@ -3,6 +3,21 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import InstructiveLogo from '../assets/instructive_logo.svg';
 
+const BG_GRADIENT = 'linear-gradient(149deg,  #04e2bb 0%, #3dafbcff 30%, #353482 100%)';
+const CARD_BG = 'white';
+const CARD_SHADOW = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+const ERROR_BORDER = '#fecaca';
+const ERROR_BG = '#fef2f2';
+const ERROR_TEXT = '#b91c1c';
+const LABEL_COLOR = '#374151';
+const INPUT_BORDER = '#e5e7eb';
+const INPUT_BG = '#f9fafb';
+const INPUT_FOCUS_BORDER = '#3d5881';
+const INPUT_FOCUS_BG = 'white';
+const BUTTON_TEXT = 'white';
+const BUTTON_GRADIENT = '#3d5881';
+const BUTTON_SHADOW = '0 4px 6px rgba(13, 70, 91, 0.3)';
+
 const LoginPage: React.FC = () => {
   const { isAuthenticated, login } = useAuth();
   const [email, setEmail] = useState<string>('');
@@ -14,7 +29,6 @@ const LoginPage: React.FC = () => {
   const location = useLocation() as any;
   const redirectTo = location.state?.from?.pathname || '/app/home';
 
-  // IMPORTANT: never navigate during render; do it in an effect
   useEffect(() => {
     if (isAuthenticated) {
       navigate(redirectTo, { replace: true });
@@ -27,7 +41,6 @@ const LoginPage: React.FC = () => {
     setBusy(true);
     try {
       await login(email.trim(), password);
-      // Redirect happens via the effect once isAuthenticated flips to true
     } catch (ex: any) {
       setErr(typeof ex?.message === 'string' ? ex.message : 'Login failed');
     } finally {
@@ -42,7 +55,7 @@ const LoginPage: React.FC = () => {
       width: '100vw',
       margin: 0,
       padding: 0,
-      background: 'linear-gradient(135deg, #a78bfa 0%, #a855f7 50%, #ec4899 100%)',
+      background: BG_GRADIENT,
       alignItems: 'center',
       justifyContent: 'center',
       position: 'fixed',
@@ -50,10 +63,10 @@ const LoginPage: React.FC = () => {
       left: 0
     }}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: CARD_BG,
         borderRadius: '24px',
         padding: '48px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        boxShadow: CARD_SHADOW,
         width: '100%',
         maxWidth: '420px',
         margin: '20px'
@@ -63,9 +76,9 @@ const LoginPage: React.FC = () => {
             marginBottom: 16,
             padding: '10px 12px',
             borderRadius: 12,
-            border: '1px solid #fecaca',
-            background: '#fef2f2',
-            color: '#b91c1c',
+            border: `1px solid ${ERROR_BORDER}`,
+            background: ERROR_BG,
+            color: ERROR_TEXT,
             fontSize: 14
           }}>
             {err}
@@ -80,7 +93,7 @@ const LoginPage: React.FC = () => {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 8 }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: LABEL_COLOR, marginBottom: 8 }}>
               Email
             </label>
             <input
@@ -93,25 +106,25 @@ const LoginPage: React.FC = () => {
                 width: '100%',
                 padding: '12px 16px',
                 fontSize: 16,
-                border: '2px solid #e5e7eb',
+                border: `2px solid ${INPUT_BORDER}`,
                 borderRadius: 12,
                 outline: 'none',
-                backgroundColor: '#f9fafb',
+                backgroundColor: INPUT_BG,
                 transition: 'all 0.3s',
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#a855f7';
-                e.target.style.backgroundColor = 'white';
+                e.target.style.borderColor = INPUT_FOCUS_BORDER;
+                e.target.style.backgroundColor = INPUT_FOCUS_BG;
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#e5e7eb';
-                e.target.style.backgroundColor = '#f9fafb';
+                e.target.style.borderColor = INPUT_BORDER;
+                e.target.style.backgroundColor = INPUT_BG;
               }}
             />
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: '#374151', marginBottom: 8 }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: LABEL_COLOR, marginBottom: 8 }}>
               Password
             </label>
             <input
@@ -124,19 +137,19 @@ const LoginPage: React.FC = () => {
                 width: '100%',
                 padding: '12px 16px',
                 fontSize: 16,
-                border: '2px solid #e5e7eb',
+                border: `2px solid ${INPUT_BORDER}`,
                 borderRadius: 12,
                 outline: 'none',
-                backgroundColor: '#f9fafb',
+                backgroundColor: INPUT_BG,
                 transition: 'all 0.3s',
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#a855f7';
-                e.target.style.backgroundColor = 'white';
+                e.target.style.borderColor = INPUT_FOCUS_BORDER;
+                e.target.style.backgroundColor = INPUT_FOCUS_BG;
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#e5e7eb';
-                e.target.style.backgroundColor = '#f9fafb';
+                e.target.style.borderColor = INPUT_BORDER;
+                e.target.style.backgroundColor = INPUT_BG;
               }}
             />
           </div>
@@ -149,13 +162,13 @@ const LoginPage: React.FC = () => {
               padding: 14,
               fontSize: 16,
               fontWeight: 600,
-              color: 'white',
-              background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
+              color: BUTTON_TEXT,
+              background: BUTTON_GRADIENT,
               border: 'none',
               borderRadius: 12,
               cursor: busy ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s',
-              boxShadow: '0 4px 6px rgba(168, 85, 247, 0.3)',
+              boxShadow: BUTTON_SHADOW,
               opacity: busy ? 0.8 : 1
             }}
           >
