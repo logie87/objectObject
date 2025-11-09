@@ -253,7 +253,7 @@ export default function StudentsPage() {
         <div>
           <h1 style={{ fontSize: 32, marginBottom: 4 }}>Students</h1>
           <div style={{ color: COLORS.mutedText }}>
-            IEP snapshots • Top gaps • One-click 
+            IEP snapshots • Top gaps • One-click view/edit
           </div>
         </div>
 
