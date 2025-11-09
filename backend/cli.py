@@ -1,8 +1,10 @@
+# cli.py
 import getpass
+import logging
 import os
 import sqlite3
-import logging
 import hashlib
+from pathlib import Path
 
 from logger import SimpleAppLogger
 
@@ -10,18 +12,22 @@ from logger import SimpleAppLogger
 # ======================= CONFIG =============================
 # ============================================================
 
-LOG_PATH = "logs"
-DB_PATH = "instuctive.db"
+BASE_DIR = Path(__file__).resolve().parent
+LOG_DIR = BASE_DIR / "logs"
+DATA_DIR = BASE_DIR / "data"
+DB_PATH = DATA_DIR / "instuctive.db"
+
 
 # ============================================================
 # ================= Command Line Application =================
 # ============================================================
 
-
 class CLApp:
     def __init__(self):
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        self.logger = SimpleAppLogger(str(LOG_DIR), "instructive_api", logging.INFO).get_logger()
         self.init_db()
-        self.logger = SimpleAppLogger(LOG_PATH, "instructive_api", logging.INFO)
 
     def hash_password(self, password: str) -> str:
         alg = hashlib.sha256()
@@ -29,89 +35,73 @@ class CLApp:
         return alg.hexdigest()
 
     def get_db(self):
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
         conn.row_factory = sqlite3.Row
         return conn
 
     def init_db(self):
         conn = self.get_db()
         c = conn.cursor()
-
         c.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL, 
                 email TEXT NOT NULL UNIQUE,
-                pwd TEXT NOT NULL
+                pwd   TEXT NOT NULL
             );
             """
         )
-
         conn.commit()
         conn.close()
-        self.logger.info("Database initialized.")
+        self.logger.info(f"Database initialized at {DB_PATH}")
 
-    def signup(self, name: str, email: str, password: str):
+    def signup(self, email: str, password: str):
         password = self.hash_password(password)
-
         conn = self.get_db()
         c = conn.cursor()
-
         try:
             c.execute(
-                "INSERT INTO users (name, email, pwd) VALUES (?, ?, ?);",
-                (name, email.lower(), password),
+                "INSERT INTO users (email, pwd) VALUES (?, ?);",
+                (email.lower(), password),
             )
             conn.commit()
-
+            self.logger.info(f"User '{email}' created.")
             return True
         except sqlite3.IntegrityError:
+            self.logger.error("Email already exists.")
             return False
         finally:
             conn.close()
 
-    def cli_signup(self, name: str, email: str, password: str):
-        """Signup ONLY available through CLI"""
-
+    def cli_signup(self):
+        """Interactive CLI for creating a user (admin-only)."""
         while True:
-            os.system("clear")  # Clear the terminal screen
+            os.system("cls" if os.name == "nt" else "clear")
             print("SIGNUP FORM")
             print("=" * 60)
             print("\n")
-
             try:
-                # Collect user input
-                name = input(f"{'Name:':<15}\n> ")  # Align field name to the left
+                email = input("Email:\n> ").strip()
+                password = getpass.getpass("Password:\n> ")
+                if not email or not password:
+                    input("Email and password required. Press Enter…")
+                    continue
 
-                email = input(f"{'Email:':<15}\n> ")  # Align field name to the left
-
-                password = getpass.getpass(
-                    f"{'Password:':<15}\n> "
-                )  # Align field name to the left
-
-                # Attempt signup
-                if self.signup(name, email, password):
-                    self.logger.info(f"User '{email}' created via CLI.")
-                    print(f"User '{email}' created via CLI.")
-                    input("Press Enter to continue...")
+                if self.signup(email, password):
+                    print(f"User '{email}' created.")
+                    input("Press Enter to continue…")
                     break
                 else:
-                    self.logger.error("Email already exists.")
-                    input("Press Enter to continue...")
+                    input("Failed (likely duplicate). Press Enter…")
             except EOFError:
-                print("\nCtrl+D detected. Exiting signup...")
-                self.app.disconnect_db()
+                print("\nCtrl+D detected. Exiting signup…")
                 break
 
     def main(self):
-        """
-        Main function to handle the flow of the application.
-        """
         while True:
             try:
-                os.system("clear")  # Clear the terminal screen
-                print("WELCOME TO THE APPLICATION")
+                os.system("cls" if os.name == "nt" else "clear")
+                print("WELCOME")
                 print("=" * 60)
                 print("1. Signup")
                 print("2. Exit")
@@ -120,10 +110,15 @@ class CLApp:
                 if choice == "1":
                     self.cli_signup()
                 elif choice == "2":
-                    print("\nExiting application...")
+                    print("\nExiting…")
                     break
                 else:
-                    print("Invalid choice. Please try again.")
+                    print("Invalid choice. Press Enter…")
+                    input()
             except EOFError:
-                print("\nCtrl+D detected. Exiting application...")
+                print("\nCtrl+D detected. Exiting…")
                 break
+
+
+if __name__ == "__main__":
+    CLApp().main()
