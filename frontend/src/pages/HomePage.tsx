@@ -1,5 +1,5 @@
 import { useState } from 'react';
-
+// Skip
 const COLORS = {
   buttonGradientStart: "#a78bfa",
   buttonGradientEnd: "#ec4899",
@@ -37,6 +37,21 @@ const Icons = {
       <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
     </svg>
   ),
+  Close: () => (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
 };
 
 export default function HomePage() {
@@ -57,28 +72,28 @@ export default function HomePage() {
   const handleOnboardingSubmit = () => {
     if (onboardingInput.trim()) {
       setConversation(prev => [...prev, { role: "user", text: onboardingInput }]);
-      
+
       if (currentQuestion < questions.length - 1) {
         const nextQuestion = currentQuestion + 1;
         setCurrentQuestion(nextQuestion);
         setTimeout(() => {
-          setConversation(prev => [...prev, { 
-            role: "assistant", 
-            text: questions[nextQuestion] 
+          setConversation(prev => [...prev, {
+            role: "assistant",
+            text: questions[nextQuestion]
           }]);
         }, 500);
       } else {
         setTimeout(() => {
-          setConversation(prev => [...prev, { 
-            role: "assistant", 
-            text: "Thank you for sharing! We're setting up your personalized dashboard now. Let's get started! 🎉" 
+          setConversation(prev => [...prev, {
+            role: "assistant",
+            text: "Thank you for sharing! We're setting up your personalized dashboard now. Let's get started! 🎉"
           }]);
           setTimeout(() => {
             setIsFirstLogin(false);
           }, 2000);
         }, 500);
       }
-      
+
       setOnboardingInput("");
     }
   };
@@ -121,8 +136,24 @@ export default function HomePage() {
               borderRadius: "24px 24px 0 0",
               textAlign: "center",
               color: "white",
+              position: "relative",
             }}
           >
+            <button
+              onClick={() => setIsFirstLogin(false)}
+              style={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                background: "none",
+                border: "none",
+                color: "white",
+                cursor: "pointer",
+                padding: 4,
+              }}
+            >
+              <Icons.Close />
+            </button>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
               <Icons.Sparkles />
             </div>
@@ -133,7 +164,6 @@ export default function HomePage() {
               Let's get to know you better to personalize your experience
             </p>
           </div>
-
           {/* Conversation Area */}
           <div
             style={{
@@ -159,11 +189,11 @@ export default function HomePage() {
                     maxWidth: "80%",
                     padding: "12px 16px",
                     borderRadius: 16,
-                    backgroundColor: msg.role === "user" 
+                    backgroundColor: msg.role === "user"
                       ? `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`
                       : "#f3f4f6",
                     color: msg.role === "user" ? "white" : COLORS.mainText,
-                    background: msg.role === "user" 
+                    background: msg.role === "user"
                       ? `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`
                       : "#f3f4f6",
                   }}
@@ -173,7 +203,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-
           {/* Input Area */}
           <div
             style={{
@@ -247,7 +276,7 @@ export default function HomePage() {
                   width: "100%",
                 }}
               >
-                Skip for now
+                Done
               </button>
             )}
           </div>
@@ -262,7 +291,6 @@ export default function HomePage() {
         <h1>Welcome</h1>
         <div className="sub">Quick Align • Summary • Top Gaps</div>
       </div>
-
       {/* Quick Align */}
       <div className="grid" style={{gridTemplateColumns:"repeat(3, minmax(240px, 1fr))", marginBottom:24}}>
         <button className="card" style={{textAlign:"left", boxShadow:"0 1px 3px rgba(0,0,0,0.1)", border:"1px solid #e5e7eb"}}>
@@ -278,7 +306,6 @@ export default function HomePage() {
           <div style={{color:"var(--muted)"}}>Local RAG + multi-agent consensus</div>
         </button>
       </div>
-
       {/* Main split: summary + panel */}
       <div className="panel" style={{padding:20, boxShadow:"0 1px 3px rgba(0,0,0,0.1)", border:"1px solid #e5e7eb"}}>
         <div style={{display:"grid", gridTemplateColumns:"1fr 360px", gap:20}}>
@@ -293,7 +320,6 @@ export default function HomePage() {
                 <span style={{marginLeft:"auto", fontSize:12, color:"var(--muted)"}}>Last run: just now</span>
               </div>
             </div>
-
             {/* Recent runs */}
             <div className="card" style={{boxShadow:"0 1px 3px rgba(0,0,0,0.1)", border:"1px solid #e5e7eb"}}>
               <div style={{fontWeight:700, marginBottom:10}}>Recent Runs</div>
@@ -305,7 +331,6 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-
             {/* Shortcuts */}
             <div className="card" style={{boxShadow:"0 1px 3px rgba(0,0,0,0.1)", border:"1px solid #e5e7eb"}}>
               <div style={{fontWeight:700, marginBottom:10}}>Shortcuts</div>
@@ -317,7 +342,6 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-
           {/* Right panel: consensus preview */}
           <aside className="card" style={{position:"sticky", top:0, boxShadow:"0 1px 3px rgba(0,0,0,0.1)", border:"1px solid #e5e7eb"}}>
             <div style={{fontWeight:800, fontSize:18, marginBottom:8}}>Consensus Adaptation</div>
@@ -332,7 +356,6 @@ export default function HomePage() {
               <button className="btn primary">Insert into lesson</button>
               <button className="btn ghost" style={{color:"#6b7280"}}>Copy</button>
             </div>
-
             {/* Quick tips */}
             <div className="card" style={{marginTop:12, boxShadow:"0 1px 2px rgba(0,0,0,0.05)", border:"1px solid #e5e7eb"}}>
               <div style={{fontWeight:700, marginBottom:6}}>Quick Tips</div>

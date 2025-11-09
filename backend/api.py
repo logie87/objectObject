@@ -117,6 +117,7 @@ def init_user_db():
         """
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE,
             pwd   TEXT NOT NULL
         );
@@ -160,7 +161,7 @@ def _safe_filename(name: str) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    return datetime.now().isoformat(timespec="seconds") + "Z"
 
 
 # ============================================================
@@ -198,13 +199,8 @@ def _students_load() -> Dict:
 # ============================================================
 
 
-def create_jwt(id, name, email: str):
-    payload = {
-        "sub": str(id),
-        "name": name,
-        "email": email,
-        "iat": int(time.time()),
-    }
+def create_jwt(user_id: int, email: str) -> str:
+    payload = {"sub": str(user_id), "email": email, "iat": int(time.time())}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
 
 
@@ -239,37 +235,29 @@ app.add_middleware(
 # ======================= AUTH ROUTES ========================
 # ============================================================
 
-
 @app.post("/auth/login")
 async def login(req: LoginRequest):
     email = req.email.lower()
-    password = req.password
+    password = req.password  # sha256 hex
 
     if len(password) != 64:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=400, detail="Invalid password hash length")
 
     conn = get_db()
     c = conn.cursor()
-
     c.execute(
-        "SELECT id, name, email FROM users WHERE email = ? AND pwd = ?;",
+        "SELECT id, email FROM users WHERE email = ? AND pwd = ?;",
         (email, password),
     )
-    user = c.fetchone()
+    row = c.fetchone()
     conn.close()
 
-    if not user:
+    if not row:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # stored_hash = user["hash"]
-
-    # if not hmac.compare_digest(stored_hash, client_hash):
-    #     raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    id, name, email = user
-
-    token = create_jwt(id, name, email)
-    logger.info(f"User '{email}' logged in successfully.")
+    user_id, user_email = row
+    token = create_jwt(user_id, user_email)
+    logger.info(f"User '{user_email}' logged in successfully.")
     return {"access_token": token, "token_type": "bearer"}
 
 
