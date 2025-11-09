@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { apiGet, apiGetBlobUrl, apiPut } from "../lib/api";
 
 // Color constants
 const COLORS = {
@@ -11,7 +12,19 @@ const COLORS = {
   avatarBg: "#eef2ff",
 };
 
-// Icons
+type ReportMeta = {
+  id: string;
+  filename: string;
+  title: string;
+  size: number;
+  sha256: string;
+  generated_at: string; // ISO
+  category: string;
+  tags: string[];
+};
+
+type CategoriesResp = { categories: string[] };
+
 const Icons = {
   Report: () => (
     <svg
@@ -28,191 +41,150 @@ const Icons = {
       <polyline points="14 2 14 8 20 8" />
     </svg>
   ),
-  History: () => (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
+  Filter: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLORS.mainText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="22 3 2 3 10 12 10 19 14 21 14 12 22 3" />
     </svg>
   ),
-  Send: () => (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  ),
-  Close: () => (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
+  Sort: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLORS.mainText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 16h13M3 12h9M3 8h5" />
     </svg>
   ),
 };
 
-const reports = [
-  "Class Alignment Snapshot",
-  "Student IEP Alignment (1-pager)",
-  "Outcome Gap Map",
-];
-
-const historyData = [
-  { date: "Nov 8, 2025 • 10:30 AM", report: "Class Alignment Snapshot", unit: "Unit 3: Fractions" },
-  { date: "Nov 7, 2025 • 2:15 PM", report: "Student IEP Alignment", unit: "Unit 2: Decimals" },
-  { date: "Nov 6, 2025 • 9:45 AM", report: "Outcome Gap Map", unit: "Unit 3: Fractions" },
-  { date: "Nov 5, 2025 • 3:20 PM", report: "Class Alignment Snapshot", unit: "Unit 1: Addition" },
-  { date: "Nov 4, 2025 • 11:00 AM", report: "Student IEP Alignment", unit: "Unit 3: Fractions" },
-];
-
 export default function ReportsPage() {
-  const [showHistory, setShowHistory] = useState(false);
-  const [feedback, setFeedback] = useState("");
-  const [showFeedbackSuccess, setShowFeedbackSuccess] = useState(false);
+  const [reports, setReports] = useState<ReportMeta[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const handleSendFeedback = () => {
-    if (feedback.trim()) {
-      setShowFeedbackSuccess(true);
-      setFeedback("");
-      setTimeout(() => setShowFeedbackSuccess(false), 3000);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [category, setCategory] = useState<string>(""); // all
+  const [sort, setSort] = useState<"recent" | "title" | "size">("recent");
+
+  const totalSize = useMemo(
+    () => reports.reduce((s, d) => s + (d.size || 0), 0),
+    [reports]
+  );
+
+  function tell(msg: string) {
+    setNotice(msg);
+    setTimeout(() => setNotice(null), 2200);
+  }
+
+  async function refresh() {
+    setBusy(true);
+    try {
+      const q = new URLSearchParams();
+      if (category) q.set("category", category);
+      if (sort) q.set("sort", sort);
+      const list = await apiGet<ReportMeta[]>(`/reports?${q.toString()}`);
+      setReports(list);
+    } finally {
+      setBusy(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cats = await apiGet<CategoriesResp>(`/reports/categories`);
+        setCategories(cats.categories || []);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    refresh().catch(err => tell(`Load failed: ${String(err)}`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, sort]);
+
+  async function viewReport(id: string) {
+    try {
+      const url = await apiGetBlobUrl(`/reports/${id}/file`);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      tell(`Open failed: ${String(e)}`);
+    }
+  }
+
+  async function renameReport(id: string, current: string) {
+    const title = prompt("New title", current);
+    if (!title || title === current) return;
+    try {
+      await apiPut<ReportMeta>(`/reports/${id}`, { title });
+      tell("Title updated.");
+      await refresh();
+    } catch (e) {
+      tell(`Rename failed: ${String(e)}`);
+    }
+  }
 
   return (
-    <div style={{ padding: 24, paddingBottom: 120 }}>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ padding: 24 }}>
+      {/* Header */}
+      <div style={{ marginBottom: 16, display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 32, marginBottom: 4 }}>Reports</h1>
           <div style={{ color: COLORS.mutedText }}>
-            Class Alignment • Student IEP Alignment • Outcome Gap Map
+            {reports.length} files • {(totalSize/1024/1024).toFixed(1)} MB
           </div>
         </div>
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          style={{
-            padding: "12px 20px",
-            borderRadius: 12,
-            border: "1px solid #e5e7eb",
-            fontWeight: 600,
-            cursor: "pointer",
-            color: COLORS.mainText,
-            backgroundColor: "white",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            transition: "all 0.2s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#f9fafb";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "white";
-          }}
-        >
-          <Icons.History />
-          See History
-        </button>
+
+        {/* Category filter */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Icons.Filter />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              color: COLORS.mainText,
+            }}
+          >
+            <option value="">All categories</option>
+            {categories.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Sort selector */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Icons.Sort />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as any)}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              color: COLORS.mainText,
+            }}
+          >
+            <option value="recent">Most recent</option>
+            <option value="title">Title (A–Z)</option>
+            <option value="size">Largest first</option>
+          </select>
+        </div>
       </div>
 
-      {/* History Panel */}
-      {showHistory && (
-        <div
-          style={{
-            marginBottom: 24,
-            padding: 24,
-            borderRadius: 16,
-            backgroundColor: COLORS.cardBg,
-            boxShadow: COLORS.cardShadow,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: COLORS.mainText }}>Report History</h2>
-            <button
-              onClick={() => setShowHistory(false)}
-              style={{
-                padding: 8,
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                backgroundColor: "transparent",
-                color: COLORS.mutedText,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icons.Close />
-            </button>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {historyData.map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  backgroundColor: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: 16,
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, color: COLORS.mainText, marginBottom: 4 }}>
-                    {item.report}
-                  </div>
-                  <div style={{ fontSize: 14, color: COLORS.mutedText }}>
-                    {item.unit} • {item.date}
-                  </div>
-                </div>
-                <button
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 8,
-                    border: "none",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    color: "white",
-                    background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  View
-                </button>
-              </div>
-            ))}
-          </div>
+      {notice && (
+        <div style={{
+          marginBottom: 16, padding: "10px 12px", borderRadius: 12,
+          border: "1px solid #e5e7eb", background: "#f8fafc", color: COLORS.mainText
+        }}>
+          {notice}
         </div>
       )}
 
-      {/* Reports Grid */}
+      {/* Grid */}
       <div
         style={{
           display: "grid",
@@ -220,24 +192,25 @@ export default function ReportsPage() {
           gap: 24,
         }}
       >
-        {reports.map((name, i) => (
+        {reports.map((r) => (
           <div
-            key={i}
+            key={r.id}
             style={{
-              padding: 32,
+              padding: 24,
               borderRadius: 16,
               backgroundColor: COLORS.cardBg,
               boxShadow: COLORS.cardShadow,
               display: "flex",
               flexDirection: "column",
-              gap: 24,
+              gap: 16,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            {/* Icon + name */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div
                 style={{
-                  width: 72,
-                  height: 72,
+                  width: 64,
+                  height: 64,
                   borderRadius: "50%",
                   backgroundColor: COLORS.avatarBg,
                   display: "flex",
@@ -248,161 +221,65 @@ export default function ReportsPage() {
               >
                 <Icons.Report />
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
                     fontWeight: 700,
-                    fontSize: 20,
+                    fontSize: 18,
                     color: COLORS.mainText,
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
                   }}
+                  title={r.title}
                 >
-                  {name}
+                  {r.title}
                 </div>
-                <div
-                  style={{
-                    color: COLORS.mutedText,
-                    fontSize: 14,
-                    marginTop: 4,
-                  }}
-                >
-                  Generate new report
+                <div style={{ color: COLORS.mutedText, fontSize: 13, marginTop: 4 }}>
+                  {(r.size/1024/1024).toFixed(2)} MB • {new Date(r.generated_at).toLocaleString()}
                 </div>
+                <div style={{ color: COLORS.mutedText, fontSize: 12, marginTop: 6 }}>
+                  {r.category}
+                </div>
+                {r.tags?.length ? (
+                  <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {r.tags.map((t) => (
+                      <span
+                        key={t}
+                        style={{ fontSize: 12, padding: "3px 8px", borderRadius: 999, background: "#f3f4f6", color: COLORS.mainText }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 10 }}>
               <button
-                style={{
-                  flex: 1,
-                  padding: "12px 0",
-                  borderRadius: 12,
-                  border: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  color: COLORS.mainText,
-                  backgroundColor: "#f3f4f6",
-                  transition: "all 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#e5e7eb";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#f3f4f6";
-                }}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}
+                onClick={() => viewReport(r.id)}
               >
-                Open
+                View
               </button>
-
               <button
-                style={{
-                  flex: 1,
-                  padding: "12px 0",
-                  borderRadius: 12,
-                  border: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  color: "white",
-                  background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                  transition: "all 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow = "0 8px 16px rgba(168,85,247,0.4)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}
+                onClick={() => renameReport(r.id, r.title)}
               >
-                Export PDF
+                Rename
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Fixed Feedback Chat Bar */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: "white",
-          borderTop: "1px solid #e5e7eb",
-          boxShadow: "0 -4px 12px rgba(0,0,0,0.08)",
-          padding: "16px 24px",
-          zIndex: 1000,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", gap: 12, alignItems: "center" }}>
-          <input
-            type="text"
-            placeholder="Have feedback or concerns? Let us know..."
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendFeedback()}
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              fontSize: 15,
-              outline: "none",
-              transition: "border-color 0.2s",
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = COLORS.buttonGradientStart;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = "#e5e7eb";
-            }}
-          />
-          <button
-            onClick={handleSendFeedback}
-            style={{
-              padding: "12px 24px",
-              borderRadius: 12,
-              border: "none",
-              fontWeight: 600,
-              cursor: "pointer",
-              color: "white",
-              background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(168,85,247,0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            <Icons.Send />
-            Send
-          </button>
+      {!reports.length && !busy && (
+        <div style={{ marginTop: 24, color: COLORS.mutedText }}>
+          No reports found{category ? ` in “${category}”` : ""}.
         </div>
-        {showFeedbackSuccess && (
-          <div
-            style={{
-              maxWidth: 1200,
-              margin: "8px auto 0",
-              padding: "8px 16px",
-              borderRadius: 8,
-              backgroundColor: "#d1fae5",
-              color: "#065f46",
-              fontSize: 14,
-              fontWeight: 500,
-            }}
-          >
-            ✓ Feedback sent successfully!
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

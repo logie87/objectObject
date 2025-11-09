@@ -1,385 +1,445 @@
-// src/pages/CurriculumPage.tsx
+// src/pages/CurriculumPage.tsx  — drop-in replacement
 
 import { useEffect, useMemo, useState } from "react";
+import { apiGet, apiPost, apiGetBlobUrl } from "../lib/api";
 
-/** ---------- Mocked template data (editable) ---------- */
 type FitStatus = "good" | "warn" | "bad";
-type IssueChip = "Reading" | "Modality" | "Time" | "Assessment" | "Exec-Fx" | "AT/Tech";
-
-type OutcomeRow = {
-  code: string;
-  activities: string[];
-  fit: { mean: number; spread: number; status: FitStatus };
-  issues: IssueChip[];
-  affected: string[]; // student ids/labels
-  consensus: string[]; // bullets
-  evidence: string; // short line
-};
-
-type Unit = {
-  id: string;
+type Resource = {
   name: string;
-  outcomes: OutcomeRow[];
+  filename: string;
+  path: string;          // course/unit/filename.pdf
+  size: number;
+  uploaded_at: string;   // ISO
+  fit: { mean: number; spread: number; status: FitStatus };
+  issues?: string[];
+};
+type Curriculum = {
+  courses: Record<string, Record<string, Resource[]>>;
 };
 
-const sampleUnits: Unit[] = [
-  {
-    id: "u1",
-    name: "Unit 1: Fractions",
-    outcomes: [
-      {
-        code: "MA.1.A",
-        activities: ["Worksheet A1", "Station A - Fraction Strips", "Exit Ticket A"],
-        fit: { mean: 86, spread: 18, status: "good" },
-        issues: ["Modality"],
-        affected: ["S2", "S5", "S7", "S9"],
-        consensus: [
-          "Provide TTS & chunking (3–5 steps).",
-          "Offer oral check-in in place of written exit ticket.",
-          "Time extension 1.5×."
-        ],
-        evidence: "IEP reading accommodation; activity reading load."
-      },
-      {
-        code: "MA.1.B",
-        activities: ["Worksheet B1", "Hands-on Lab (Cuisenaire Rods)"],
-        fit: { mean: 71, spread: 26, status: "warn" },
-        issues: ["Time", "Assessment"],
-        affected: ["S1", "S3", "S8"],
-        consensus: [
-          "Allow extra time window and reduce item count.",
-          "Use quick oral probe for mastery instead of full quiz."
-        ],
-        evidence: "Time-on-task; prior assessment history."
-      },
-      {
-        code: "MA.1.C",
-        activities: ["Video Mini-lesson", "Practice Set C"],
-        fit: { mean: 48, spread: 34, status: "bad" },
-        issues: ["Reading", "Modality"],
-        affected: ["S4", "S6", "S10", "S12"],
-        consensus: [
-          "Provide guided notes with visuals.",
-          "Enable captions + transcript with highlighted key terms."
-        ],
-        evidence: "High lexical density; modality mismatch for S4/S6."
-      }
-    ]
-  },
-  {
-    id: "u2",
-    name: "Unit 2: Geometry",
-    outcomes: [
-      {
-        code: "MA.2.A",
-        activities: ["Worksheet G1", "Stations: Angles", "Exit Ticket G"],
-        fit: { mean: 78, spread: 22, status: "warn" },
-        issues: ["Assessment"],
-        affected: ["S2", "S7"],
-        consensus: ["Swap written exit ticket for 1:1 oral check-in."],
-        evidence: "Assessment format vs accommodations."
-      },
-      {
-        code: "MA.2.B",
-        activities: ["Investigation: Triangles", "Sketch & Label Task"],
-        fit: { mean: 90, spread: 12, status: "good" },
-        issues: [],
-        affected: [],
-        consensus: ["No change needed; keep visual supports available."],
-        evidence: "High engagement, low spread."
-      }
-    ]
-  },
-  {
-    id: "u3",
-    name: "Unit 3: Measurement",
-    outcomes: [
-      {
-        code: "MA.3.A",
-        activities: ["Lab: Measuring Length", "Reflection Prompt"],
-        fit: { mean: 62, spread: 28, status: "warn" },
-        issues: ["Exec-Fx", "Time"],
-        affected: ["S3", "S5", "S9"],
-        consensus: [
-          "Provide checklist + model response.",
-          "Offer time extension and reduced reflection length."
-        ],
-        evidence: "Executive function supports noted in IEPs."
-      }
-    ]
-  }
-];
+const ISSUE_OPTIONS = ["Reading", "Modality", "Time", "Assessment", "Exec-Fx", "AT/Tech"];
 
-/** ---------- Small utility ---------- */
-function statusBadge({ mean, spread, status }: OutcomeRow["fit"]) {
-  const text =
-    status === "good" ? `▲ ${mean}%` : status === "warn" ? `■ ${mean}%` : `● ${mean}%`;
-  const cls = status === "good" ? "good" : status === "warn" ? "warn" : "bad";
+function statusBadge({ mean, spread, status }: Resource["fit"]) {
+  const symbol = status === "good" ? "▲" : status === "warn" ? "■" : "●";
+  const color =
+    status === "good" ? "#16a34a" : status === "warn" ? "#f59e0b" : "#ef4444";
   return (
-    <span className={`badge ${cls}`} title={`Mean ${mean} • Spread ${spread}`}>
-      {text}
+    <span
+      title={`Mean ${mean}% • Spread ${spread}`}
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, color }}
+    >
+      {symbol} {mean}%
     </span>
   );
 }
 
-/** ---------- Page Component ---------- */
 export default function CurriculumPage() {
-  const [activeUnitId, setActiveUnitId] = useState<Unit["id"]>("u1");
-  const [focusedIndex, setFocusedIndex] = useState(0);
-  const [notice, setNotice] = useState<string>("");
+  const [data, setData] = useState<Curriculum | null>(null);
+  const [activeCourse, setActiveCourse] = useState("");
+  const [activeUnit, setActiveUnit] = useState("");
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
 
-  const activeUnit = useMemo(
-    () => sampleUnits.find((u) => u.id === activeUnitId) ?? sampleUnits[0],
-    [activeUnitId]
+  const [issueFilter, setIssueFilter] = useState<string>("All Issues");
+  const [minFit, setMinFit] = useState<number>(0);
+  const [atRiskOnly, setAtRiskOnly] = useState<boolean>(false);
+
+  const [focused, setFocused] = useState<Resource | null>(null);
+  const [analysis, setAnalysis] = useState<{
+    affected: string[];
+    consensus: string[];
+    evidence: string;
+  } | null>(null);
+  const [busyAnalyze, setBusyAnalyze] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const d = await apiGet<Curriculum>("/curriculum");
+        setData(d);
+        const firstCourse = Object.keys(d.courses)[0];
+        if (firstCourse) {
+          setActiveCourse(firstCourse);
+          const firstUnit = Object.keys(d.courses[firstCourse])[0];
+          if (firstUnit) setActiveUnit(firstUnit);
+        }
+      } catch {
+        // demo: ignore
+      }
+    })();
+  }, []);
+
+  const courses = useMemo(() => Object.keys(data?.courses || {}), [data]);
+  const units = useMemo(
+    () => (activeCourse ? Object.keys(data?.courses[activeCourse] || {}) : []),
+    [data, activeCourse]
   );
 
-  const rows = activeUnit.outcomes;
-  const focused = rows[focusedIndex] ?? rows[0];
+  const allResources: Resource[] =
+    (data && activeCourse && activeUnit
+      ? data.courses[activeCourse][activeUnit]
+      : []) || [];
 
-  // auto-hide notices after a beat
-  useEffect(() => {
-    if (!notice) return;
-    const t = setTimeout(() => setNotice(""), 3000);
-    return () => clearTimeout(t);
-  }, [notice]);
+  const resources = useMemo(() => {
+    let items = allResources;
+    if (issueFilter !== "All Issues") {
+      items = items.filter((r) => (r.issues || []).includes(issueFilter));
+    }
+    if (minFit > 0) {
+      items = items.filter((r) => r.fit.mean >= minFit);
+    }
+    if (atRiskOnly) {
+      items = items.filter((r) => r.fit.status !== "good");
+    }
+    return items;
+  }, [allResources, issueFilter, minFit, atRiskOnly]);
 
-  const tell = (msg: string) => {
-    setNotice(msg);
+  const handleReorder = async (newOrder: Resource[]) => {
+    if (!data) return;
+    const next: Curriculum = {
+      ...data,
+      courses: {
+        ...data.courses,
+        [activeCourse]: {
+          ...data.courses[activeCourse],
+          [activeUnit]: newOrder,
+        },
+      },
+    };
+    setData(next);
+    try {
+      await apiPost(`/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`, {
+        order: newOrder.map((r) => r.filename),
+      });
+    } catch {
+      // demo: ignore
+    }
   };
 
-  const handleSelectUnit = (id: string, name: string) => {
-    setActiveUnitId(id);
-    setFocusedIndex(0);
-    tell(
-      `Switched to ${name}. Outcomes and activities below now reflect this unit. Re-run to refresh fit badges if filters changed.`
-    );
+  const onDragStart = (i: number) => setDragIdx(i);
+  const onDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === i) return;
+    const working = [...allResources];
+    const [moved] = working.splice(dragIdx, 1);
+    working.splice(i, 0, moved);
+    setDragIdx(i);
+    handleReorder(working);
   };
 
-  const handleGenerate = (row: OutcomeRow) => {
-    tell(
-      `Would generate a consensus adaptation for ${row.code}: run local RAG over this unit’s materials + IEPs, then propose changes (with rationale & evidence) for the selected activities.`
-    );
+  const analyze = async (r: Resource) => {
+    setBusyAnalyze(true);
+    setFocused(r);
+    setAnalysis(null);
+    try {
+      const res = await apiGet<{
+        affected: string[];
+        consensus: string[];
+        evidence: string;
+      }>(
+        `/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(
+          activeUnit
+        )}/analysis?resource=${encodeURIComponent(r.filename)}`
+      );
+      setAnalysis(res);
+    } catch {
+      setAnalysis({
+        affected: [],
+        consensus: ["(demo) No change needed."],
+        evidence: "(demo) No evidence.",
+      });
+    } finally {
+      setBusyAnalyze(false);
+    }
   };
 
-  const handleRerun = () => {
-    tell(
-      "Would re-run alignment locally using current filters and the active unit. Fit %, spread, and issue badges would refresh."
-    );
-  };
+  async function openResource(r: Resource) {
+    try {
+      const url = await apiGetBlobUrl(`/curriculum/${r.path}`);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      // demo: ignore
+    }
+  }
+
+  if (!data) return <div className="card">Loading curriculum…</div>;
 
   return (
     <div>
       <div className="header">
         <h1>Curriculum</h1>
-        <div className="sub">Units • Outcomes • Activity fit & issues</div>
+        <div className="sub" style={{ color: "#6b7280" }}>
+          Units • Resources • Alignment Overview
+        </div>
       </div>
 
-      {/* Inline “what would happen” notice */}
-      {notice && (
-        <div
-          className="card"
-          role="status"
-          aria-live="polite"
+      {/* Controls */}
+      <div
+        className="card"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 220px 180px 1fr auto",
+          gap: 12,
+          alignItems: "center",
+          padding: "10px 16px",
+          marginBottom: 16,
+        }}
+      >
+        <label style={{ fontWeight: 700 }}>Course</label>
+        <select
+          value={activeCourse}
+          onChange={(e) => {
+            const c = e.target.value;
+            setActiveCourse(c);
+            const first = Object.keys(data.courses[c] || {})[0];
+            setActiveUnit(first || "");
+            setFocused(null);
+            setAnalysis(null);
+          }}
           style={{
-            marginBottom: 12,
-            borderLeft: "6px solid #a78bfa",
-            background: "#fafaff"
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
           }}
         >
-          {notice}
-        </div>
-      )}
+          {courses.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
 
-      <div className="panel curpanel" style={{ padding: 20 }}>
-        {/* Filter bar */}
-        <div
-          className="card "
-          style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}
+        <select
+          value={issueFilter}
+          onChange={(e) => setIssueFilter(e.target.value)}
+          style={{
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+          }}
         >
-          <select
-            style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
-            onChange={(e) => tell(`Would filter by unit = ${e.target.value}.`)}
-          >
-            <option>All Units</option>
-            {sampleUnits.map((u) => (
-              <option key={u.id}>{u.name}</option>
-            ))}
-          </select>
+          <option>All Issues</option>
+          {ISSUE_OPTIONS.map((i) => (
+            <option key={i}>{i}</option>
+          ))}
+        </select>
 
-          <select
-            style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
-            onChange={(e) => tell(`Would filter by issue = ${e.target.value}.`)}
-          >
-            <option>All Issues</option>
-            <option>Reading</option>
-            <option>Modality</option>
-            <option>Time</option>
-            <option>Assessment</option>
-            <option>Exec-Fx</option>
-            <option>AT/Tech</option>
-          </select>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <label style={{ fontSize: 12, color: "var(--muted)" }}>
+            Min fit {minFit}%
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={minFit}
+            onChange={(e) => setMinFit(parseInt(e.target.value, 10))}
+          />
+          <label style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={atRiskOnly}
+              onChange={(e) => setAtRiskOnly(e.target.checked)}
+            />
+            At-risk only
+          </label>
+        </div>
 
-          <button className="btn ghost" onClick={handleRerun}>
-            Re-run (filters changed)
+        <div style={{ display: "flex", justifyContent: "end", gap: 8 }}>
+          <button
+            className="btn ghost"
+            onClick={() => {
+              setIssueFilter("All Issues");
+              setMinFit(0);
+              setAtRiskOnly(false);
+            }}
+          >
+            Reset Filters
           </button>
         </div>
+      </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 360px", gap: 20, height: '80%'}}>
-          {/* Units tree */}
-        <aside className="card" style={{ padding: 12, height: '100%' }} >
-
-            <div style={{ fontWeight: 700, marginBottom: 10 }}>Units</div>
-            <div style={{ display: "grid", gap: 8 }}>
-                {sampleUnits.map((u) => {
-                const active = u.id === activeUnitId;
-                return (
-                    <button
-                    key={u.id}
-                    className={`unit-btn ${active ? "active" : ""}`}
-                    onClick={() => handleSelectUnit(u.id, u.name)}
-                    aria-current={active ? "page" : undefined}
-                    >
-                    <span aria-hidden className="unit-dot" />
-                    <span className="nav-label" style={{ color: "inherit" }}>{u.name}</span>
-                    </button>
-                );
-                })}
-            </div>
+      {/* Workspace */}
+      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 380px", gap: 20 }}>
+        {/* Units */}
+        <aside className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 700, marginBottom: 10 }}>Units</div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {units.map((u) => (
+              <button
+                key={u}
+                className={`unit-btn ${u === activeUnit ? "active" : ""}`}
+                onClick={() => {
+                  setActiveUnit(u);
+                  setFocused(null);
+                  setAnalysis(null);
+                }}
+              >
+                <span aria-hidden className="unit-dot" />
+                <span className="nav-label" style={{ color: "inherit" }}>
+                  {u}
+                </span>
+              </button>
+            ))}
+          </div>
         </aside>
 
+        {/* Resource table */}
+        <section className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr 160px",
+              background: "#f8fafc",
+              padding: "10px 16px",
+              fontWeight: 700,
+            }}
+          >
+            <div>Resource</div>
+            <div>Size</div>
+            <div>Alignment</div>
+            <div>Actions</div>
+          </div>
 
-          {/* Outcome table (driven by active unit) */}
-          <section className="card" style={{ padding: 0, overflow: "hidden" }}>
+          {resources.map((r, i) => (
             <div
+              key={r.path}
+              draggable
+              onDragStart={() => onDragStart(i)}
+              onDragOver={(e) => onDragOver(e, i)}
               style={{
                 display: "grid",
-                gridTemplateColumns: "160px 1fr 140px 180px 120px",
-                background: "#f8fafc",
-                padding: "12px 16px",
-                fontWeight: 700
+                gridTemplateColumns: "2fr 1fr 1fr 160px",
+                padding: "10px 16px",
+                borderTop: "1px solid #eef2f7",
+                alignItems: "center",
+                background: focused?.path === r.path ? "#fafafa" : "transparent",
+                cursor: "grab",
               }}
             >
-              <div>Outcome</div>
-              <div>Activities</div>
-              <div>Group Fit</div>
-              <div>Issues</div>
-              <div>Action</div>
-            </div>
-
-            {rows.map((row, i) => (
-              <div
-                key={row.code}
+              <button
+                onClick={() => openResource(r)}
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "160px 1fr 140px 180px 120px",
-                  padding: "14px 16px",
-                  borderTop: "1px solid #eef2f7",
-                  alignItems: "center",
-                  background: i === focusedIndex ? "#fafafa" : "transparent",
-                  cursor: "pointer"
+                  textAlign: "left",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  color: "#4f46e5",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
-                onClick={() => {
-                  setFocusedIndex(i);
-                  tell(
-                    `Selected ${row.code}. The right panel shows affected students and a ready-to-insert consensus adaptation.`
-                  );
-                }}
+                title="Open PDF"
               >
-                <div>{row.code}</div>
-                <div>{row.activities.join(", ")}</div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  {statusBadge(row.fit)}
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                    spread {row.fit.spread}
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {row.issues.map((iss) => {
-                    const cls =
-                      iss === "Reading"
-                        ? "bad"
-                        : iss === "Modality" || iss === "Time" || iss === "Assessment"
-                        ? "warn"
-                        : "warn";
-                    // use ● for bad, ■ for warn
-                    const glyph = cls === "bad" ? "●" : "■";
-                    return (
-                      <span key={iss} className={`badge ${cls}`}>
-                        {glyph} {iss}
+                {r.name}
+              </button>
+              <div>{(r.size / 1024).toFixed(1)} KB</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {statusBadge(r.fit)}
+                {(r.issues || []).length > 0 && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {(r.issues || []).slice(0, 2).map((iss) => (
+                      <span key={iss} className="badge warn">
+                        ■ {iss}
                       </span>
-                    );
-                  })}
+                    ))}
+                    {(r.issues || []).length > 2 && (
+                      <span className="badge warn">+{(r.issues || []).length - 2}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn ghost curric-btn"
+                  onClick={() => analyze(r)}
+                  disabled={busyAnalyze && focused?.path === r.path}
+                  title="Analyze alignment and get adaptation"
+                >
+                  {busyAnalyze && focused?.path === r.path ? "Analyzing…" : "Analyze"}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {!resources.length && (
+            <div style={{ padding: 16, color: "var(--muted)" }}>
+              No PDFs match current filters.
+            </div>
+          )}
+        </section>
+
+        {/* Right: Analysis panel (kept, but no extra hint box) */}
+        <aside className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>
+            {focused ? focused.name : "Select a resource to analyze"}
+          </div>
+          {focused && (
+            <>
+              <div className="card" style={{ background: "#f8fafc" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700 }}>Group Fit</div>
+                  {statusBadge(focused.fit)}
                 </div>
-                <div>
-                  <button className="btn ghost curric-btn" onClick={() => handleGenerate(row)}>
-                    Generate
-                  </button>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                  Modified: {focused.uploaded_at.split("T")[0]} • Size: {(focused.size / 1024).toFixed(1)} KB
+                </div>
+                {(focused.issues || []).length > 0 && (
+                  <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {(focused.issues || []).map((iss) => (
+                      <span key={iss} className="badge warn">■ {iss}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="card" style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Affected students</div>
+                <div style={{ color: "var(--muted)" }}>
+                  {analysis?.affected?.length
+                    ? analysis.affected.join(", ")
+                    : busyAnalyze
+                    ? "Loading…"
+                    : "—"}
                 </div>
               </div>
-            ))}
-          </section>
 
-          {/* Right context (focused outcome from active unit) */}
-          <aside className="card" style={{ position: "sticky", top: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 8 }}>
-              Activity Group Fit
-            </div>
-            <div style={{ color: "var(--muted)", marginBottom: 12 }}>
-              Who’s affected + consensus suggestion
-            </div>
-
-            <div className="card" style={{ background: "#f8fafc" }}>
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                {focused?.code} • Affected students ({focused?.affected.length ?? 0})
-              </div>
-              <div style={{ color: "var(--muted)", marginBottom: 10 }}>
-                {focused?.affected.join(", ") || "None"} • issues:{" "}
-                {focused?.issues.join(", ") || "—"}
+              <div className="card" style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>
+                  Consensus adaptation
+                </div>
+                {busyAnalyze && !analysis ? (
+                  <div style={{ color: "var(--muted)" }}>Analyzing…</div>
+                ) : (
+                  <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
+                    {(analysis?.consensus || []).map((c, i) => (
+                      <li key={i}>{c}</li>
+                    ))}
+                  </ul>
+                )}
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
+                  Evidence: {analysis?.evidence || (busyAnalyze ? "…" : "—")}
+                </div>
               </div>
 
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>Consensus adaptation</div>
-              <ul style={{ margin: "0 0 10px 18px", padding: 0 }}>
-                {focused?.consensus.map((line, j) => (
-                  <li key={j}>{line}</li>
-                ))}
-              </ul>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                Evidence: {focused?.evidence}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button className="btn primary">Insert</button>
+                <button className="btn ghost">Save</button>
+                <button
+                  className="btn ghost"
+                  onClick={() => {
+                    if (!analysis) return;
+                    const text = `Adaptation:\n- ${analysis.consensus.join(
+                      "\n- "
+                    )}\n\nEvidence: ${analysis.evidence}`;
+                    navigator.clipboard?.writeText(text);
+                  }}
+                >
+                  Copy
+                </button>
               </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button
-                className="btn primary"
-                onClick={() =>
-                  tell(
-                    "Would insert the adaptation into the lesson plan document and save an audit note to the student IEP log."
-                  )
-                }
-              >
-                Insert
-              </button>
-              <button
-                className="btn ghost"
-                onClick={() =>
-                  tell("Would save this adaptation to your Library → Templates for reuse.")
-                }
-              >
-                Save
-              </button>
-              <button
-                className="btn ghost"
-                onClick={() => tell("Copied adaptation text + rationale to clipboard.")}
-              >
-                Copy
-              </button>
-            </div>
-
-            <div style={{ marginTop: 12, fontSize: 12, color: "var(--muted)" }}>
-              Hint: Badges stale after filters. Re-run to refresh metrics.
-            </div>
-          </aside>
-        </div>
+            </>
+          )}
+        </aside>
       </div>
     </div>
   );

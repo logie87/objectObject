@@ -1,608 +1,494 @@
-import React from "react";
+// StudentsPage.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import { apiGet, apiPut } from "../lib/api";
 
-// Color constants
 const COLORS = {
   readingBadgeBg: "rgba(251, 191, 191, 0.15)",
   readingBadgeText: "#ef4444",
   timeBadgeBg: "rgba(253, 230, 138, 0.15)",
   timeBadgeText: "#f59e0b",
+  altRespBg: "rgba(191, 219, 254, 0.18)",
+  altRespText: "#2563eb",
   pieGradientStart: "#34d399",
   pieGradientEnd: "#22c55e",
   pieEmpty: "#e5e7eb",
   buttonGradientStart: "#a78bfa",
   buttonGradientEnd: "#ec4899",
-  cardBg: "var(--surface-100)",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
   mainText: "#374151",
   avatarBg: "#eef2ff",
+  border: "#e5e7eb",
+  surface: "#ffffff",
 };
 
-// Icons
-const Icons = {
-  Person: () => (
-    <svg
-      width="40"
-      height="40"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={COLORS.mainText}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="7" r="4" />
-      <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
-    </svg>
-  ),
-  Reading: () => (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill={COLORS.readingBadgeText}
-      stroke="none"
-    >
-      <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22h11a2.5 2.5 0 0 0 2.5-2.5V4.5A2.5 2.5 0 0 0 17.5 2h-11A2.5 2.5 0 0 0 4 4.5v15z" />
-    </svg>
-  ),
-  Time: () => (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill={COLORS.timeBadgeText}
-      stroke="none"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v6l4 2" stroke="white" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  ),
+type StudentSummary = {
+  id: string;
+  name: string;
+  grade?: string | null;
+  teacher?: string | null;
+  alignment_pct?: number | null;
+  badges: string[];
 };
 
-// Student Card Component
-function StudentCard({ student }: { student: typeof students[0] }) {
+type StudentFull = {
+  id: string;
+  data: any; // full JSON as-is
+};
+
+const Badge: React.FC<{ kind: string }> = ({ kind }) => {
+  let bg = COLORS.timeBadgeBg, fg = COLORS.timeBadgeText;
+  if (kind === "Reading") { bg = COLORS.readingBadgeBg; fg = COLORS.readingBadgeText; }
+  if (kind === "Alternate Response") { bg = COLORS.altRespBg; fg = COLORS.altRespText; }
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px",
+      borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: bg, color: fg
+    }}>
+      {kind}
+    </span>
+  );
+};
+
+const StudentCard: React.FC<{
+  s: StudentSummary;
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
+}> = ({ s, onView }) => {
+  const pct = typeof s.alignment_pct === "number" ? Math.max(0, Math.min(100, s.alignment_pct)) : null;
+  const deg = pct != null ? pct * 3.6 : 0;
+
   return (
     <div
       style={{
-        padding: 32,
+        padding: 24,
         borderRadius: 16,
-        backgroundColor: "white",
+        backgroundColor: COLORS.surface,
         boxShadow: COLORS.cardShadow,
         display: "flex",
         flexDirection: "column",
-        gap: 24,
+        gap: 18,
+        border: `1px solid ${COLORS.border}`,
       }}
     >
-      {/* Top: Avatar + Name + Pie */}
-      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+      {/* Top */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {/* Generic user icon (reverted) */}
         <div
           style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            backgroundColor: COLORS.avatarBg,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
+            width: 64, height: 64, borderRadius: "50%",
+            backgroundColor: COLORS.avatarBg, display: "flex",
+            alignItems: "center", justifyContent: "center"
           }}
+          aria-hidden
         >
-          <Icons.Person />
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={COLORS.mainText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21a8 8 0 0 0-16 0" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 20, color: COLORS.mainText }}>
-            {student.name}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: COLORS.mainText, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+            {s.name}
           </div>
-          <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: 4 }}>
-            Alignment
+          <div style={{ color: COLORS.mutedText, fontSize: 13 }}>
+            {s.grade ? `Grade ${s.grade}` : "—"} {s.teacher ? `• ${s.teacher}` : ""}
           </div>
         </div>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            background: `conic-gradient(${COLORS.pieGradientStart} ${
-              student.alignment * 3.6
-            }deg, ${COLORS.pieEmpty} ${student.alignment * 3.6}deg)`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 600,
-            fontSize: 16,
-            color: COLORS.mainText,
-            boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              backgroundColor: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14,
-            }}
-          >
-            {student.alignment}%
+
+        <div style={{
+          width: 64, height: 64, borderRadius: "50%",
+          background: pct != null ? `conic-gradient(${COLORS.pieGradientStart} ${deg}deg, ${COLORS.pieEmpty} ${deg}deg)` : COLORS.pieEmpty,
+          display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: "50%", background: "#fff",
+            display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: COLORS.mainText
+          }}>
+            {pct != null ? `${pct}%` : "—"}
           </div>
         </div>
       </div>
+
       {/* Badges */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {student.badges.map((b) => {
-          const Icon = Icons[b as keyof typeof Icons];
-          const badgeBg =
-            b === "Reading" ? COLORS.readingBadgeBg : COLORS.timeBadgeBg;
-          const badgeText =
-            b === "Reading" ? COLORS.readingBadgeText : COLORS.timeBadgeText;
-          return (
-            <span
-              key={b}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "6px 12px",
-                borderRadius: 12,
-                fontSize: 12,
-                fontWeight: 500,
-                backgroundColor: badgeBg,
-                color: badgeText,
-              }}
-            >
-              <Icon />
-              {b}
-            </span>
-          );
-        })}
-      </div>
-      {/* Action Buttons */}
-      <div style={{ display: "flex", gap: 12 }}>
+      {!!s.badges?.length && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {s.badges.map(b => <Badge key={b} kind={b} />)}
+        </div>
+      )}
+
+      {/* Actions: Open + Reports (template) */}
+     <div style={{ display: "flex", gap: 10 }}>
         <button
           style={{
             flex: 1,
-            padding: "14px 0",
+            padding: "10px 0",
             borderRadius: 12,
-            background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-            color: "white",
-            fontWeight: 600,
-            fontSize: 16,
-            border: "none",
+            border: "1px solid #e5e7eb",
+            background: "#fff",
+            color: "#374151",
+            fontWeight: 700,
             cursor: "pointer",
-            textAlign: "center",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           }}
+          onClick={() => onView(s.id)}
         >
-          View
+          Open
         </button>
+
+        {/* Reports: now primary gradient */}
         <button
           style={{
             flex: 1,
-            padding: "12px 0",
+            padding: "10px 0",
             borderRadius: 12,
             border: "none",
-            fontWeight: 600,
+            background: "linear-gradient(135deg, #a78bfa, #ec4899)",
+            color: "#fff",
+            fontWeight: 700,
             cursor: "pointer",
-            color: COLORS.mainText,
-            backgroundColor: "#f3f4f6",
-            transition: "background-color 0.3s",
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#e5e7eb")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#f3f4f6")
+          onClick={() =>
+            alert("Reports: quick-generate/view for this student (coming soon)")
           }
         >
-          Edit
+          Reports
         </button>
       </div>
     </div>
   );
-}
+};
 
-// Sample students
-const students = Array.from({ length: 8 }, (_, i) => ({
-  name: `Student${i + 1}`,
-  alignment: 72,
-  badges: ["Reading", "Time"],
-}));
+const Field: React.FC<{
+  label: string; value: string; onChange: (v: string) => void; textarea?: boolean;
+}> = ({ label, value, onChange, textarea }) => (
+  <label style={{ display: "grid", gap: 6 }}>
+    <span style={{ fontSize: 12, color: COLORS.mutedText }}>{label}</span>
+    {textarea ? (
+      <textarea value={value} onChange={e => onChange(e.target.value)}
+        rows={4}
+        style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}`, resize: "vertical" }} />
+    ) : (
+      <input value={value} onChange={e => onChange(e.target.value)}
+        style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}` }} />
+    )}
+  </label>
+);
 
-// Sample units and IEPs
-const units = [
-  "Unit 1: Math Basics",
-  "Unit 2: Reading Comprehension",
-  "Unit 3: Science",
-];
-const ieps = ["IEP Goal 1", "IEP Goal 2", "IEP Goal 3", "IEP Goal 4"];
+const SectionCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div style={{
+    padding: 16, borderRadius: 14, border: `1px solid ${COLORS.border}`,
+    background: "#fff", display: "grid", gap: 12
+  }}>
+    <div style={{ fontWeight: 800, color: COLORS.mainText }}>{title}</div>
+    {children}
+  </div>
+);
 
 export default function StudentsPage() {
-  const [showModal, setShowModal] = React.useState(false);
-  const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
-  const [selectedUnits, setSelectedUnits] = React.useState<string[]>([]);
-  const [selectedIEPs, setSelectedIEPs] = React.useState<string[]>([]);
-  const [isGenerating, setIsGenerating] = React.useState(false);
-  const [studentSearch, setStudentSearch] = React.useState("");
-  const [unitSearch, setUnitSearch] = React.useState("");
+  const [all, setAll] = useState<StudentSummary[]>([]);
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const toggleSelection = (
-    item: string,
-    list: string[],
-    setter: (list: string[]) => void
-  ) => {
-    if (list.includes(item)) {
-      setter(list.filter((i) => i !== item));
-    } else {
-      setter([...list, item]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [active, setActive] = useState<StudentFull | null>(null);
+  const [tab, setTab] = useState<"profile"|"goals"|"accom"|"notes"|"people">("profile");
+
+  const filtered = useMemo(
+    () => all.filter(s => s.name.toLowerCase().includes(q.toLowerCase())),
+    [all, q]
+  );
+
+  async function load() {
+    setBusy(true);
+    try {
+      const list = await apiGet<StudentSummary[]>("/students");
+      setAll(list);
+    } finally {
+      setBusy(false);
     }
-  };
+  }
 
-  const handleGenerate = () => {
-    // Clear IEP goals
-    setSelectedIEPs([]);
-    // Set generating state
-    setIsGenerating(true);
-    console.log({
-      students: selectedStudents,
-      units: selectedUnits,
-    });
-    // Simulate async operation
-    setTimeout(() => {
-      setIsGenerating(false);
-      setShowModal(false);
-      alert("Report generation complete! Your report is ready.");
-    }, 3000);
-  };
+  useEffect(() => { load(); }, []);
 
-  const filteredStudents = students.filter((s) =>
-    s.name.toLowerCase().includes(studentSearch.toLowerCase())
-  );
+  async function openView(id: string) {
+    const data = await apiGet<StudentFull>(`/students/${id}`);
+    setActive(data);
+    setTab("profile");
+    setModalOpen(true);
+  }
+  const openEdit = openView; // same modal, editable
 
-  const filteredUnits = units.filter((u) =>
-    u.toLowerCase().includes(unitSearch.toLowerCase())
-  );
+  function mutateActive(path: string[], value: any) {
+    if (!active) return;
+    const next = JSON.parse(JSON.stringify(active));
+    let node = next.data;
+    for (let i = 0; i < path.length - 1; i++) {
+      const k = path[i];
+      if (typeof node[k] !== "object" || node[k] === null) node[k] = {};
+      node = node[k];
+    }
+    node[path[path.length - 1]] = value;
+    setActive(next);
+  }
+
+  async function saveActive() {
+    if (!active) return;
+    const payload: any = {};
+
+    // Gather known sections if present
+    if (active.data.student) payload.student = active.data.student;
+    if (active.data.education_goals) payload.education_goals = active.data.education_goals;
+    if (active.data.accommodations) payload.accommodations = active.data.accommodations;
+    if (typeof active.data.performance_progress === "string") payload.performance_progress = active.data.performance_progress;
+    if (typeof active.data.assessments === "string") payload.assessments = active.data.assessments;
+    if (typeof active.data.transition_goals === "string") payload.transition_goals = active.data.transition_goals;
+    if (Array.isArray(active.data.participants)) payload.participants = active.data.participants;
+    if (typeof active.data.alignment_pct === "number") payload.alignment_pct = active.data.alignment_pct;
+
+    const saved = await apiPut<StudentFull>(`/students/${active.id}`, payload);
+    setActive(saved);
+    // refresh list summaries for name/grade/badges changes
+    await load();
+  }
+
+  function addParticipant() {
+    if (!active) return;
+    const arr = Array.isArray(active.data.participants) ? active.data.participants.slice() : [];
+    arr.push({ name: "", role: "" });
+    setActive({ ...active, data: { ...active.data, participants: arr } });
+  }
+
+  function removeParticipant(i: number) {
+    if (!active) return;
+    const arr = (active.data.participants || []).slice();
+    arr.splice(i, 1);
+    setActive({ ...active, data: { ...active.data, participants: arr } });
+  }
 
   return (
-    <div style={{ padding: 24, width: "100%" }}>
+    <div style={{ padding: 24 }}>
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          width: "100%",
-          marginBottom: 24,
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
         <div>
-          <h1 style={{ fontSize: 32, marginBottom: 4 }}>Students</h1>
-          <div style={{ color: COLORS.mutedText }}>
-            IEP snapshots • Top gaps • One-click view/edit
-          </div>
+          <h1 style={{ fontSize: 28, marginBottom: 4 }}>Students</h1>
+          <div style={{ color: COLORS.mutedText }}>Manage profiles and IEP details</div>
         </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10 }}>
           <input
-            type="text"
-            placeholder="Search students..."
-            style={{
-              padding: "8px 16px",
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              outline: "none",
-              minWidth: 240,
-            }}
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Search students…"
+            style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}`, minWidth: 220 }}
           />
           <button
-            onClick={() => setShowModal(true)}
+            onClick={load}
+            disabled={busy}
             style={{
-              padding: "12px 24px",
-              borderRadius: 12,
+              padding: "10px 16px", borderRadius: 10, border: "none", cursor: "pointer",
               background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              color: "white",
-              fontWeight: 600,
-              fontSize: 16,
-              border: "none",
-              cursor: "pointer",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-              whiteSpace: "nowrap",
+              color: "#fff", fontWeight: 700
             }}
           >
-            Generate Report
+            {busy ? "Refreshing…" : "Refresh"}
           </button>
         </div>
       </div>
-      {/* Student Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          gap: 24,
-        }}
-      >
-        {students.map((student) => (
-          <StudentCard key={student.name} student={student} />
+
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+        {filtered.map(s => (
+          <StudentCard key={s.id} s={s} onView={openView} onEdit={openEdit} />
         ))}
       </div>
-      {/* Report Modal */}
-      {showModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: 16,
-              padding: 32,
-              maxWidth: 600,
-              width: "90%",
-              maxHeight: "80vh",
-              overflowY: "auto",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 style={{ fontSize: 24, marginBottom: 8, color: COLORS.mainText }}>
-              Generate Report
-            </h2>
-            <p style={{ color: COLORS.mutedText, marginBottom: 24 }}>
-              Select students, units, and IEPs to include in your report
-            </p>
 
-            {isGenerating ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "60px 20px",
-                }}
-              >
-                <div
+      {!filtered.length && !busy && (
+        <div style={{ marginTop: 16, color: COLORS.mutedText }}>No students found.</div>
+      )}
+
+      {/* Modal */}
+      {modalOpen && active && (
+      <div
+        onClick={() => setModalOpen(false)}
+        style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+        }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          // Fixed, consistent height; internal scroll
+          style={{
+            width: "min(100%, 980px)",
+            height: "82vh",
+            display: "flex",
+            flexDirection: "column",
+            background: "#fff",
+            borderRadius: 16,
+            boxShadow: "0 20px 60px rgba(0,0,0,.25)"
+          }}
+        >
+          {/* Header (fixed height) */}
+          <div style={{ padding: 18, borderBottom: `1px solid ${COLORS.border}`, flex: "0 0 auto" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 20, color: COLORS.mainText }}>
+                  {active.data?.student?.student_name || active.id}
+                </div>
+                <div style={{ color: COLORS.mutedText, fontSize: 13 }}>
+                  {active.data?.student?.grade ? `Grade ${active.data.student.grade}` : "—"} {active.data?.student?.teacher ? `• ${active.data.student.teacher}` : ""}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => setModalOpen(false)}
+                  style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer" }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={saveActive}
                   style={{
-                    width: 48,
-                    height: 48,
-                    border: "4px solid #f3f4f6",
-                    borderTopColor: COLORS.buttonGradientEnd,
-                    borderRadius: "50%",
-                    margin: "0 auto 20px",
-                    animation: "spin 1s linear infinite",
-                  }}
-                />
-                <h3
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 600,
-                    color: COLORS.mainText,
-                    marginBottom: 8,
+                    padding: "10px 16px", borderRadius: 10, border: "none", cursor: "pointer",
+                    background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+                    color: "#fff", fontWeight: 800
                   }}
                 >
-                  Generating Your Report
-                </h3>
-                <p style={{ color: COLORS.mutedText, fontSize: 14 }}>
-                  This will take a few minutes. We'll let you know when it's done.
-                </p>
-                <style>
-                  {`
-                    @keyframes spin {
-                      to { transform: rotate(360deg); }
-                    }
-                  `}
-                </style>
+                  Save
+                </button>
               </div>
-            ) : (
-              <>
-                {/* Students Section */}
-                <div style={{ marginBottom: 24 }}>
-                  <h3
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 600,
-                      marginBottom: 12,
-                      color: COLORS.mainText,
-                    }}
-                  >
-                    Students
-                  </h3>
-                  <input
-                    type="text"
-                    placeholder="Search students..."
-                    value={studentSearch}
-                    onChange={(e) => setStudentSearch(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      borderRadius: 8,
-                      border: "1px solid #e5e7eb",
-                      outline: "none",
-                      marginBottom: 12,
-                      fontSize: 14,
-                    }}
-                  />
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {filteredStudents.map((student) => (
-                      <button
-                        key={student.name}
-                        onClick={() =>
-                          toggleSelection(
-                            student.name,
-                            selectedStudents,
-                            setSelectedStudents
-                          )
-                        }
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: 8,
-                          border: selectedStudents.includes(student.name)
-                            ? `2px solid ${COLORS.buttonGradientEnd}`
-                            : "2px solid #e5e7eb",
-                          backgroundColor: selectedStudents.includes(student.name)
-                            ? "rgba(236, 72, 153, 0.1)"
-                            : "white",
-                          color: selectedStudents.includes(student.name)
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.mainText,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          fontSize: 14,
-                        }}
-                      >
-                        {student.name}
-                      </button>
-                    ))}
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              {["profile","goals","accom","notes","people"].map(t => (
+                <button key={t}
+                  onClick={() => setTab(t as any)}
+                  style={{
+                    padding: "8px 12px", borderRadius: 999, border: `1px solid ${tab===t ? COLORS.buttonGradientEnd : COLORS.border}`,
+                    background: tab===t ? "rgba(236,72,153,.08)" : "#fff", color: tab===t ? COLORS.buttonGradientEnd : COLORS.mainText,
+                    fontWeight: 700, cursor: "pointer"
+                  }}>
+                  {t === "profile" ? "Profile" :
+                  t === "goals" ? "IEP Goals" :
+                  t === "accom" ? "Accommodations" :
+                  t === "notes" ? "Notes & Assessments" :
+                  "Participants"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Scrollable content area fills remaining height */}
+          <div style={{ padding: 18, overflow: "auto", flex: "1 1 auto" }}>
+            {tab === "profile" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <SectionCard title="Student">
+                  <Field label="Name" value={active.data.student?.student_name || ""} onChange={v => mutateActive(["student","student_name"], v)} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <Field label="Grade" value={active.data.student?.grade || ""} onChange={v => mutateActive(["student","grade"], v)} />
+                    <Field label="Date of Birth (DD/MM/YYYY)" value={active.data.student?.date_of_birth || ""} onChange={v => mutateActive(["student","date_of_birth"], v)} />
                   </div>
-                </div>
-                {/* Units Section */}
-                <div style={{ marginBottom: 24 }}>
-                  <h3
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 600,
-                      marginBottom: 12,
-                      color: COLORS.mainText,
-                    }}
-                  >
-                    Units
-                  </h3>
-                  <input
-                    type="text"
-                    placeholder="Search units..."
-                    value={unitSearch}
-                    onChange={(e) => setUnitSearch(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      borderRadius: 8,
-                      border: "1px solid #e5e7eb",
-                      outline: "none",
-                      marginBottom: 12,
-                      fontSize: 14,
-                    }}
-                  />
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {filteredUnits.map((unit) => (
-                      <button
-                        key={unit}
-                        onClick={() =>
-                          toggleSelection(unit, selectedUnits, setSelectedUnits)
-                        }
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: 8,
-                          border: selectedUnits.includes(unit)
-                            ? `2px solid ${COLORS.buttonGradientEnd}`
-                            : "2px solid #e5e7eb",
-                          backgroundColor: selectedUnits.includes(unit)
-                            ? "rgba(236, 72, 153, 0.1)"
-                            : "white",
-                          color: selectedUnits.includes(unit)
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.mainText,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          fontSize: 14,
-                        }}
-                      >
-                        {unit}
-                      </button>
-                    ))}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <Field label="Teacher" value={active.data.student?.teacher || ""} onChange={v => mutateActive(["student","teacher"], v)} />
+                    <Field label="School" value={active.data.student?.school || ""} onChange={v => mutateActive(["student","school"], v)} />
                   </div>
-                </div>
-                {/* IEP Section */}
-                <div style={{ marginBottom: 32 }}>
-                  <h3
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 600,
-                      marginBottom: 12,
-                      color: COLORS.mainText,
-                    }}
-                  >
-                    IEP Goals
-                  </h3>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {ieps.map((iep) => (
-                      <button
-                        key={iep}
-                        onClick={() =>
-                          toggleSelection(iep, selectedIEPs, setSelectedIEPs)
-                        }
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: 8,
-                          border: selectedIEPs.includes(iep)
-                            ? `2px solid ${COLORS.buttonGradientEnd}`
-                            : "2px solid #e5e7eb",
-                          backgroundColor: selectedIEPs.includes(iep)
-                            ? "rgba(236, 72, 153, 0.1)"
-                            : "white",
-                          color: selectedIEPs.includes(iep)
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.mainText,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          fontSize: 14,
-                        }}
-                      >
-                        {iep}
-                      </button>
-                    ))}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <Field label="PEN" value={active.data.student?.pen || ""} onChange={v => mutateActive(["student","pen"], v)} />
+                    <Field label="IEP Date (DD/MM/YYYY)" value={active.data.student?.iep_date || ""} onChange={v => mutateActive(["student","iep_date"], v)} />
                   </div>
-                </div>
-                {/* Action Buttons */}
-                <div style={{ display: "flex", gap: 12 }}>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    style={{
-                      flex: 1,
-                      padding: "12px 0",
-                      borderRadius: 12,
-                      border: "none",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      color: COLORS.mainText,
-                      backgroundColor: "#f3f4f6",
-                      fontSize: 16,
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleGenerate}
-                    style={{
-                      flex: 1,
-                      padding: "12px 0",
-                      borderRadius: 12,
-                      background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                      color: "white",
-                      fontWeight: 600,
-                      fontSize: 16,
-                      border: "none",
-                      cursor: "pointer",
-                      boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    Generate
+                  <Field label="Designation" value={active.data.student?.designation || ""} onChange={v => mutateActive(["student","designation"], v)} />
+                  <Field label="Alignment % (optional)" value={String(active.data.alignment_pct ?? "")} onChange={v => mutateActive(["alignment_pct"], v.replace(/\D/g,"") ? Number(v) : null as any)} />
+                </SectionCard>
+                <SectionCard title="Performance Progress">
+                  <Field textarea label="Summary" value={active.data.performance_progress || ""} onChange={v => mutateActive(["performance_progress"], v)} />
+                </SectionCard>
+              </div>
+            )}
+
+            {tab === "goals" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <SectionCard title="Academic">
+                  <Field textarea label="Goal" value={active.data.education_goals?.academic || ""} onChange={v => mutateActive(["education_goals","academic"], v)} />
+                </SectionCard>
+                <SectionCard title="Social">
+                  <Field textarea label="Goal" value={active.data.education_goals?.social || ""} onChange={v => mutateActive(["education_goals","social"], v)} />
+                </SectionCard>
+                <SectionCard title="Behavioural">
+                  <Field textarea label="Goal" value={active.data.education_goals?.behavioural || ""} onChange={v => mutateActive(["education_goals","behavioural"], v)} />
+                </SectionCard>
+                <SectionCard title="Communicative">
+                  <Field textarea label="Goal" value={active.data.education_goals?.communicative || ""} onChange={v => mutateActive(["education_goals","communicative"], v)} />
+                </SectionCard>
+                <SectionCard title="Physical">
+                  <Field textarea label="Needs" value={active.data.education_goals?.physical || ""} onChange={v => mutateActive(["education_goals","physical"], v)} />
+                </SectionCard>
+              </div>
+            )}
+
+            {tab === "accom" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <SectionCard title="Instructional">
+                  <Field textarea label="Supports" value={active.data.accommodations?.instructional || ""} onChange={v => mutateActive(["accommodations","instructional"], v)} />
+                </SectionCard>
+                <SectionCard title="Environmental">
+                  <Field textarea label="Supports" value={active.data.accommodations?.environmental || ""} onChange={v => mutateActive(["accommodations","environmental"], v)} />
+                </SectionCard>
+                <SectionCard title="Assessment">
+                  <Field textarea label="Supports" value={active.data.accommodations?.assessment || ""} onChange={v => mutateActive(["accommodations","assessment"], v)} />
+                </SectionCard>
+                <SectionCard title="Technology">
+                  <Field textarea label="Tools" value={active.data.accommodations?.technology || ""} onChange={v => mutateActive(["accommodations","technology"], v)} />
+                </SectionCard>
+              </div>
+            )}
+
+            {tab === "notes" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <SectionCard title="Assessments">
+                  <Field textarea label="Notes" value={active.data.assessments || ""} onChange={v => mutateActive(["assessments"], v)} />
+                </SectionCard>
+                <SectionCard title="Transition Goals">
+                  <Field textarea label="Goals" value={active.data.transition_goals || ""} onChange={v => mutateActive(["transition_goals"], v)} />
+                </SectionCard>
+              </div>
+            )}
+
+            {tab === "people" && (
+              <div style={{ display: "grid", gap: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontWeight: 800, color: COLORS.mainText }}>Participants</div>
+                  <button onClick={addParticipant} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer" }}>
+                    Add
                   </button>
                 </div>
-              </>
+                {(active.data.participants || []).map((p: any, i: number) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
+                    <Field label="Name" value={p.name || ""} onChange={v => {
+                      const arr = active.data.participants.slice();
+                      arr[i] = { ...arr[i], name: v };
+                      setActive({ ...active, data: { ...active.data, participants: arr } });
+                    }} />
+                    <Field label="Role" value={p.role || ""} onChange={v => {
+                      const arr = active.data.participants.slice();
+                      arr[i] = { ...arr[i], role: v };
+                      setActive({ ...active, data: { ...active.data, participants: arr } });
+                    }} />
+                    <button onClick={() => removeParticipant(i)}
+                      style={{ height: 40, marginBottom: 2, borderRadius: 10, border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", cursor: "pointer" }}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                {!active.data.participants?.length && (
+                  <div style={{ color: COLORS.mutedText, fontSize: 13 }}>No participants yet.</div>
+                )}
+              </div>
             )}
           </div>
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 }
