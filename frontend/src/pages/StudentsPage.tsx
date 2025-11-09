@@ -1,6 +1,6 @@
 import React from "react";
 
-// Color constants Edit
+// Color constants
 const COLORS = {
   readingBadgeBg: "rgba(251, 191, 191, 0.15)",
   readingBadgeText: "#ef4444",
@@ -67,7 +67,7 @@ function StudentCard({ student }: { student: typeof students[0] }) {
       style={{
         padding: 32,
         borderRadius: 16,
-        backgroundColor: "white", // changed to white
+        backgroundColor: "white",
         boxShadow: COLORS.cardShadow,
         display: "flex",
         flexDirection: "column",
@@ -90,7 +90,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
         >
           <Icons.Person />
         </div>
-
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 20, color: COLORS.mainText }}>
             {student.name}
@@ -99,7 +98,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
             Alignment
           </div>
         </div>
-
         <div
           style={{
             width: 72,
@@ -133,7 +131,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
           </div>
         </div>
       </div>
-
       {/* Badges */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {student.badges.map((b) => {
@@ -142,7 +139,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
             b === "Reading" ? COLORS.readingBadgeBg : COLORS.timeBadgeBg;
           const badgeText =
             b === "Reading" ? COLORS.readingBadgeText : COLORS.timeBadgeText;
-
           return (
             <span
               key={b}
@@ -164,7 +160,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
           );
         })}
       </div>
-
       {/* Action Buttons */}
       <div style={{ display: "flex", gap: 12 }}>
         <button
@@ -184,7 +179,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
         >
           View
         </button>
-
         <button
           style={{
             flex: 1,
@@ -231,6 +225,9 @@ export default function StudentsPage() {
   const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
   const [selectedUnits, setSelectedUnits] = React.useState<string[]>([]);
   const [selectedIEPs, setSelectedIEPs] = React.useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [studentSearch, setStudentSearch] = React.useState("");
+  const [unitSearch, setUnitSearch] = React.useState("");
 
   const toggleSelection = (
     item: string,
@@ -243,6 +240,31 @@ export default function StudentsPage() {
       setter([...list, item]);
     }
   };
+
+  const handleGenerate = () => {
+    // Clear IEP goals
+    setSelectedIEPs([]);
+    // Set generating state
+    setIsGenerating(true);
+    console.log({
+      students: selectedStudents,
+      units: selectedUnits,
+    });
+    // Simulate async operation
+    setTimeout(() => {
+      setIsGenerating(false);
+      setShowModal(false);
+      alert("Report generation complete! Your report is ready.");
+    }, 3000);
+  };
+
+  const filteredStudents = students.filter((s) =>
+    s.name.toLowerCase().includes(studentSearch.toLowerCase())
+  );
+
+  const filteredUnits = units.filter((u) =>
+    u.toLowerCase().includes(unitSearch.toLowerCase())
+  );
 
   return (
     <div style={{ padding: 24, width: "100%" }}>
@@ -262,7 +284,6 @@ export default function StudentsPage() {
             IEP snapshots • Top gaps • One-click view/edit
           </div>
         </div>
-
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <input
             type="text"
@@ -275,7 +296,6 @@ export default function StudentsPage() {
               minWidth: 240,
             }}
           />
-
           <button
             onClick={() => setShowModal(true)}
             style={{
@@ -295,7 +315,6 @@ export default function StudentsPage() {
           </button>
         </div>
       </div>
-
       {/* Student Grid */}
       <div
         style={{
@@ -308,7 +327,6 @@ export default function StudentsPage() {
           <StudentCard key={student.name} student={student} />
         ))}
       </div>
-
       {/* Report Modal */}
       {showModal && (
         <div
@@ -346,179 +364,242 @@ export default function StudentsPage() {
               Select students, units, and IEPs to include in your report
             </p>
 
-            {/* Students Section */}
-            <div style={{ marginBottom: 24 }}>
-              <h3
+            {isGenerating ? (
+              <div
                 style={{
-                  fontSize: 16,
-                  fontWeight: 600,
-                  marginBottom: 12,
-                  color: COLORS.mainText,
+                  textAlign: "center",
+                  padding: "60px 20px",
                 }}
               >
-                Students
-              </h3>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {students.map((student) => (
-                  <button
-                    key={student.name}
-                    onClick={() =>
-                      toggleSelection(
-                        student.name,
-                        selectedStudents,
-                        setSelectedStudents
-                      )
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    border: "4px solid #f3f4f6",
+                    borderTopColor: COLORS.buttonGradientEnd,
+                    borderRadius: "50%",
+                    margin: "0 auto 20px",
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
+                <h3
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: COLORS.mainText,
+                    marginBottom: 8,
+                  }}
+                >
+                  Generating Your Report
+                </h3>
+                <p style={{ color: COLORS.mutedText, fontSize: 14 }}>
+                  This will take a few minutes. We'll let you know when it's done.
+                </p>
+                <style>
+                  {`
+                    @keyframes spin {
+                      to { transform: rotate(360deg); }
                     }
+                  `}
+                </style>
+              </div>
+            ) : (
+              <>
+                {/* Students Section */}
+                <div style={{ marginBottom: 24 }}>
+                  <h3
                     style={{
-                      padding: "8px 16px",
-                      borderRadius: 8,
-                      border: selectedStudents.includes(student.name)
-                        ? `2px solid ${COLORS.buttonGradientEnd}`
-                        : "2px solid #e5e7eb",
-                      backgroundColor: selectedStudents.includes(student.name)
-                        ? "rgba(236, 72, 153, 0.1)"
-                        : "white",
-                      color: selectedStudents.includes(student.name)
-                        ? COLORS.buttonGradientEnd
-                        : COLORS.mainText,
-                      fontWeight: 500,
-                      cursor: "pointer",
-                      fontSize: 14,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      marginBottom: 12,
+                      color: COLORS.mainText,
                     }}
                   >
-                    {student.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Units Section */}
-            <div style={{ marginBottom: 24 }}>
-              <h3
-                style={{
-                  fontSize: 16,
-                  fontWeight: 600,
-                  marginBottom: 12,
-                  color: COLORS.mainText,
-                }}
-              >
-                Units
-              </h3>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {units.map((unit) => (
-                  <button
-                    key={unit}
-                    onClick={() =>
-                      toggleSelection(unit, selectedUnits, setSelectedUnits)
-                    }
+                    Students
+                  </h3>
+                  <input
+                    type="text"
+                    placeholder="Search students..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
                     style={{
-                      padding: "8px 16px",
+                      width: "100%",
+                      padding: "8px 12px",
                       borderRadius: 8,
-                      border: selectedUnits.includes(unit)
-                        ? `2px solid ${COLORS.buttonGradientEnd}`
-                        : "2px solid #e5e7eb",
-                      backgroundColor: selectedUnits.includes(unit)
-                        ? "rgba(236, 72, 153, 0.1)"
-                        : "white",
-                      color: selectedUnits.includes(unit)
-                        ? COLORS.buttonGradientEnd
-                        : COLORS.mainText,
-                      fontWeight: 500,
-                      cursor: "pointer",
+                      border: "1px solid #e5e7eb",
+                      outline: "none",
+                      marginBottom: 12,
                       fontSize: 14,
                     }}
-                  >
-                    {unit}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* IEP Section */}
-            <div style={{ marginBottom: 32 }}>
-              <h3
-                style={{
-                  fontSize: 16,
-                  fontWeight: 600,
-                  marginBottom: 12,
-                  color: COLORS.mainText,
-                }}
-              >
-                IEP Goals
-              </h3>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {ieps.map((iep) => (
-                  <button
-                    key={iep}
-                    onClick={() =>
-                      toggleSelection(iep, selectedIEPs, setSelectedIEPs)
-                    }
+                  />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {filteredStudents.map((student) => (
+                      <button
+                        key={student.name}
+                        onClick={() =>
+                          toggleSelection(
+                            student.name,
+                            selectedStudents,
+                            setSelectedStudents
+                          )
+                        }
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: 8,
+                          border: selectedStudents.includes(student.name)
+                            ? `2px solid ${COLORS.buttonGradientEnd}`
+                            : "2px solid #e5e7eb",
+                          backgroundColor: selectedStudents.includes(student.name)
+                            ? "rgba(236, 72, 153, 0.1)"
+                            : "white",
+                          color: selectedStudents.includes(student.name)
+                            ? COLORS.buttonGradientEnd
+                            : COLORS.mainText,
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          fontSize: 14,
+                        }}
+                      >
+                        {student.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Units Section */}
+                <div style={{ marginBottom: 24 }}>
+                  <h3
                     style={{
-                      padding: "8px 16px",
-                      borderRadius: 8,
-                      border: selectedIEPs.includes(iep)
-                        ? `2px solid ${COLORS.buttonGradientEnd}`
-                        : "2px solid #e5e7eb",
-                      backgroundColor: selectedIEPs.includes(iep)
-                        ? "rgba(236, 72, 153, 0.1)"
-                        : "white",
-                      color: selectedIEPs.includes(iep)
-                        ? COLORS.buttonGradientEnd
-                        : COLORS.mainText,
-                      fontWeight: 500,
-                      cursor: "pointer",
-                      fontSize: 14,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      marginBottom: 12,
+                      color: COLORS.mainText,
                     }}
                   >
-                    {iep}
+                    Units
+                  </h3>
+                  <input
+                    type="text"
+                    placeholder="Search units..."
+                    value={unitSearch}
+                    onChange={(e) => setUnitSearch(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1px solid #e5e7eb",
+                      outline: "none",
+                      marginBottom: 12,
+                      fontSize: 14,
+                    }}
+                  />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {filteredUnits.map((unit) => (
+                      <button
+                        key={unit}
+                        onClick={() =>
+                          toggleSelection(unit, selectedUnits, setSelectedUnits)
+                        }
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: 8,
+                          border: selectedUnits.includes(unit)
+                            ? `2px solid ${COLORS.buttonGradientEnd}`
+                            : "2px solid #e5e7eb",
+                          backgroundColor: selectedUnits.includes(unit)
+                            ? "rgba(236, 72, 153, 0.1)"
+                            : "white",
+                          color: selectedUnits.includes(unit)
+                            ? COLORS.buttonGradientEnd
+                            : COLORS.mainText,
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          fontSize: 14,
+                        }}
+                      >
+                        {unit}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* IEP Section */}
+                <div style={{ marginBottom: 32 }}>
+                  <h3
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      marginBottom: 12,
+                      color: COLORS.mainText,
+                    }}
+                  >
+                    IEP Goals
+                  </h3>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {ieps.map((iep) => (
+                      <button
+                        key={iep}
+                        onClick={() =>
+                          toggleSelection(iep, selectedIEPs, setSelectedIEPs)
+                        }
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: 8,
+                          border: selectedIEPs.includes(iep)
+                            ? `2px solid ${COLORS.buttonGradientEnd}`
+                            : "2px solid #e5e7eb",
+                          backgroundColor: selectedIEPs.includes(iep)
+                            ? "rgba(236, 72, 153, 0.1)"
+                            : "white",
+                          color: selectedIEPs.includes(iep)
+                            ? COLORS.buttonGradientEnd
+                            : COLORS.mainText,
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          fontSize: 14,
+                        }}
+                      >
+                        {iep}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Action Buttons */}
+                <div style={{ display: "flex", gap: 12 }}>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px 0",
+                      borderRadius: 12,
+                      border: "none",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      color: COLORS.mainText,
+                      backgroundColor: "#f3f4f6",
+                      fontSize: 16,
+                    }}
+                  >
+                    Cancel
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{
-                  flex: 1,
-                  padding: "12px 0",
-                  borderRadius: 12,
-                  border: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  color: COLORS.mainText,
-                  backgroundColor: "#f3f4f6",
-                  fontSize: 16,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  console.log({
-                    students: selectedStudents,
-                    units: selectedUnits,
-                    ieps: selectedIEPs,
-                  });
-                  setShowModal(false);
-                }}
-                style={{
-                  flex: 1,
-                  padding: "12px 0",
-                  borderRadius: 12,
-                  background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                  color: "white",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  border: "none",
-                  cursor: "pointer",
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                }}
-              >
-                Generate
-              </button>
-            </div>
+                  <button
+                    onClick={handleGenerate}
+                    style={{
+                      flex: 1,
+                      padding: "12px 0",
+                      borderRadius: 12,
+                      background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+                      color: "white",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      border: "none",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    Generate
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
