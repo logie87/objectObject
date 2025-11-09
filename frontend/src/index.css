@@ -21,7 +21,14 @@ html,body{
 }
 
 a{color:inherit;text-decoration:none}
-button,input{font:inherit}
+button,input{font:inherit ; transition-duration: 0.15s;}
+button:hover {
+  background:var(--surface-100);
+  transition-duration: 0.15s;
+  transform:scale(1.05);
+  /* transform:translateY(-2px); */
+  box-shadow:var(--shadow-md);
+}
 
 .app-shell{
   display:grid;
@@ -66,6 +73,7 @@ button,input{font:inherit}
   background:#111827; color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer;
   box-shadow:var(--shadow-sm);
 }
+
 .btn.ghost{background:#f3f4f6;color:#111827}
 .btn.flat{background:#fff;border:1px solid #e5e7eb;color:#111827}
 .btn.primary{background:linear-gradient(135deg,var(--primaryA),var(--primaryC))}
