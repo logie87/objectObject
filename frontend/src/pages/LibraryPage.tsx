@@ -53,9 +53,57 @@ const docs = [
 export default function LibraryPage() {
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 32, marginBottom: 4 }}>Library</h1>
-        <div style={{ color: COLORS.mutedText }}>Ingested curriculum & guidance documents</div>
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ fontSize: 32, marginBottom: 4 }}>Library</h1>
+          <div style={{ color: COLORS.mutedText }}>Ingested curriculum & guidance documents</div>
+        </div>
+        <button
+          style={{
+            padding: "14px 28px",
+            borderRadius: 12,
+            border: "none",
+            fontWeight: 600,
+            fontSize: 16,
+            cursor: "pointer",
+            color: "white",
+            background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+            boxShadow: "0 4px 12px rgba(168,85,247,0.3)",
+            transition: "all 0.3s",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 16px rgba(168,85,247,0.4)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 12px rgba(168,85,247,0.3)";
+          }}
+          onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf,.doc,.docx';
+            input.multiple = true;
+            input.onchange = (e) => {
+              const files = (e.target as HTMLInputElement).files;
+              if (files) {
+                console.log('Files selected:', Array.from(files).map(f => f.name));
+                // Handle file upload here
+              }
+            };
+            input.click();
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Upload Documents
+        </button>
       </div>
 
       <div

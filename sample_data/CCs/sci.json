@@ -1,15 +1,13 @@
 {
   "subject": "Science",
   "grade_bands": {
-    "K-9": {
-      "source": "BC Science K-9 Classroom Assessment Resource Package",
+    "6-9": {
+      "source": "BC Science 6-9 Classroom Assessment Resource Package",
       "criteria_categories": {
         "questioning": {
           "description": "Observations, curiosity, testable questions, predictions.",
           "grades": {
-            "K-2": ["Observe familiar contexts; ask simple questions; make basic predictions."],
-            "3-4": ["Ask investigable questions; predict based on prior knowledge."],
-            "5-6": ["Ask questions leading to scientific inquiries; predict outcomes."],
+            "6": ["Ask questions leading to scientific inquiries; predict outcomes."],
             "7-8": ["Formulate more complex questions and predictions."],
             "9": ["Ask testable questions; make precise observations; begin forming hypotheses."]
           }
@@ -17,9 +15,7 @@
         "procedures_and_evidence": {
           "description": "Planning, safe use of materials, data collection.",
           "grades": {
-            "K-2": ["Use materials safely; gather simple data."],
-            "3-4": ["Plan simple investigations; sort and classify data."],
-            "5-6": ["Choose methods; investigate a variable; record data."],
+            "6": ["Choose methods; investigate a variable; record data."],
             "7-8": ["Control variables; use tools to collect and organize data."],
             "9": ["Plan and use varied methods; collect reliable data from multiple sources."]
           }
@@ -27,9 +23,7 @@
         "analysis": {
           "description": "Patterns, conclusions, errors, evaluation of sources.",
           "grades": {
-            "K-2": ["Represent simple data; talk about observations."],
-            "3-4": ["Identify patterns; relate predictions to results."],
-            "5-6": ["Use data to support conclusions; refine methods."],
+            "6": ["Use data to support conclusions; refine methods."],
             "7-8": ["Identify error sources; evaluate ideas from evidence."],
             "9": ["Evaluate methods, error, bias; draw data-consistent conclusions."]
           }
@@ -37,16 +31,14 @@
         "ethics": {
           "description": "Social, environmental, and ethical implications.",
           "grades": {
-            "K-3": ["Consider environmental impact of own actions."],
-            "4-6": ["Consider ethical responsibilities in investigations."],
+            "6": ["Consider ethical responsibilities in investigations."],
             "7-9": ["Identify and evaluate ethical, social, and environmental implications of science topics."]
           }
         },
         "communicating": {
           "description": "Explain scientific ideas and relationships.",
           "grades": {
-            "K-3": ["Share observations and ideas about place and phenomena."],
-            "4-6": ["Explain ideas and processes with simple representations."],
+            "6": ["Explain ideas and processes with simple representations."],
             "7-9": ["Communicate clearly using appropriate science language and models."]
           }
         }
