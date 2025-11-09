@@ -1,6 +1,6 @@
 // StudentsPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { apiGet, apiPut } from "../lib/api";
+import { apiGet, apiPut } from "..//lib/api";
 
 const COLORS = {
   readingBadgeBg: "rgba(251, 191, 191, 0.15)",
@@ -33,7 +33,7 @@ type StudentSummary = {
 
 type StudentFull = {
   id: string;
-  data: any; // full JSON as-is
+  data: any; // full json as-is
 };
 
 const Badge: React.FC<{ kind: string }> = ({ kind }) => {
@@ -71,9 +71,9 @@ const StudentCard: React.FC<{
         border: `1px solid ${COLORS.border}`,
       }}
     >
-      {/* Top */}
+      {/* top */}
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        {/* Generic user icon (reverted) */}
+        {/* generic user icon (reverted) */}
         <div
           style={{
             width: 64, height: 64, borderRadius: "50%",
@@ -111,15 +111,15 @@ const StudentCard: React.FC<{
         </div>
       </div>
 
-      {/* Badges */}
+      {/* badges */}
       {!!s.badges?.length && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {s.badges.map(b => <Badge key={b} kind={b} />)}
         </div>
       )}
 
-      {/* Actions: Open + Reports (template) */}
-     <div style={{ display: "flex", gap: 10 }}>
+      {/* actions: open + reports (template) */}
+      <div style={{ display: "flex", gap: 10 }}>
         <button
           style={{
             flex: 1,
@@ -136,7 +136,7 @@ const StudentCard: React.FC<{
           Open
         </button>
 
-        {/* Reports: now primary gradient */}
+        {/* reports: now primary gradient */}
         <button
           style={{
             flex: 1,
@@ -185,14 +185,29 @@ const SectionCard: React.FC<{ title: string; children: React.ReactNode }> = ({ t
   </div>
 );
 
+// tiny spinner used in the modal loading and saving overlay
+const Spinner: React.FC<{ size?: number }> = ({ size = 40 }) => (
+  <svg width={size} height={size} viewBox="0 0 50 50" aria-hidden role="img" style={{ display: "block" }}>
+    <circle cx="25" cy="25" r="20" fill="none" stroke="#e5e7eb" strokeWidth="6" strokeLinecap="round" />
+    <path d="M25 5 a20 20 0 0 1 0 40" fill="none" stroke="#ec4899" strokeWidth="6" strokeLinecap="round">
+      <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+    </path>
+  </svg>
+);
+
 export default function StudentsPage() {
   const [all, setAll] = useState<StudentSummary[]>([]);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const [modalOpen, setModalOpen] = useState(false);
+  // modal animation state
+  const ANIM_MS = 220; // keep in sync with keyframes duration
+  const [modalOpen, setModalOpen] = useState(false);      // logical open/close
+  const [modalMounted, setModalMounted] = useState(false); // mounted while animates out
+
   const [active, setActive] = useState<StudentFull | null>(null);
   const [tab, setTab] = useState<"profile"|"goals"|"accom"|"notes"|"people">("profile");
+  const [saving, setSaving] = useState(false); // saving overlay
 
   const filtered = useMemo(
     () => all.filter(s => s.name.toLowerCase().includes(q.toLowerCase())),
@@ -211,13 +226,29 @@ export default function StudentsPage() {
 
   useEffect(() => { load(); }, []);
 
+  // open modal with loading screen immediately, then fetch
   async function openView(id: string) {
-    const data = await apiGet<StudentFull>(`/students/${id}`);
-    setActive(data);
-    setTab("profile");
+    setModalMounted(true);
     setModalOpen(true);
+    setActive(null);
+    try {
+      const data = await apiGet<StudentFull>(`/students/${id}`);
+      setActive(data);
+      setTab("profile");
+    } catch (e) {
+      setActive({ id, data: { error: "failed to load student" } } as any);
+    }
   }
-  const openEdit = openView; // same modal, editable
+  const openEdit = openView;
+
+  // begin closing with animation, then unmount after duration
+  function beginClose() {
+    setModalOpen(false);
+    window.setTimeout(() => {
+      setModalMounted(false);
+      setActive(null);
+    }, ANIM_MS);
+  }
 
   function mutateActive(path: string[], value: any) {
     if (!active) return;
@@ -234,22 +265,24 @@ export default function StudentsPage() {
 
   async function saveActive() {
     if (!active) return;
-    const payload: any = {};
+    setSaving(true);
+    try {
+      const payload: any = {};
+      if (active.data.student) payload.student = active.data.student;
+      if (active.data.education_goals) payload.education_goals = active.data.education_goals;
+      if (active.data.accommodations) payload.accommodations = active.data.accommodations;
+      if (typeof active.data.performance_progress === "string") payload.performance_progress = active.data.performance_progress;
+      if (typeof active.data.assessments === "string") payload.assessments = active.data.assessments;
+      if (typeof active.data.transition_goals === "string") payload.transition_goals = active.data.transition_goals;
+      if (Array.isArray(active.data.participants)) payload.participants = active.data.participants;
+      if (typeof active.data.alignment_pct === "number") payload.alignment_pct = active.data.alignment_pct;
 
-    // Gather known sections if present
-    if (active.data.student) payload.student = active.data.student;
-    if (active.data.education_goals) payload.education_goals = active.data.education_goals;
-    if (active.data.accommodations) payload.accommodations = active.data.accommodations;
-    if (typeof active.data.performance_progress === "string") payload.performance_progress = active.data.performance_progress;
-    if (typeof active.data.assessments === "string") payload.assessments = active.data.assessments;
-    if (typeof active.data.transition_goals === "string") payload.transition_goals = active.data.transition_goals;
-    if (Array.isArray(active.data.participants)) payload.participants = active.data.participants;
-    if (typeof active.data.alignment_pct === "number") payload.alignment_pct = active.data.alignment_pct;
-
-    const saved = await apiPut<StudentFull>(`/students/${active.id}`, payload);
-    setActive(saved);
-    // refresh list summaries for name/grade/badges changes
-    await load();
+      const saved = await apiPut<StudentFull>(`/students/${active.id}`, payload);
+      setActive(saved);
+      await load();
+    } finally {
+      setSaving(false);
+    }
   }
 
   function addParticipant() {
@@ -268,7 +301,21 @@ export default function StudentsPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      {/* Header */}
+      {/* keyframes for overlay and modal animations */}
+      <style>{`
+        @keyframes overlayIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes overlayOut { from { opacity: 1 } to { opacity: 0 } }
+        @keyframes modalIn {
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+        @keyframes modalOut {
+          from { opacity: 1; transform: translateY(0)    scale(1); }
+          to   { opacity: 0; transform: translateY(8px) scale(0.98); }
+        }
+      `}</style>
+
+      {/* header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4 }}>Students</h1>
@@ -295,7 +342,7 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
         {filtered.map(s => (
           <StudentCard key={s.id} s={s} onView={openView} onEdit={openEdit} />
@@ -306,189 +353,228 @@ export default function StudentsPage() {
         <div style={{ marginTop: 16, color: COLORS.mutedText }}>No students found.</div>
       )}
 
-      {/* Modal */}
-      {modalOpen && active && (
-      <div
-        onClick={() => setModalOpen(false)}
-        style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
-        }}
-      >
+      {/* modal with enter/exit animation */}
+      {modalMounted && (
         <div
-          onClick={e => e.stopPropagation()}
-          // Fixed, consistent height; internal scroll
+          onClick={beginClose}
           style={{
-            width: "min(100%, 980px)",
-            height: "82vh",
-            display: "flex",
-            flexDirection: "column",
-            background: "#fff",
-            borderRadius: 16,
-            boxShadow: "0 20px 60px rgba(0,0,0,.25)"
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,.45)",
+            display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+            animation: `${modalOpen ? "overlayIn" : "overlayOut"} ${ANIM_MS}ms ease both`
           }}
         >
-          {/* Header (fixed height) */}
-          <div style={{ padding: 18, borderBottom: `1px solid ${COLORS.border}`, flex: "0 0 auto" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontWeight: 900, fontSize: 20, color: COLORS.mainText }}>
-                  {active.data?.student?.student_name || active.id}
-                </div>
-                <div style={{ color: COLORS.mutedText, fontSize: 13 }}>
-                  {active.data?.student?.grade ? `Grade ${active.data.student.grade}` : "—"} {active.data?.student?.teacher ? `• ${active.data.student.teacher}` : ""}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: "min(100%, 980px)",
+              height: "82vh",
+              display: "flex",
+              flexDirection: "column",
+              background: "#fff",
+              borderRadius: 16,
+              boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+              position: "relative",
+              animation: `${modalOpen ? "modalIn" : "modalOut"} ${ANIM_MS}ms cubic-bezier(.22,.61,.36,1) both`
+            }}
+          >
+            {/* loading screen while active is null */}
+            {!active ? (
+              <div style={{ flex: "1 1 auto", display: "grid", placeItems: "center", gap: 14, padding: 24 }}>
+                <Spinner size={56} />
+                <div style={{ color: COLORS.mutedText, fontWeight: 700 }}>loading student…</div>
                 <button
-                  onClick={() => setModalOpen(false)}
-                  style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer" }}
+                  onClick={beginClose}
+                  style={{ marginTop: 8, padding: "8px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer" }}
                 >
-                  Close
-                </button>
-                <button
-                  onClick={saveActive}
-                  style={{
-                    padding: "10px 16px", borderRadius: 10, border: "none", cursor: "pointer",
-                    background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                    color: "#fff", fontWeight: 800
-                  }}
-                >
-                  Save
+                  cancel
                 </button>
               </div>
-            </div>
-
-            {/* Tabs */}
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              {["profile","goals","accom","notes","people"].map(t => (
-                <button key={t}
-                  onClick={() => setTab(t as any)}
-                  style={{
-                    padding: "8px 12px", borderRadius: 999, border: `1px solid ${tab===t ? COLORS.buttonGradientEnd : COLORS.border}`,
-                    background: tab===t ? "rgba(236,72,153,.08)" : "#fff", color: tab===t ? COLORS.buttonGradientEnd : COLORS.mainText,
-                    fontWeight: 700, cursor: "pointer"
-                  }}>
-                  {t === "profile" ? "Profile" :
-                  t === "goals" ? "IEP Goals" :
-                  t === "accom" ? "Accommodations" :
-                  t === "notes" ? "Notes & Assessments" :
-                  "Participants"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Scrollable content area fills remaining height */}
-          <div style={{ padding: 18, overflow: "auto", flex: "1 1 auto" }}>
-            {tab === "profile" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <SectionCard title="Student">
-                  <Field label="Name" value={active.data.student?.student_name || ""} onChange={v => mutateActive(["student","student_name"], v)} />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <Field label="Grade" value={active.data.student?.grade || ""} onChange={v => mutateActive(["student","grade"], v)} />
-                    <Field label="Date of Birth (DD/MM/YYYY)" value={active.data.student?.date_of_birth || ""} onChange={v => mutateActive(["student","date_of_birth"], v)} />
+            ) : (
+              <>
+                {/* header */}
+                <div style={{ padding: 18, borderBottom: `1px solid ${COLORS.border}`, flex: "0 0 auto" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: 20, color: COLORS.mainText }}>
+                        {active.data?.student?.student_name || active.id}
+                      </div>
+                      <div style={{ color: COLORS.mutedText, fontSize: 13 }}>
+                        {active.data?.student?.grade ? `Grade ${active.data.student.grade}` : "—"} {active.data?.student?.teacher ? `• ${active.data.student.teacher}` : ""}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={beginClose}
+                        style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer" }}
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={saveActive}
+                        disabled={saving}
+                        style={{
+                          padding: "10px 16px", borderRadius: 10, border: "none", cursor: "pointer",
+                          opacity: saving ? 0.8 : 1,
+                          background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+                          color: "#fff", fontWeight: 800
+                        }}
+                      >
+                        {saving ? "Saving…" : "Save"}
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <Field label="Teacher" value={active.data.student?.teacher || ""} onChange={v => mutateActive(["student","teacher"], v)} />
-                    <Field label="School" value={active.data.student?.school || ""} onChange={v => mutateActive(["student","school"], v)} />
+
+                  {/* tabs */}
+                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                    {["profile","goals","accom","notes","people"].map(t => (
+                      <button key={t}
+                        onClick={() => setTab(t as any)}
+                        style={{
+                          padding: "8px 12px", borderRadius: 999, border: `1px solid ${tab===t ? COLORS.buttonGradientEnd : COLORS.border}`,
+                          background: tab===t ? "rgba(236,72,153,.08)" : "#fff", color: tab===t ? COLORS.buttonGradientEnd : COLORS.mainText,
+                          fontWeight: 700, cursor: "pointer"
+                        }}>
+                        {t === "profile" ? "Profile" :
+                        t === "goals" ? "IEP Goals" :
+                        t === "accom" ? "Accommodations" :
+                        t === "notes" ? "Notes & Assessments" :
+                        "Participants"}
+                      </button>
+                    ))}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <Field label="PEN" value={active.data.student?.pen || ""} onChange={v => mutateActive(["student","pen"], v)} />
-                    <Field label="IEP Date (DD/MM/YYYY)" value={active.data.student?.iep_date || ""} onChange={v => mutateActive(["student","iep_date"], v)} />
-                  </div>
-                  <Field label="Designation" value={active.data.student?.designation || ""} onChange={v => mutateActive(["student","designation"], v)} />
-                  <Field label="Alignment % (optional)" value={String(active.data.alignment_pct ?? "")} onChange={v => mutateActive(["alignment_pct"], v.replace(/\D/g,"") ? Number(v) : null as any)} />
-                </SectionCard>
-                <SectionCard title="Performance Progress">
-                  <Field textarea label="Summary" value={active.data.performance_progress || ""} onChange={v => mutateActive(["performance_progress"], v)} />
-                </SectionCard>
-              </div>
-            )}
-
-            {tab === "goals" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <SectionCard title="Academic">
-                  <Field textarea label="Goal" value={active.data.education_goals?.academic || ""} onChange={v => mutateActive(["education_goals","academic"], v)} />
-                </SectionCard>
-                <SectionCard title="Social">
-                  <Field textarea label="Goal" value={active.data.education_goals?.social || ""} onChange={v => mutateActive(["education_goals","social"], v)} />
-                </SectionCard>
-                <SectionCard title="Behavioural">
-                  <Field textarea label="Goal" value={active.data.education_goals?.behavioural || ""} onChange={v => mutateActive(["education_goals","behavioural"], v)} />
-                </SectionCard>
-                <SectionCard title="Communicative">
-                  <Field textarea label="Goal" value={active.data.education_goals?.communicative || ""} onChange={v => mutateActive(["education_goals","communicative"], v)} />
-                </SectionCard>
-                <SectionCard title="Physical">
-                  <Field textarea label="Needs" value={active.data.education_goals?.physical || ""} onChange={v => mutateActive(["education_goals","physical"], v)} />
-                </SectionCard>
-              </div>
-            )}
-
-            {tab === "accom" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <SectionCard title="Instructional">
-                  <Field textarea label="Supports" value={active.data.accommodations?.instructional || ""} onChange={v => mutateActive(["accommodations","instructional"], v)} />
-                </SectionCard>
-                <SectionCard title="Environmental">
-                  <Field textarea label="Supports" value={active.data.accommodations?.environmental || ""} onChange={v => mutateActive(["accommodations","environmental"], v)} />
-                </SectionCard>
-                <SectionCard title="Assessment">
-                  <Field textarea label="Supports" value={active.data.accommodations?.assessment || ""} onChange={v => mutateActive(["accommodations","assessment"], v)} />
-                </SectionCard>
-                <SectionCard title="Technology">
-                  <Field textarea label="Tools" value={active.data.accommodations?.technology || ""} onChange={v => mutateActive(["accommodations","technology"], v)} />
-                </SectionCard>
-              </div>
-            )}
-
-            {tab === "notes" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <SectionCard title="Assessments">
-                  <Field textarea label="Notes" value={active.data.assessments || ""} onChange={v => mutateActive(["assessments"], v)} />
-                </SectionCard>
-                <SectionCard title="Transition Goals">
-                  <Field textarea label="Goals" value={active.data.transition_goals || ""} onChange={v => mutateActive(["transition_goals"], v)} />
-                </SectionCard>
-              </div>
-            )}
-
-            {tab === "people" && (
-              <div style={{ display: "grid", gap: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontWeight: 800, color: COLORS.mainText }}>Participants</div>
-                  <button onClick={addParticipant} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer" }}>
-                    Add
-                  </button>
                 </div>
-                {(active.data.participants || []).map((p: any, i: number) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
-                    <Field label="Name" value={p.name || ""} onChange={v => {
-                      const arr = active.data.participants.slice();
-                      arr[i] = { ...arr[i], name: v };
-                      setActive({ ...active, data: { ...active.data, participants: arr } });
-                    }} />
-                    <Field label="Role" value={p.role || ""} onChange={v => {
-                      const arr = active.data.participants.slice();
-                      arr[i] = { ...arr[i], role: v };
-                      setActive({ ...active, data: { ...active.data, participants: arr } });
-                    }} />
-                    <button onClick={() => removeParticipant(i)}
-                      style={{ height: 40, marginBottom: 2, borderRadius: 10, border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", cursor: "pointer" }}>
-                      Remove
-                    </button>
+
+                {/* content */}
+                <div style={{ padding: 18, overflow: "auto", flex: "1 1 auto" }}>
+                  {tab === "profile" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <SectionCard title="Student">
+                        <Field label="Name" value={active.data.student?.student_name || ""} onChange={v => mutateActive(["student","student_name"], v)} />
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <Field label="Grade" value={active.data.student?.grade || ""} onChange={v => mutateActive(["student","grade"], v)} />
+                          <Field label="Date of Birth (DD/MM/YYYY)" value={active.data.student?.date_of_birth || ""} onChange={v => mutateActive(["student","date_of_birth"], v)} />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <Field label="Teacher" value={active.data.student?.teacher || ""} onChange={v => mutateActive(["student","teacher"], v)} />
+                          <Field label="School" value={active.data.student?.school || ""} onChange={v => mutateActive(["student","school"], v)} />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <Field label="PEN" value={active.data.student?.pen || ""} onChange={v => mutateActive(["student","pen"], v)} />
+                          <Field label="IEP Date (DD/MM/YYYY)" value={active.data.student?.iep_date || ""} onChange={v => mutateActive(["student","iep_date"], v)} />
+                        </div>
+                        <Field label="Designation" value={active.data.student?.designation || ""} onChange={v => mutateActive(["student","designation"], v)} />
+                        <Field label="Alignment % (optional)" value={String(active.data.alignment_pct ?? "")} onChange={v => mutateActive(["alignment_pct"], v.replace(/\D/g,"") ? Number(v) : null as any)} />
+                      </SectionCard>
+                      <SectionCard title="Performance Progress">
+                        <Field textarea label="Summary" value={active.data.performance_progress || ""} onChange={v => mutateActive(["performance_progress"], v)} />
+                      </SectionCard>
+                    </div>
+                  )}
+
+                  {tab === "goals" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <SectionCard title="Academic">
+                        <Field textarea label="Goal" value={active.data.education_goals?.academic || ""} onChange={v => mutateActive(["education_goals","academic"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Social">
+                        <Field textarea label="Goal" value={active.data.education_goals?.social || ""} onChange={v => mutateActive(["education_goals","social"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Behavioural">
+                        <Field textarea label="Goal" value={active.data.education_goals?.behavioural || ""} onChange={v => mutateActive(["education_goals","behavioural"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Communicative">
+                        <Field textarea label="Goal" value={active.data.education_goals?.communicative || ""} onChange={v => mutateActive(["education_goals","communicative"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Physical">
+                        <Field textarea label="Needs" value={active.data.education_goals?.physical || ""} onChange={v => mutateActive(["education_goals","physical"], v)} />
+                      </SectionCard>
+                    </div>
+                  )}
+
+                  {tab === "accom" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <SectionCard title="Instructional">
+                        <Field textarea label="Supports" value={active.data.accommodations?.instructional || ""} onChange={v => mutateActive(["accommodations","instructional"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Environmental">
+                        <Field textarea label="Supports" value={active.data.accommodations?.environmental || ""} onChange={v => mutateActive(["accommodations","environmental"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Assessment">
+                        <Field textarea label="Supports" value={active.data.accommodations?.assessment || ""} onChange={v => mutateActive(["accommodations","assessment"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Technology">
+                        <Field textarea label="Tools" value={active.data.accommodations?.technology || ""} onChange={v => mutateActive(["accommodations","technology"], v)} />
+                      </SectionCard>
+                    </div>
+                  )}
+
+                  {tab === "notes" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <SectionCard title="Assessments">
+                        <Field textarea label="Notes" value={active.data.assessments || ""} onChange={v => mutateActive(["assessments"], v)} />
+                      </SectionCard>
+                      <SectionCard title="Transition Goals">
+                        <Field textarea label="Goals" value={active.data.transition_goals || ""} onChange={v => mutateActive(["transition_goals"], v)} />
+                      </SectionCard>
+                    </div>
+                  )}
+
+                  {tab === "people" && (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontWeight: 800, color: COLORS.mainText }}>Participants</div>
+                        <button onClick={addParticipant} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer" }}>
+                          Add
+                        </button>
+                      </div>
+                      {(active.data.participants || []).map((p: any, i: number) => (
+                        <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
+                          <Field label="Name" value={p.name || ""} onChange={v => {
+                            const arr = active.data.participants.slice();
+                            arr[i] = { ...arr[i], name: v };
+                            setActive({ ...active, data: { ...active.data, participants: arr } });
+                          }} />
+                          <Field label="Role" value={p.role || ""} onChange={v => {
+                            const arr = active.data.participants.slice();
+                            arr[i] = { ...arr[i], role: v };
+                            setActive({ ...active, data: { ...active.data, participants: arr } });
+                          }} />
+                          <button onClick={() => removeParticipant(i)}
+                            style={{ height: 40, marginBottom: 2, borderRadius: 10, border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", cursor: "pointer" }}>
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      {!active.data.participants?.length && (
+                        <div style={{ color: COLORS.mutedText, fontSize: 13 }}>No participants yet.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* saving overlay */}
+                {saving && (
+                  <div
+                    style={{
+                      position: "absolute", inset: 0,
+                      background: "rgba(255,255,255,.6)",
+                      display: "grid", placeItems: "center",
+                      animation: `overlayIn ${ANIM_MS}ms ease both`
+                    }}
+                    aria-live="polite"
+                  >
+                    <div style={{ display: "grid", placeItems: "center", gap: 10, padding: 20, borderRadius: 12, background: "#fff", border: `1px solid ${COLORS.border}`, animation: `modalIn ${ANIM_MS}ms cubic-bezier(.22,.61,.36,1) both` }}>
+                      <Spinner />
+                      <div style={{ color: COLORS.mutedText, fontWeight: 700 }}>saving…</div>
+                    </div>
                   </div>
-                ))}
-                {!active.data.participants?.length && (
-                  <div style={{ color: COLORS.mutedText, fontSize: 13 }}>No participants yet.</div>
                 )}
-              </div>
+              </>
             )}
           </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 }
