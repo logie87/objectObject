@@ -37,8 +37,10 @@ button,input{font:inherit}
 .sidebar{
   grid-area:sidebar;
   background:linear-gradient(135deg,var(--surface-100),var(--surface-100) 50%,var(--surface-100));
-  border: 1px solid var(--surface-900);
+  border: 1px solid var(--surface-400);
   padding:20px 14px; overflow:auto; margin: .5rem; border-radius: 15px;
+  box-shadow: 3px 5px 5px rgba(0,0,0,.06);
+
 }
 
 /* Topbar full width above sidebar */
@@ -89,8 +91,15 @@ button,input{font:inherit}
 .logo-badge{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--primaryA),var(--primaryC));box-shadow:var(--shadow-md)}
 
 .nav-btn{
+  transition-duration: 0.25s;
   width:100%; display:flex; align-items:center; gap:12px;
   padding:12px 14px; border:none; background:transparent; color: var(--text-400); border-radius:12px; cursor:pointer;
+}
+.nav-btn:hover{
+  transition-duration: 0.25s;
+  transform:translateY(-2px);
+  background:var(--surface-400);
+  box-shadow:var(--shadow-md);
 }
 .nav-btn.active{background:var(--surface-600); box-shadow:var(--shadow-sm)}
 .nav-label{font-weight:600}
@@ -123,6 +132,6 @@ button,input{font:inherit}
 .unit-dot{ width:8px; height:8px; border-radius:999px; background:#6366f1 }
 
 .logo-img{
-  width:36px; height:36px; border-radius:12px; object-fit:cover;
+  width:36px; height:36px; object-fit:cover;
   box-shadow: var(--shadow-md);
 }
