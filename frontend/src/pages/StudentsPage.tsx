@@ -227,6 +227,7 @@ export default function StudentsPage() {
   const [studentSearch, setStudentSearch] = React.useState("");
   const [unitSearch, setUnitSearch] = React.useState("");
   const [showStudentDropdown, setShowStudentDropdown] = React.useState(false);
+  const [showUnitDropdown, setShowUnitDropdown] = React.useState(false);
 
   const toggleSelection = (
     item: string,
@@ -237,6 +238,32 @@ export default function StudentsPage() {
       setter(list.filter((i) => i !== item));
     } else {
       setter([...list, item]);
+    }
+  };
+
+  const handleStudentKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && studentSearch.trim()) {
+      const matchingStudent = students.find(
+        (s) => s.name.toLowerCase() === studentSearch.toLowerCase()
+      );
+      if (matchingStudent && !selectedStudents.includes(matchingStudent.name)) {
+        setSelectedStudents([...selectedStudents, matchingStudent.name]);
+      }
+      setStudentSearch("");
+      setShowStudentDropdown(false);
+    }
+  };
+
+  const handleUnitKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && unitSearch.trim()) {
+      const matchingUnit = units.find(
+        (u) => u.toLowerCase() === unitSearch.toLowerCase()
+      );
+      if (matchingUnit && !selectedUnits.includes(matchingUnit)) {
+        setSelectedUnits([...selectedUnits, matchingUnit]);
+      }
+      setUnitSearch("");
+      setShowUnitDropdown(false);
     }
   };
 
@@ -418,6 +445,7 @@ export default function StudentsPage() {
                     placeholder="Search students..."
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
+                    onKeyDown={handleStudentKeyDown}
                     onFocus={() => setShowStudentDropdown(true)}
                     onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                     style={{
@@ -516,8 +544,8 @@ export default function StudentsPage() {
                     ))}
                   </div>
                 </div>
-                {/* Units Section */}
-                <div style={{ marginBottom: 32 }}>
+                {/* Units Section with Dropdown */}
+                <div style={{ marginBottom: 32, position: "relative" }}>
                   <h3
                     style={{
                       fontSize: 16,
@@ -533,6 +561,9 @@ export default function StudentsPage() {
                     placeholder="Search units..."
                     value={unitSearch}
                     onChange={(e) => setUnitSearch(e.target.value)}
+                    onKeyDown={handleUnitKeyDown}
+                    onFocus={() => setShowUnitDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowUnitDropdown(false), 200)}
                     style={{
                       width: "100%",
                       padding: "8px 12px",
@@ -543,32 +574,81 @@ export default function StudentsPage() {
                       fontSize: 14,
                     }}
                   />
+                  {/* Dropdown Suggestions */}
+                  {showUnitDropdown && unitSearch && filteredUnits.length > 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 8,
+                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        maxHeight: 200,
+                        overflowY: "auto",
+                        zIndex: 10,
+                        marginTop: -12,
+                      }}
+                    >
+                      {filteredUnits.map((unit) => (
+                        <div
+                          key={unit}
+                          onClick={() => {
+                            toggleSelection(unit, selectedUnits, setSelectedUnits);
+                            setUnitSearch("");
+                          }}
+                          style={{
+                            padding: "10px 12px",
+                            cursor: "pointer",
+                            fontSize: 14,
+                            color: COLORS.mainText,
+                            borderBottom: "1px solid #f3f4f6",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f9fafb";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "white";
+                          }}
+                        >
+                          {unit}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Selected Units */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {filteredUnits.map((unit) => (
-                      <button
+                    {selectedUnits.map((unit) => (
+                      <div
                         key={unit}
-                        onClick={() =>
-                          toggleSelection(unit, selectedUnits, setSelectedUnits)
-                        }
                         style={{
                           padding: "8px 16px",
                           borderRadius: 8,
-                          border: selectedUnits.includes(unit)
-                            ? `2px solid ${COLORS.buttonGradientEnd}`
-                            : "2px solid #e5e7eb",
-                          backgroundColor: selectedUnits.includes(unit)
-                            ? "rgba(236, 72, 153, 0.1)"
-                            : "white",
-                          color: selectedUnits.includes(unit)
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.mainText,
+                          border: `2px solid ${COLORS.buttonGradientEnd}`,
+                          backgroundColor: "rgba(236, 72, 153, 0.1)",
+                          color: COLORS.buttonGradientEnd,
                           fontWeight: 500,
-                          cursor: "pointer",
                           fontSize: 14,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
                         }}
                       >
                         {unit}
-                      </button>
+                        <span
+                          onClick={() =>
+                            toggleSelection(unit, selectedUnits, setSelectedUnits)
+                          }
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ×
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
