@@ -99,18 +99,22 @@ button:hover {
 .logo-badge{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--primaryA),var(--primaryC));box-shadow:var(--shadow-md)}
 
 .nav-btn{
-  transition-duration: 0.25s;
+  transition-duration: 0.15s;
   width:100%; display:flex; align-items:center; gap:12px;
   padding:12px 14px; border:none; background:transparent; color: var(--text-400); border-radius:12px; cursor:pointer;
 }
 .nav-btn:hover{
-  transition-duration: 0.25s;
-  transform:translateY(-2px);
-  transform:scale(1.01);
+  /* transition-duration: 0.25s; */
+  /* transform:translateY(-2px); */
+  transform:scale(1.03);
   background:var(--surface-400);
   box-shadow:var(--shadow-md);
 }
-.nav-btn.active{background:var(--surface-600); box-shadow:var(--shadow-sm)}
+.nav-btn.active{
+  background:var(--surface-600);
+  box-shadow:var(--shadow-sm);
+  transform:scale(1.03);
+}
 .nav-label{font-weight:600}
 
 .header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:4px 0 18px}
