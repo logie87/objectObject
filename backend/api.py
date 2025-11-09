@@ -235,6 +235,7 @@ app.add_middleware(
 # ======================= AUTH ROUTES ========================
 # ============================================================
 
+
 @app.post("/auth/login")
 async def login(req: LoginRequest):
     email = req.email.lower()
@@ -246,7 +247,7 @@ async def login(req: LoginRequest):
     conn = get_db()
     c = conn.cursor()
     c.execute(
-        "SELECT id, email FROM users WHERE email = ? AND pwd = ?;",
+        "SELECT id, name, email FROM users WHERE email = ? AND pwd = ?;",
         (email, password),
     )
     row = c.fetchone()
@@ -255,17 +256,15 @@ async def login(req: LoginRequest):
     if not row:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    user_id, user_email = row
+    user_id, user_name, user_email = row
     token = create_jwt(user_id, user_email)
     logger.info(f"User '{user_email}' logged in successfully.")
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "user_name": user_name, "token_type": "bearer"}
 
 
 @app.get("/secret")
 async def secret(user=Depends(verify_jwt)):
-    logger.info(
-        f"User accessed /secret: {user['email']}, {user['sub']}, {user['name']}, {user['iat']}"
-    )
+    logger.info(f"User accessed /secret: {user['email']}, {user['sub']}, {user['iat']}")
     return {"message": f"Welcome, {user['email']}!"}
 
 
