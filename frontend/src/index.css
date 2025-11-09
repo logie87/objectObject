@@ -147,6 +147,7 @@ button,input{font:inherit}
   min-height: 80vh;
 }
 
+
 .logo-img{
   width:36px; height:36px; object-fit:cover;
   box-shadow: var(--shadow-md);
