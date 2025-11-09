@@ -1,1 +1,8 @@
 frontend/package-lock.json
+
+*/.venv/
+*/venv/
+.venv/
+venv/
+
+*.log
