@@ -212,22 +212,21 @@ const students = Array.from({ length: 8 }, (_, i) => ({
   badges: ["Reading", "Time"],
 }));
 
-// Sample units and IEPs
+// Sample units
 const units = [
   "Unit 1: Math Basics",
   "Unit 2: Reading Comprehension",
   "Unit 3: Science",
 ];
-const ieps = ["IEP Goal 1", "IEP Goal 2", "IEP Goal 3", "IEP Goal 4"];
 
 export default function StudentsPage() {
   const [showModal, setShowModal] = React.useState(false);
   const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
   const [selectedUnits, setSelectedUnits] = React.useState<string[]>([]);
-  const [selectedIEPs, setSelectedIEPs] = React.useState<string[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [studentSearch, setStudentSearch] = React.useState("");
   const [unitSearch, setUnitSearch] = React.useState("");
+  const [showStudentDropdown, setShowStudentDropdown] = React.useState(false);
 
   const toggleSelection = (
     item: string,
@@ -242,9 +241,6 @@ export default function StudentsPage() {
   };
 
   const handleGenerate = () => {
-    // Clear IEP goals
-    setSelectedIEPs([]);
-    // Set generating state
     setIsGenerating(true);
     console.log({
       students: selectedStudents,
@@ -361,7 +357,7 @@ export default function StudentsPage() {
               Generate Report
             </h2>
             <p style={{ color: COLORS.mutedText, marginBottom: 24 }}>
-              Select students, units, and IEPs to include in your report
+              Select students and units to include in your report
             </p>
 
             {isGenerating ? (
@@ -405,8 +401,8 @@ export default function StudentsPage() {
               </div>
             ) : (
               <>
-                {/* Students Section */}
-                <div style={{ marginBottom: 24 }}>
+                {/* Students Section with Dropdown */}
+                <div style={{ marginBottom: 24, position: "relative" }}>
                   <h3
                     style={{
                       fontSize: 16,
@@ -422,6 +418,8 @@ export default function StudentsPage() {
                     placeholder="Search students..."
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
+                    onFocus={() => setShowStudentDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                     style={{
                       width: "100%",
                       padding: "8px 12px",
@@ -432,41 +430,94 @@ export default function StudentsPage() {
                       fontSize: 14,
                     }}
                   />
+                  {/* Dropdown Suggestions */}
+                  {showStudentDropdown && studentSearch && filteredStudents.length > 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 8,
+                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        maxHeight: 200,
+                        overflowY: "auto",
+                        zIndex: 10,
+                        marginTop: -12,
+                      }}
+                    >
+                      {filteredStudents.map((student) => (
+                        <div
+                          key={student.name}
+                          onClick={() => {
+                            toggleSelection(
+                              student.name,
+                              selectedStudents,
+                              setSelectedStudents
+                            );
+                            setStudentSearch("");
+                          }}
+                          style={{
+                            padding: "10px 12px",
+                            cursor: "pointer",
+                            fontSize: 14,
+                            color: COLORS.mainText,
+                            borderBottom: "1px solid #f3f4f6",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f9fafb";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "white";
+                          }}
+                        >
+                          {student.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Selected Students */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {filteredStudents.map((student) => (
-                      <button
-                        key={student.name}
-                        onClick={() =>
-                          toggleSelection(
-                            student.name,
-                            selectedStudents,
-                            setSelectedStudents
-                          )
-                        }
+                    {selectedStudents.map((student) => (
+                      <div
+                        key={student}
                         style={{
                           padding: "8px 16px",
                           borderRadius: 8,
-                          border: selectedStudents.includes(student.name)
-                            ? `2px solid ${COLORS.buttonGradientEnd}`
-                            : "2px solid #e5e7eb",
-                          backgroundColor: selectedStudents.includes(student.name)
-                            ? "rgba(236, 72, 153, 0.1)"
-                            : "white",
-                          color: selectedStudents.includes(student.name)
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.mainText,
+                          border: `2px solid ${COLORS.buttonGradientEnd}`,
+                          backgroundColor: "rgba(236, 72, 153, 0.1)",
+                          color: COLORS.buttonGradientEnd,
                           fontWeight: 500,
-                          cursor: "pointer",
                           fontSize: 14,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
                         }}
                       >
-                        {student.name}
-                      </button>
+                        {student}
+                        <span
+                          onClick={() =>
+                            toggleSelection(
+                              student,
+                              selectedStudents,
+                              setSelectedStudents
+                            )
+                          }
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ×
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
                 {/* Units Section */}
-                <div style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 32 }}>
                   <h3
                     style={{
                       fontSize: 16,
@@ -517,47 +568,6 @@ export default function StudentsPage() {
                         }}
                       >
                         {unit}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* IEP Section */}
-                <div style={{ marginBottom: 32 }}>
-                  <h3
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 600,
-                      marginBottom: 12,
-                      color: COLORS.mainText,
-                    }}
-                  >
-                    IEP Goals
-                  </h3>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {ieps.map((iep) => (
-                      <button
-                        key={iep}
-                        onClick={() =>
-                          toggleSelection(iep, selectedIEPs, setSelectedIEPs)
-                        }
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: 8,
-                          border: selectedIEPs.includes(iep)
-                            ? `2px solid ${COLORS.buttonGradientEnd}`
-                            : "2px solid #e5e7eb",
-                          backgroundColor: selectedIEPs.includes(iep)
-                            ? "rgba(236, 72, 153, 0.1)"
-                            : "white",
-                          color: selectedIEPs.includes(iep)
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.mainText,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          fontSize: 14,
-                        }}
-                      >
-                        {iep}
                       </button>
                     ))}
                   </div>
