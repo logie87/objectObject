@@ -27,7 +27,7 @@ export default function HomePage(){
         <div style={{display:"grid", gridTemplateColumns:"1fr 360px", gap:20}}>
           <div className="grid" style={{gridTemplateColumns:"1fr", gap:16}}>
             {/* Alignment snapshot */}
-            <div className="card">
+            <div style={{marginLeft: 10, marginBottom: 10}}>
               <div style={{fontWeight:700, marginBottom:10}}>Alignment Snapshot</div>
               <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}>
                 <span className="badge good">▲ Good • 82%</span>
@@ -38,7 +38,7 @@ export default function HomePage(){
             </div>
 
             {/* Recent runs */}
-            <div className="card">
+            <div style={{marginLeft: 10}}>
               <div style={{fontWeight:700, marginBottom:10}}>Recent Runs</div>
               {[1,2,3].map(i=>(
                 <div key={i} style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:12,alignItems:"center",padding:"10px 0",borderTop:i===1?"none":"1px solid #eef2f7"}}>
@@ -50,7 +50,7 @@ export default function HomePage(){
             </div>
 
             {/* Shortcuts */}
-            <div className="card">
+            <div style={{marginLeft: 10}}>
               <div style={{fontWeight:700, marginBottom:10}}>Shortcuts</div>
               <div style={{display:"flex", gap:10, flexWrap:"wrap"}}>
                 <button className="btn flat">Upload Worksheet</button>
@@ -62,29 +62,25 @@ export default function HomePage(){
           </div>
 
           {/* Right panel: consensus preview */}
-          <aside className="card" style={{position:"sticky", top:0}}>
+          <aside style={{position:"sticky", top:0}}>
             <div style={{fontWeight:800, fontSize:18, marginBottom:8}}>Consensus Adaptation</div>
             <div style={{color:"var(--muted)", marginBottom:12}}>Rationale + evidence snippets</div>
-            <div className="card" style={{background:"#f8fafc"}}>
               Provide TTS version, scaffold steps, alternate oral assessment, time 1.5×.
               <div style={{marginTop:8,fontSize:12,color:"var(--muted)"}}>
                 Evidence: IEP accommodations; activity reading load; prior performance.
               </div>
-            </div>
-            <div style={{display:"flex", gap:8, marginTop:12}}>
-              <button className="btn primary">Insert into lesson</button>
-              <button className="btn ghost">Copy</button>
-            </div>
+                  <div style={{display:"flex", gap:12, marginTop: 14}}>
+                  <button className="btn primary">Insert into lesson</button>
+                  <button className="btn ghost">Copy</button>
+              </div>
 
             {/* Quick tips */}
-            <div className="card" style={{marginTop:12}}>
-              <div style={{fontWeight:700, marginBottom:6}}>Quick Tips</div>
+              <div style={{fontWeight:700, marginTop: 20}}>Quick Tips</div>
               <ul style={{margin:"0 0 0 18px", padding:0}}>
                 <li>Use the Library for BC guidelines before running alignment.</li>
                 <li>Filters in Curriculum require a re-run to refresh badges.</li>
                 <li>Student view → one-click Generate pulls evidence into the panel.</li>
               </ul>
-            </div>
           </aside>
         </div>
       </div>

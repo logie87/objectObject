@@ -104,6 +104,8 @@ button,input{font:inherit}
 .grid.files{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .card{background:var(--panel);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);transition:transform .15s,box-shadow .15s,background .15s}
 .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.card{background:var(--panel);border-radius:var(--radius-lg);padding:8px;box-shadow:var(--shadow-sm);transition:transform .10s,box-shadow .10s,background .10s}
+.btncard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);background:#f9fafb}
 
 .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
 .badge.good{background:#e8fff3;color:#0f766e}
