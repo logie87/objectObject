@@ -1,14 +1,7 @@
-// import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { apiDelete, apiGet, apiGetBlobUrl, apiPostForm, apiPut } from "../lib/api";
 
-// Color constants
 const COLORS = {
-  readingBadgeBg: "rgba(251, 191, 191, 0.15)",
-  readingBadgeText: "#ef4444",
-  timeBadgeBg: "rgba(253, 230, 138, 0.15)",
-  timeBadgeText: "#f59e0b",
-  pieGradientStart: "#34d399", // green
-  pieGradientEnd: "#22c55e",
-  pieEmpty: "#e5e7eb",
   buttonGradientStart: "#a78bfa",
   buttonGradientEnd: "#ec4899",
   cardBg: "#ffffff",
@@ -18,187 +11,227 @@ const COLORS = {
   avatarBg: "#ecfeff",
 };
 
-// Icons
+type DocMeta = {
+  id: string;
+  filename: string;
+  title: string;
+  size: number;
+  sha256: string;
+  uploaded_at: string;
+  tags: string[];
+  source?: string | null;
+};
+
 const Icons = {
   Document: () => (
-    <svg
-      width="40"
-      height="40"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={COLORS.mainText}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={COLORS.mainText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
     </svg>
   ),
 };
 
-const docs = [
-  "BC-Adaptations-Guidelines-Reading.pdf",
-  "BC-Universal-Design-for-Learning-Overview.pdf",
-  "BC-Assessment-Accommodations-K-12.pdf",
-  "BC-IEP-Planning-Template.docx",
-  "BC-Assistive-Technology-Quick-Ref.pdf",
-  "BC-Executive-Function-Supports.pdf",
-  "BC-ELL-Adjustment-Guidelines.pdf",
-  "BC-Math-Alternate-Pathways.pdf",
-  "BC-Behavior-Support-Strategies.pdf",
-  "BC-Transition-Planning-Checklist.pdf",
-];
-
 export default function LibraryPage() {
+  const [docs, setDocs] = useState<DocMeta[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const totalSize = useMemo(
+    () => docs.reduce((s, d) => s + (d.size || 0), 0),
+    [docs]
+  );
+
+  function tell(msg: string) {
+    setNotice(msg);
+    setTimeout(() => setNotice(null), 2500);
+  }
+
+  async function refresh() {
+    setBusy(true);
+    try {
+      const list = await apiGet<DocMeta[]>("/library");
+      setDocs(list);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    refresh().catch(err => tell(`Load failed: ${String(err)}`));
+  }, []);
+
+  async function onUpload(files: FileList) {
+    setBusy(true);
+    try {
+      for (const f of Array.from(files)) {
+        const fd = new FormData();
+        fd.append("file", f);
+        fd.append("title", f.name.replace(/\.(pdf)$/i, ""));
+        // optional tags, comma-separated: fd.append("tags", "guideline,bc");
+        await apiPostForm<DocMeta>("/library/upload", fd);
+      }
+      tell("Upload complete.");
+      await refresh();
+    } catch (e) {
+      tell(`Upload error: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function viewDoc(id: string) {
+    try {
+      const url = await apiGetBlobUrl(`/library/${id}/file`);
+      window.open(url, "_blank", "noopener,noreferrer");
+      // Caller will revokeObjectURL automatically on tab close; no manual revoke needed here.
+    } catch (e) {
+      tell(`Open failed: ${String(e)}`);
+    }
+  }
+
+  async function renameDoc(id: string, current: string) {
+    const title = prompt("New title", current);
+    if (!title || title === current) return;
+    try {
+      await apiPut<DocMeta>(`/library/${id}`, { title });
+      tell("Title updated.");
+      await refresh();
+    } catch (e) {
+      tell(`Rename failed: ${String(e)}`);
+    }
+  }
+
+  async function deleteDoc(id: string) {
+    if (!confirm("Delete this document from the library?")) return;
+    try {
+      await apiDelete(`/library/${id}`);
+      tell("Deleted.");
+      await refresh();
+    } catch (e) {
+      tell(`Delete failed: ${String(e)}`);
+    }
+  }
+
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1 style={{ fontSize: 32, marginBottom: 4 }}>Library</h1>
-          <div style={{ color: COLORS.mutedText }}>Ingested curriculum & guidance documents</div>
+          <div style={{ color: COLORS.mutedText }}>
+            Ingested curriculum & guidance documents • {docs.length} files • {(totalSize/1024/1024).toFixed(1)} MB
+          </div>
         </div>
-        <button
-          style={{
-            padding: "14px 28px",
-            borderRadius: 12,
-            border: "none",
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: "pointer",
-            color: "white",
-            background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-            boxShadow: "0 4px 12px rgba(168,85,247,0.3)",
-            transition: "all 0.3s",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 16px rgba(168,85,247,0.4)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 12px rgba(168,85,247,0.3)";
-          }}
-          onClick={() => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.pdf,.doc,.docx';
-            input.multiple = true;
-            input.onchange = (e) => {
-              const files = (e.target as HTMLInputElement).files;
-              if (files) {
-                console.log('Files selected:', Array.from(files).map(f => f.name));
-                // Handle file upload here
-              }
-            };
-            input.click();
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-          Upload Documents
-        </button>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".pdf"
+            multiple
+            style={{ display: "none" }}
+            onChange={(e) => {
+              if (e.target.files) onUpload(e.target.files);
+              if (inputRef.current) inputRef.current.value = "";
+            }}
+          />
+          <button
+            style={{
+              padding: "14px 20px",
+              borderRadius: 12,
+              border: "none",
+              fontWeight: 600,
+              fontSize: 16,
+              cursor: "pointer",
+              color: "white",
+              background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+              boxShadow: "0 4px 12px rgba(168,85,247,0.3)",
+            }}
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+          >
+            {busy ? "Working…" : "Upload PDFs"}
+          </button>
+        </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-          gap: 24,
-        }}
-      >
-        {docs.map((name, i) => (
-          <div
-            key={i}
-            style={{
-              padding: 32,
-              borderRadius: 16,
-              backgroundColor: COLORS.cardBg,
-              boxShadow: COLORS.cardShadow,
-              display: "flex",
-              flexDirection: "column",
-              gap: 24,
-            }}
-          >
-            {/* Top: Icon + Name */}
-            <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: "50%",
-                  backgroundColor: COLORS.avatarBg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
+      {notice && (
+        <div style={{
+          marginBottom: 16, padding: "10px 12px", borderRadius: 12,
+          border: "1px solid #e5e7eb", background: "#f8fafc", color: COLORS.mainText
+        }}>
+          {notice}
+        </div>
+      )}
+
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 24 }}>
+        {docs.map((d) => (
+          <div key={d.id}
+               style={{ padding: 24, borderRadius: 16, backgroundColor: COLORS.cardBg, boxShadow: COLORS.cardShadow, display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Icon + name */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: "50%", backgroundColor: COLORS.avatarBg,
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+              }}>
                 <Icons.Document />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 20, color: COLORS.mainText }}>{name}</div>
-                <div style={{ color: COLORS.mutedText, fontSize: 14, marginTop: 4 }}>Added recently</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 18, color: COLORS.mainText, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}
+                     title={d.title}>
+                  {d.title}
+                </div>
+                <div style={{ color: COLORS.mutedText, fontSize: 13, marginTop: 4 }}>
+                  {(d.size/1024/1024).toFixed(2)} MB • {new Date(d.uploaded_at).toLocaleString()}
+                </div>
+                {d.tags?.length ? (
+                  <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {d.tags.map(t => (
+                      <span key={t} style={{ fontSize: 12, padding: "3px 8px", borderRadius: 999, background: "#f3f4f6", color: COLORS.mainText }}>
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: "flex", gap: 12 }}>
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 10 }}>
               <button
-                style={{
-                  flex: 1,
-                  padding: "12px 0",
-                  borderRadius: 12,
-                  border: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  color: COLORS.mainText,
-                  backgroundColor: "#f3f4f6",
-                  transition: "all 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#e5e7eb";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f3f4f6";
-                }}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}
+                onClick={() => viewDoc(d.id)}
               >
                 View
               </button>
-
+              <button
+                style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}
+                onClick={() => renameDoc(d.id, d.title)}
+              >
+                Rename
+              </button>
               <button
                 style={{
-                  flex: 1,
-                  padding: "12px 0",
-                  borderRadius: 12,
-                  border: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  color: "white",
-                  background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                  transition: "all 0.3s",
+                  padding: "10px 16px", borderRadius: 12, border: "none", cursor: "pointer",
+                  background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff"
                 }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-3px)";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 16px rgba(168,85,247,0.4)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
-                }}
+                onClick={() => deleteDoc(d.id)}
+                title="Delete from library"
               >
-                Analyze
+                Delete
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {!docs.length && !busy && (
+        <div style={{ marginTop: 24, color: COLORS.mutedText }}>
+          No documents yet. Click “Upload PDFs” to add files.
+        </div>
+      )}
     </div>
   );
 }
