@@ -190,7 +190,7 @@ export default function CurriculumPage() {
         </div>
       )}
 
-      <div className="panel" style={{ padding: 20 }}>
+      <div className="panel curpanel" style={{ padding: 20 }}>
         {/* Filter bar */}
         <div
           className="card"
@@ -310,7 +310,7 @@ export default function CurriculumPage() {
                   })}
                 </div>
                 <div>
-                  <button className="btn ghost" onClick={() => handleGenerate(row)}>
+                  <button className="btn ghost curric-btn" onClick={() => handleGenerate(row)}>
                     Generate
                   </button>
                 </div>
