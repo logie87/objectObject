@@ -67,7 +67,7 @@ function StudentCard({ student }: { student: typeof students[0] }) {
       style={{
         padding: 32,
         borderRadius: 16,
-        backgroundColor: COLORS.cardBg,
+        backgroundColor: "white", // changed to white
         boxShadow: COLORS.cardShadow,
         display: "flex",
         flexDirection: "column",
@@ -122,7 +122,7 @@ function StudentCard({ student }: { student: typeof students[0] }) {
               width: 44,
               height: 44,
               borderRadius: "50%",
-              backgroundColor: COLORS.cardBg,
+              backgroundColor: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -167,7 +167,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
 
       {/* Action Buttons */}
       <div style={{ display: "flex", gap: 12 }}>
-        {/* View Button */}
         <button
           style={{
             flex: 1,
@@ -186,7 +185,6 @@ function StudentCard({ student }: { student: typeof students[0] }) {
           View
         </button>
 
-        {/* Edit Button */}
         <button
           style={{
             flex: 1,
@@ -221,7 +219,11 @@ const students = Array.from({ length: 8 }, (_, i) => ({
 }));
 
 // Sample units and IEPs
-const units = ["Unit 1: Math Basics", "Unit 2: Reading Comprehension", "Unit 3: Science"];
+const units = [
+  "Unit 1: Math Basics",
+  "Unit 2: Reading Comprehension",
+  "Unit 3: Science",
+];
 const ieps = ["IEP Goal 1", "IEP Goal 2", "IEP Goal 3", "IEP Goal 4"];
 
 export default function StudentsPage() {
@@ -230,9 +232,13 @@ export default function StudentsPage() {
   const [selectedUnits, setSelectedUnits] = React.useState<string[]>([]);
   const [selectedIEPs, setSelectedIEPs] = React.useState<string[]>([]);
 
-  const toggleSelection = (item: string, list: string[], setter: (list: string[]) => void) => {
+  const toggleSelection = (
+    item: string,
+    list: string[],
+    setter: (list: string[]) => void
+  ) => {
     if (list.includes(item)) {
-      setter(list.filter(i => i !== item));
+      setter(list.filter((i) => i !== item));
     } else {
       setter([...list, item]);
     }
@@ -258,7 +264,6 @@ export default function StudentsPage() {
         </div>
 
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          {/* Search bar */}
           <input
             type="text"
             placeholder="Search students..."
@@ -271,7 +276,6 @@ export default function StudentsPage() {
             }}
           />
 
-          {/* Generate Report Button */}
           <button
             onClick={() => setShowModal(true)}
             style={{
@@ -305,7 +309,7 @@ export default function StudentsPage() {
         ))}
       </div>
 
-      {/* Report Generation Modal */}
+      {/* Report Modal */}
       {showModal && (
         <div
           style={{
@@ -344,14 +348,27 @@ export default function StudentsPage() {
 
             {/* Students Section */}
             <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: COLORS.mainText }}>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                  color: COLORS.mainText,
+                }}
+              >
                 Students
               </h3>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {students.map((student) => (
                   <button
                     key={student.name}
-                    onClick={() => toggleSelection(student.name, selectedStudents, setSelectedStudents)}
+                    onClick={() =>
+                      toggleSelection(
+                        student.name,
+                        selectedStudents,
+                        setSelectedStudents
+                      )
+                    }
                     style={{
                       padding: "8px 16px",
                       borderRadius: 8,
@@ -377,14 +394,23 @@ export default function StudentsPage() {
 
             {/* Units Section */}
             <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: COLORS.mainText }}>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                  color: COLORS.mainText,
+                }}
+              >
                 Units
               </h3>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {units.map((unit) => (
                   <button
                     key={unit}
-                    onClick={() => toggleSelection(unit, selectedUnits, setSelectedUnits)}
+                    onClick={() =>
+                      toggleSelection(unit, selectedUnits, setSelectedUnits)
+                    }
                     style={{
                       padding: "8px 16px",
                       borderRadius: 8,
@@ -408,16 +434,25 @@ export default function StudentsPage() {
               </div>
             </div>
 
-            {/* IEPs Section */}
+            {/* IEP Section */}
             <div style={{ marginBottom: 32 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: COLORS.mainText }}>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                  color: COLORS.mainText,
+                }}
+              >
                 IEP Goals
               </h3>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {ieps.map((iep) => (
                   <button
                     key={iep}
-                    onClick={() => toggleSelection(iep, selectedIEPs, setSelectedIEPs)}
+                    onClick={() =>
+                      toggleSelection(iep, selectedIEPs, setSelectedIEPs)
+                    }
                     style={{
                       padding: "8px 16px",
                       borderRadius: 8,
