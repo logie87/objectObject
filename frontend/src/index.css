@@ -36,8 +36,9 @@ button,input{font:inherit}
 /* Sidebar: keep icons strictly white, no color */
 .sidebar{
   grid-area:sidebar;
-  background:linear-gradient(135deg,var(--surface-600),var(--surface-600) 50%,var(--surface-500));
-  padding:20px 14px; overflow:auto;
+  background:linear-gradient(135deg,var(--surface-100),var(--surface-100) 50%,var(--surface-100));
+  border: 1px solid var(--surface-900);
+  padding:20px 14px; overflow:auto; margin: .5rem; border-radius: 15px;
 }
 
 /* Topbar full width above sidebar */
@@ -91,7 +92,7 @@ button,input{font:inherit}
   width:100%; display:flex; align-items:center; gap:12px;
   padding:12px 14px; border:none; background:transparent; color: var(--text-400); border-radius:12px; cursor:pointer;
 }
-.nav-btn.active{background:rgba(255,255,255,.22); box-shadow:var(--shadow-sm)}
+.nav-btn.active{background:var(--surface-600); box-shadow:var(--shadow-sm)}
 .nav-label{font-weight:600}
 
 .header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:4px 0 18px}
