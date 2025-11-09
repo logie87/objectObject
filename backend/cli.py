@@ -22,11 +22,14 @@ DB_PATH = DATA_DIR / "instuctive.db"
 # ================= Command Line Application =================
 # ============================================================
 
+
 class CLApp:
     def __init__(self):
         LOG_DIR.mkdir(parents=True, exist_ok=True)
         DATA_DIR.mkdir(parents=True, exist_ok=True)
-        self.logger = SimpleAppLogger(str(LOG_DIR), "instructive_api", logging.INFO).get_logger()
+        self.logger = SimpleAppLogger(
+            str(LOG_DIR), "instructive_api", logging.INFO
+        ).get_logger()
         self.init_db()
 
     def hash_password(self, password: str) -> str:
