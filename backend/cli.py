@@ -49,6 +49,7 @@ class CLApp:
             """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
                 email TEXT NOT NULL UNIQUE,
                 pwd   TEXT NOT NULL
             );
@@ -58,14 +59,14 @@ class CLApp:
         conn.close()
         self.logger.info(f"Database initialized at {DB_PATH}")
 
-    def signup(self, email: str, password: str):
+    def signup(self, name: str, email: str, password: str):
         password = self.hash_password(password)
         conn = self.get_db()
         c = conn.cursor()
         try:
             c.execute(
-                "INSERT INTO users (email, pwd) VALUES (?, ?);",
-                (email.lower(), password),
+                "INSERT INTO users (name, email, pwd) VALUES (?, ?, ?);",
+                (name, email.lower(), password),
             )
             conn.commit()
             self.logger.info(f"User '{email}' created.")
@@ -84,13 +85,14 @@ class CLApp:
             print("=" * 60)
             print("\n")
             try:
+                name = input("Name:\n> ")
                 email = input("Email:\n> ").strip()
                 password = getpass.getpass("Password:\n> ")
                 if not email or not password:
                     input("Email and password required. Press Enter…")
                     continue
 
-                if self.signup(email, password):
+                if self.signup(name, email, password):
                     print(f"User '{email}' created.")
                     input("Press Enter to continue…")
                     break

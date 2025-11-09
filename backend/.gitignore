@@ -5,6 +5,7 @@ tests/
 .venv/
 venv/
 data/
+*.pyc
 
 # Logs
 logs/

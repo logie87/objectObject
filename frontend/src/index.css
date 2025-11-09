@@ -138,6 +138,16 @@ button,input{font:inherit}
 .unit-btn.active{ background:#eef2ff; border-color:#c7d2fe }
 .unit-dot{ width:8px; height:8px; border-radius:999px; background:#6366f1 }
 
+.curric-btn {
+  margin: 1rem;
+  
+}
+
+.curpanel {
+  min-height: 80vh;
+}
+
+
 .logo-img{
   width:36px; height:36px; object-fit:cover;
   box-shadow: var(--shadow-md);

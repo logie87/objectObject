@@ -190,10 +190,10 @@ export default function CurriculumPage() {
         </div>
       )}
 
-      <div className="panel" style={{ padding: 20 }}>
+      <div className="panel curpanel" style={{ padding: 20 }}>
         {/* Filter bar */}
         <div
-          className="card"
+          className="card "
           style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}
         >
           <select
@@ -224,9 +224,10 @@ export default function CurriculumPage() {
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 360px", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 360px", gap: 20, height: '80%'}}>
           {/* Units tree */}
-        <aside className="card" style={{ padding: 12 }}>
+        <aside className="card" style={{ padding: 12, height: '100%' }} >
+
             <div style={{ fontWeight: 700, marginBottom: 10 }}>Units</div>
             <div style={{ display: "grid", gap: 8 }}>
                 {sampleUnits.map((u) => {
@@ -310,7 +311,7 @@ export default function CurriculumPage() {
                   })}
                 </div>
                 <div>
-                  <button className="btn ghost" onClick={() => handleGenerate(row)}>
+                  <button className="btn ghost curric-btn" onClick={() => handleGenerate(row)}>
                     Generate
                   </button>
                 </div>
