@@ -1,15 +1,12 @@
 {
   "subject": "Mathematics",
   "grade_bands": {
-    "K-9": {
-      "source": "BC Math K-9 Classroom Assessment Resource Package",
+    "6-9": {
+      "source": "BC Math 6-9 Classroom Assessment Resource Package",
       "criteria_categories": {
         "questioning_and_investigating": {
           "description": "Curiosity, posing problems and questions.",
           "grades": {
-            "K-1": ["Ask simple math questions; show curiosity."],
-            "2-3": ["Pose simple problems and questions."],
-            "4-5": ["Pose increasingly purposeful mathematical questions."],
             "6-7": ["Pose complex problems in varied contexts."],
             "8-9": ["Pose rich problems and lines of inquiry."]
           }
@@ -17,7 +14,7 @@
         "connecting_and_reflecting": {
           "description": "Connect math ideas, other areas, First Peoples perspectives, and personal interests; reflect on thinking.",
           "grades": {
-            "K-9": [
+            "6-9": [
               "Connect math concepts with other math, other learning, and own interests.",
               "Recognize and connect First Peoples perspectives where relevant.",
               "Reflect on own and others’ mathematical thinking (increasing sophistication by grade)."
@@ -27,12 +24,6 @@
         "reasoning_and_analyzing": {
           "description": "Number/quantity sense, patterning, spatial reasoning, logical thinking.",
           "grades": {
-            "K-3": [
-              "Use reasoning to explore number, patterns, and comparisons."
-            ],
-            "4-5": [
-              "Use fluent, flexible number thinking; explore patterns and spatial relationships."
-            ],
             "6-7": [
               "Use logical reasoning, estimation, and pattern recognition to make decisions."
             ],
@@ -44,12 +35,6 @@
         "understanding_and_solving": {
           "description": "Use tools, representations, and strategies to solve problems.",
           "grades": {
-            "K-3": [
-              "Use concrete materials and simple strategies to explore and solve problems."
-            ],
-            "4-5": [
-              "Use multiple strategies and visual models for contextual problems."
-            ],
             "6-7": [
               "Apply multiple strategies and technologies to real-life and abstract problems."
             ],
@@ -61,12 +46,6 @@
         "communicating_and_representing": {
           "description": "Use math language and representations to explain thinking.",
           "grades": {
-            "K-3": [
-              "Share math thinking with words, objects, and pictures."
-            ],
-            "4-5": [
-              "Use appropriate vocabulary and multiple representations."
-            ],
             "6-7": [
               "Explain and justify math ideas and decisions."
             ],
