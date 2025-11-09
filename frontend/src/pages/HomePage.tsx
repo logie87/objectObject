@@ -58,7 +58,7 @@ export default function HomePage() {
   const [isFirstLogin, setIsFirstLogin] = useState(true);
   const [onboardingInput, setOnboardingInput] = useState("");
   const [conversation, setConversation] = useState([
-    { role: "assistant", text: "Welcome! 👋 We're so excited to have you here. To help us personalize your experience, tell us a bit about yourself as a teacher. What grade level do you teach, and what subjects?" }
+    { role: "assistant", text: `Welcome, ${localStorage.getItem("userName")}! 👋 We're so excited to have you here. To help us personalize your experience, tell us a bit about yourself as a teacher. What grade level do you teach, and what subjects?` }
   ]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
 

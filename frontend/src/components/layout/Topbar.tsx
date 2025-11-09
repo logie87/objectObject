@@ -1,7 +1,7 @@
-import { useNavigate } from "react-router-dom";
+import { useAuth } from '../../context/AuthContext';
 
 export default function Topbar(){
-  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   return (
     // align with the sidebar by reserving a left column equal to the sidebar width (260px)
@@ -39,7 +39,7 @@ export default function Topbar(){
           <button className="btn flat" aria-label="Settings">Settings</button>
           <button
             className="btn flat"
-            onClick={() => navigate("/", { replace: true })}
+            onClick={ logout }
             aria-label="Logout"
           >
             Logout

@@ -1,44 +1,55 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import InstructiveLogo from '../assets/instructive_logo.svg'; 
 
 // --- minimal inline auth (uses your API URL env) ---
-const API_BASE =
-  import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ||
-  'https://refused-football-telling-guarantees.trycloudflare.com';
+// const API_BASE =
+//   import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ||
+//   'https://refused-football-telling-guarantees.trycloudflare.com';
 
-async function sha256Hex(input: string): Promise<string> {
-  const enc = new TextEncoder().encode(input);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
+// async function sha256Hex(input: string): Promise<string> {
+//   const enc = new TextEncoder().encode(input);
+//   const buf = await crypto.subtle.digest('SHA-256', enc);
+//   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+// }
 
-async function doLogin(email: string, password: string) {
-  const passwordHash = await sha256Hex(password);
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password: passwordHash }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = await res.json() as { access_token: string; token_type: string };
-  localStorage.setItem('token', data.access_token);
-  localStorage.setItem('userEmail', email.toLowerCase());
-}
+// async function doLogin(email: string, password: string) {
+//   const passwordHash = await sha256Hex(password);
+//   const res = await fetch(`${API_BASE}/auth/login`, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ email, password: passwordHash }),
+//   });
+//   if (!res.ok) throw new Error(await res.text());
+//   const data = await res.json() as { access_token: string; user_name: string; token_type: string };
+//   localStorage.setItem('authToken', data.access_token);
+//   localStorage.setItem('userName', data.user_name)
+//   localStorage.setItem('userEmail', email.toLowerCase());
+// }
 
 const LoginPage: React.FC = () => {
+  
+  const { isAuthenticated } = useAuth();
+
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const navigate = useNavigate();
-
+  
+  if (isAuthenticated) {
+    navigate('/app/home', { replace: true });
+  }
+  
+  const { login } = useAuth();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
     setBusy(true);
     try {
-      await doLogin(email.trim(), password);
+      await login(email.trim(), password);
       navigate('/app/home', { replace: true });
     } catch (ex: any) {
       setErr(typeof ex?.message === 'string' ? ex.message : 'Login failed');
