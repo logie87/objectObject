@@ -1,7 +1,13 @@
-// src/pages/HomePage.tsx — drop-in replacement using simple redirects to /app/*
-
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiGetBlobUrl } from "../lib/api";
+
+const COLORS = {
+  border: "#e5e7eb",
+  shadow: "0 1px 3px rgba(0,0,0,0.1)",
+  shadowLight: "0 1px 2px rgba(0,0,0,0.05)",
+  cardBg: "#f8fafc",
+  muted: "var(--muted)",
+};
 
 type ReportCategory =
   | "Class Alignment Snapshot — Today’s Fire Map"
@@ -13,7 +19,7 @@ type ReportMeta = {
   title: string;
   filename: string;
   size: number;
-  uploaded_at: string; // ISO
+  uploaded_at: string;
   category: ReportCategory;
   course?: string | null;
   unit?: string | null;
@@ -21,7 +27,6 @@ type ReportMeta = {
 
 type DocMeta = { id: string; size: number; uploaded_at: string; title: string };
 
-// Minimal curriculum DTO for the snapshot pills
 type CurriculumResourceFit = { status: "good" | "warn" | "bad" };
 type CurriculumResource = { fit: CurriculumResourceFit };
 type CurriculumDTO = { courses: Record<string, Record<string, CurriculumResource[]>> };
@@ -50,7 +55,6 @@ function StatusBadge({
 }
 
 const go = (path: string) => {
-  // simplest, robust redirect that works regardless of router issues
   window.location.assign(path);
 };
 
@@ -88,7 +92,6 @@ export default function HomePage() {
     };
   }, []);
 
-  // Compute snapshot from curriculum fits (if any)
   const snapshot = useMemo(() => {
     const counts = { good: 0, warn: 0, bad: 0, total: 0 };
     if (!curriculum) return counts;
@@ -118,7 +121,6 @@ export default function HomePage() {
       const url = await apiGetBlobUrl(`/reports/${r.id}/file`);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch {
-      // Fallback: take user to Reports page
       go("/app/reports");
     }
   }
@@ -126,79 +128,53 @@ export default function HomePage() {
   const latestReport = reports[0];
 
   return (
-    <div>
-      <div className="header">
-        <h1>Welcome</h1>
-        <div className="sub">Quick start • Live data from Library / Students / Reports</div>
-      </div>
-
-      {/* Quick Actions — every button goes to an implemented page */}
+    <div style={{ padding: 24 }}>
       <div
-        className="grid"
-        style={{ gridTemplateColumns: "repeat(3, minmax(240px, 1fr))", marginBottom: 24 }}
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
       >
-        <button
-          className="card"
-          onClick={() => go("/app/curriculum")}
-          style={{ textAlign: "left", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}
-        >
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>Curriculum</div>
-          <div style={{ color: "var(--muted)" }}>
-            Browse units and open resources • alignment badges where available
+        <div>
+          <h1 style={{ fontSize: 28, marginBottom: 4 }}>Welcome</h1>
+          <div style={{ color: COLORS.muted }}>
+            {students.length} students • {reports.length} reports • {docs.length} documents
           </div>
-          <div style={{ marginTop: 10 }}>
-            <span className="badge warn">Resources: {snapshot.total}</span>
-          </div>
-        </button>
-
-        <button
-          className="card"
-          onClick={() => go("/app/students")}
-          style={{ textAlign: "left", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}
-        >
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>Students</div>
-          <div style={{ color: "var(--muted)" }}>
-            Manage IEP data and view/edit student profiles
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <span className="badge good">{students.length} loaded</span>
-          </div>
-        </button>
-
-        <button
-          className="card"
-          onClick={() => go("/app/reports")}
-          style={{ textAlign: "left", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}
-        >
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>Reports</div>
-          <div style={{ color: "var(--muted)" }}>
-            Open generated PDFs by category or recency
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <span className="badge bad">{reports.length} recent</span>
-          </div>
-        </button>
+        </div>
       </div>
 
-      {/* Main split: snapshot + right quick open */}
-      <div className="panel" style={{ padding: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}>
+      <div
+        className="panel"
+        style={{
+          padding: 20,
+          boxShadow: COLORS.shadow,
+          border: `1px solid ${COLORS.border}`,
+        }}
+      >
         <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
           <div className="grid" style={{ gridTemplateColumns: "1fr", gap: 16 }}>
-            {/* Alignment snapshot */}
-            <div className="card" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}>
+            <div
+              className="card"
+              style={{ boxShadow: COLORS.shadow, border: `1px solid ${COLORS.border}` }}
+            >
               <div style={{ fontWeight: 700, marginBottom: 10 }}>Alignment Snapshot</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <StatusBadge label="Good" value={snapPct.good} kind="good" />
                 <StatusBadge label="At-risk" value={snapPct.warn} kind="warn" />
                 <StatusBadge label="Gap" value={snapPct.bad} kind="bad" />
-                <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)" }}>
+                <span style={{ marginLeft: "auto", fontSize: 12, color: COLORS.muted }}>
                   {busy ? "Refreshing…" : `Total resources: ${snapshot.total}`}
                 </span>
               </div>
             </div>
 
-            {/* Recent Reports */}
-            <div className="card" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}>
+            <div
+              className="card"
+              style={{ boxShadow: COLORS.shadow, border: `1px solid ${COLORS.border}` }}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ fontWeight: 700 }}>Recent Reports</div>
                 <button className="btn ghost" onClick={() => go("/app/reports")}>
@@ -207,8 +183,12 @@ export default function HomePage() {
               </div>
 
               {!reports.length && (
-                <div style={{ color: "var(--muted)" }}>
-                  No reports yet. Go to <button className="btn flat" onClick={() => go("/app/reports")}>Reports</button>.
+                <div style={{ color: COLORS.muted }}>
+                  No reports yet. Go to{" "}
+                  <button className="btn flat" onClick={() => go("/app/reports")}>
+                    Reports
+                  </button>
+                  .
                 </div>
               )}
 
@@ -221,7 +201,7 @@ export default function HomePage() {
                     gap: 12,
                     alignItems: "center",
                     padding: "10px 0",
-                    borderTop: i === 0 ? "none" : "1px solid #e5e7eb",
+                    borderTop: i === 0 ? "none" : `1px solid ${COLORS.border}`,
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
@@ -236,7 +216,7 @@ export default function HomePage() {
                     >
                       {r.title}
                     </div>
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                    <div style={{ fontSize: 12, color: COLORS.muted }}>
                       {r.category} {r.course ? `• ${r.course}` : ""} {r.unit ? `• ${r.unit}` : ""} •{" "}
                       {new Date(r.uploaded_at).toLocaleString()}
                     </div>
@@ -251,27 +231,41 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Shortcuts */}
-            <div className="card" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}>
+            <div
+              className="card"
+              style={{ boxShadow: COLORS.shadow, border: `1px solid ${COLORS.border}` }}
+            >
               <div style={{ fontWeight: 700, marginBottom: 10 }}>Shortcuts</div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button className="btn flat" onClick={() => go("/app/library")}>Open Library</button>
-                <button className="btn flat" onClick={() => go("/app/reports")}>View Reports</button>
-                <button className="btn flat" onClick={() => go("/app/students")}>Manage Students</button>
-                <button className="btn flat" onClick={() => go("/app/curriculum")}>Curriculum</button>
+                <button className="btn flat" onClick={() => go("/app/library")}>
+                  Open Library
+                </button>
+                <button className="btn flat" onClick={() => go("/app/reports")}>
+                  View Reports
+                </button>
+                <button className="btn flat" onClick={() => go("/app/students")}>
+                  Manage Students
+                </button>
+                <button className="btn flat" onClick={() => go("/app/curriculum")}>
+                  Curriculum
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Right panel: Most recent report quick-open */}
           <aside
             className="card"
-            style={{ position: "sticky", top: 0, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}
+            style={{
+              position: "sticky",
+              top: 0,
+              boxShadow: COLORS.shadow,
+              border: `1px solid ${COLORS.border}`,
+            }}
           >
             <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 8 }}>
               {latestReport ? "Latest Report" : "Getting Started"}
             </div>
-            <div style={{ color: "var(--muted)", marginBottom: 12 }}>
+            <div style={{ color: COLORS.muted, marginBottom: 12 }}>
               {latestReport
                 ? "Quick access to your most recent alignment output."
                 : "Open Curriculum to browse resources, or Reports to see generated PDFs."}
@@ -280,10 +274,14 @@ export default function HomePage() {
             {latestReport ? (
               <div
                 className="card"
-                style={{ background: "#f8fafc", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e5e7eb" }}
+                style={{
+                  background: COLORS.cardBg,
+                  boxShadow: COLORS.shadowLight,
+                  border: `1px solid ${COLORS.border}`,
+                }}
               >
                 <div style={{ fontWeight: 700 }}>{latestReport.title}</div>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 4 }}>
                   {latestReport.category} {latestReport.course ? `• ${latestReport.course}` : ""}{" "}
                   {latestReport.unit ? `• ${latestReport.unit}` : ""} •{" "}
                   {new Date(latestReport.uploaded_at).toLocaleString()}
@@ -300,10 +298,14 @@ export default function HomePage() {
             ) : (
               <div
                 className="card"
-                style={{ background: "#f8fafc", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e5e7eb" }}
+                style={{
+                  background: COLORS.cardBg,
+                  boxShadow: COLORS.shadowLight,
+                  border: `1px solid ${COLORS.border}`,
+                }}
               >
                 <div style={{ marginBottom: 8, fontWeight: 700 }}>No recent reports</div>
-                <div style={{ fontSize: 14, color: "var(--muted)" }}>
+                <div style={{ fontSize: 14, color: COLORS.muted }}>
                   Go to Reports or Curriculum to get started.
                 </div>
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
@@ -317,10 +319,18 @@ export default function HomePage() {
               </div>
             )}
 
-            <div className="card" style={{ marginTop: 12, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e5e7eb" }}>
+            <div
+              className="card"
+              style={{
+                marginTop: 12,
+                boxShadow: COLORS.shadowLight,
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
               <div style={{ fontWeight: 700, marginBottom: 6 }}>Library Status</div>
-              <div style={{ fontSize: 14, color: "var(--muted)" }}>
-                {docs.length} PDFs in Library • {docs.length ? new Date(docs[0].uploaded_at).toLocaleDateString() : "—"}
+              <div style={{ fontSize: 14, color: COLORS.muted }}>
+                {docs.length} PDFs in Library •{" "}
+                {docs.length ? new Date(docs[0].uploaded_at).toLocaleDateString() : "—"}
               </div>
             </div>
           </aside>
