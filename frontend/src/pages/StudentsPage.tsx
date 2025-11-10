@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react"; 
-import { apiGet, apiPut } from "../lib/api";
 
 const COLORS = {
   readingBadgeBg: "rgba(251, 191, 191, 0.15)",
@@ -47,6 +46,54 @@ type Resource = {
 
 type Curriculum = {
   courses: Record<string, Record<string, Resource[]>>;
+};
+
+// Mock data
+const mockStudents: StudentSummary[] = [
+  {
+    id: "1",
+    name: "Emma Thompson",
+    grade: "5",
+    teacher: "Ms. Johnson",
+    alignment_pct: 85,
+    badges: ["Reading", "Time Management"],
+  },
+  {
+    id: "2",
+    name: "Liam Chen",
+    grade: "4",
+    teacher: "Mr. Davis",
+    alignment_pct: 72,
+    badges: ["Alternate Response"],
+  },
+  {
+    id: "3",
+    name: "Sophia Martinez",
+    grade: "6",
+    teacher: "Mrs. Williams",
+    alignment_pct: 93,
+    badges: ["Reading", "Alternate Response"],
+  },
+];
+
+const mockCurriculum: Curriculum = {
+  courses: {
+    "Mathematics": {
+      "Unit 1: Numbers": [],
+      "Unit 2: Algebra": [],
+      "Unit 3: Geometry": [],
+    },
+    "Science": {
+      "Unit 1: Biology": [],
+      "Unit 2: Chemistry": [],
+      "Unit 3: Physics": [],
+    },
+    "English": {
+      "Unit 1: Grammar": [],
+      "Unit 2: Literature": [],
+      "Unit 3: Writing": [],
+    },
+  },
 };
 
 // Reusable Autocomplete multi-select input
@@ -431,10 +478,10 @@ export default function StudentsPage() {
   async function load() {
     setBusy(true);
     try {
-      const list = await apiGet<StudentSummary[]>("/students");
-      setAll(list);
-      const curriculumData = await apiGet<Curriculum>("/curriculum");
-      setCurriculum(curriculumData);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setAll(mockStudents);
+      setCurriculum(mockCurriculum);
     } finally {
       setBusy(false);
     }
@@ -764,6 +811,30 @@ export default function StudentsPage() {
               </div>
             )}
 
+            {isGenerating && (
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(236, 72, 153, 0.1))",
+                  border: `1px solid ${COLORS.altRespBg}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Spinner size={24} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: COLORS.mainText, marginBottom: 4 }}>
+                    Generating your report...
+                  </div>
+                  <div style={{ fontSize: 13, color: COLORS.mutedText }}>
+                    This will take a few minutes. Feel free to continue working.
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
               <button
                 onClick={() => setShowModal(false)}
@@ -777,6 +848,7 @@ export default function StudentsPage() {
                   color: COLORS.mainText,
                   fontWeight: 600,
                   cursor: "pointer",
+                  opacity: isGenerating ? 0.5 : 1,
                 }}
               >
                 Cancel
@@ -796,6 +868,7 @@ export default function StudentsPage() {
                   border: "none",
                   cursor: "pointer",
                   boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                  opacity: isGenerating || !selectedStudents.length || !selectedCourses.length || !selectedUnits.length ? 0.5 : 1,
                 }}
               >
                 {isGenerating ? "Generating..." : "Generate"}
