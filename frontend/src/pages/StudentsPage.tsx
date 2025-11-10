@@ -1,3 +1,7 @@
+// studentspage.tsx
+// adds dark mode support by reading `<html data-theme="dark">` or the `dark` class
+// listens for theme changes via mutationobserver, matchmedia, and storage events
+
 import React, { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../lib/api";
 
@@ -51,13 +55,110 @@ type Curriculum = {
   courses: Record<string, Record<string, Resource[]>>;
 };
 
-// Reusable Autocomplete multi-select input
+// theme palettes (light + dark)
+const THEME_COLORS = {
+  light: {
+    readingBadgeBg: "rgba(226, 255, 129, 0.45)",
+    readingBadgeText: "#3A3A5C",
+    timeBadgeBg: "rgba(208, 255, 179, 0.45)",
+    timeBadgeText: "#3A3A5C",
+    altRespBg: "rgba(97, 255, 163, 0.20)",
+    altRespText: "#3A3A5C",
+    pieGradientStart: "#34d399",
+    pieGradientEnd: "#22c55e",
+    pieEmpty: "#e5e7eb",
+    buttonGradientStart: "#08debb",
+    buttonGradientEnd: "#35598f",
+    spinnerTrack: "#e5e7eb",
+    spinnerArc: "#ec4899",
+    cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
+    mutedText: "#6b7280",
+    mainText: "#374151",
+    avatarBg: "#f2f3f6ff",
+    border: "#e5e7eb",
+    surface: "#ffffff",
+    hoverSurface: "#f9fafb",
+    overlayBg: "rgba(0,0,0,.45)",
+    modalShadow: "0 20px 60px rgba(0,0,0,.25)",
+  },
+  dark: {
+    readingBadgeBg: "rgba(226, 255, 129, 0.18)",
+    readingBadgeText: "#e5e7eb",
+    timeBadgeBg: "rgba(208, 255, 179, 0.18)",
+    timeBadgeText: "#e5e7eb",
+    altRespBg: "rgba(97, 255, 163, 0.12)",
+    altRespText: "#e5e7eb",
+    pieGradientStart: "#34d399",
+    pieGradientEnd: "#22c55e",
+    pieEmpty: "#374151",
+    buttonGradientStart: "#08debb",
+    buttonGradientEnd: "#35598f",
+    spinnerTrack: "#374151",
+    spinnerArc: "#ec4899",
+    cardShadow: "0 6px 24px rgba(0,0,0,0.35)",
+    mutedText: "#9ca3af",
+    mainText: "#e5e7eb",
+    avatarBg: "#0f172a",
+    border: "#334155",
+    surface: "#0b1324",
+    hoverSurface: "#111827",
+    overlayBg: "rgba(0,0,0,.55)",
+    modalShadow: "0 24px 80px rgba(0,0,0,.55)",
+  },
+};
+
+// small hook to detect whether current app theme is dark
+function useIsDark(): boolean {
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document === "undefined") return false;
+    const root = document.documentElement;
+    const attr = root.getAttribute("data-theme");
+    if (attr === "dark") return true;
+    if (attr === "light") return false;
+    return root.classList.contains("dark");
+  });
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const root = document.documentElement;
+    const get = () =>
+      root.getAttribute("data-theme") === "dark" ||
+      root.classList.contains("dark");
+
+    const obs = new MutationObserver(() => setIsDark(get()));
+    obs.observe(root, { attributes: true, attributeFilter: ["data-theme", "class"] });
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== "theme") return;
+      setIsDark(get());
+    };
+    window.addEventListener("storage", onStorage);
+
+    const mql = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const onMql = () => setIsDark(get());
+    mql?.addEventListener?.("change", onMql);
+
+    // ensure correct after mount
+    setIsDark(get());
+
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("storage", onStorage);
+      mql?.removeEventListener?.("change", onMql);
+    };
+  }, []);
+
+  return isDark;
+}
+
+// reusable autocomplete multi-select input
 const AutocompleteMulti: React.FC<{
   label: string;
   options: { value: string; label: string }[];
   selected: string[];
   onChange: (v: string[]) => void;
-  COLORS: typeof COLORS;
+  COLORS: typeof THEME_COLORS.light;
   onEnter?: () => void;
   inputRef?: React.RefObject<HTMLInputElement>;
 }> = ({ label, options, selected, onChange, COLORS, onEnter, inputRef }) => {
@@ -75,7 +176,7 @@ const AutocompleteMulti: React.FC<{
         <input
           ref={inputRef}
           type="text"
-          placeholder={`Type to search ${label.toLowerCase()}…`}
+          placeholder={`type to search ${label.toLowerCase()}…`}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
@@ -98,6 +199,8 @@ const AutocompleteMulti: React.FC<{
             padding: "10px 12px",
             borderRadius: 8,
             border: `1px solid ${COLORS.border}`,
+            background: COLORS.surface,
+            color: COLORS.mainText,
           }}
         />
         {q && (
@@ -107,7 +210,7 @@ const AutocompleteMulti: React.FC<{
               top: "100%",
               left: 0,
               right: 0,
-              background: "#fff",
+              background: COLORS.surface,
               border: `1px solid ${COLORS.border}`,
               borderRadius: 8,
               boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
@@ -130,6 +233,13 @@ const AutocompleteMulti: React.FC<{
                     padding: "8px 12px",
                     cursor: "pointer",
                     borderBottom: `1px solid ${COLORS.border}`,
+                    color: COLORS.mainText,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = COLORS.hoverSurface;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
                   {o.label}
@@ -137,7 +247,7 @@ const AutocompleteMulti: React.FC<{
               ))
             ) : (
               <div style={{ padding: "8px 12px", color: COLORS.mutedText }}>
-                No match
+                no match
               </div>
             )}
           </div>
@@ -179,8 +289,8 @@ const AutocompleteMulti: React.FC<{
   );
 };
 
-// Badge
-const Badge: React.FC<{ kind: string }> = ({ kind }) => {
+// badge
+const Badge: React.FC<{ kind: string; COLORS: typeof THEME_COLORS.light }> = ({ kind, COLORS }) => {
   let bg = COLORS.timeBadgeBg,
     fg = COLORS.timeBadgeText;
   if (kind === "Reading") {
@@ -210,12 +320,115 @@ const Badge: React.FC<{ kind: string }> = ({ kind }) => {
   );
 };
 
-// Student Card
+// spinner
+const Spinner: React.FC<{ size?: number; COLORS: typeof THEME_COLORS.light }> = ({
+  size = 40,
+  COLORS,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 50 50"
+    aria-hidden
+    role="img"
+    style={{ display: "block" }}
+  >
+    <circle
+      cx="25"
+      cy="25"
+      r="20"
+      fill="none"
+      stroke={COLORS.spinnerTrack}
+      strokeWidth="6"
+      strokeLinecap="round"
+    />
+    <path
+      d="M25 5 a20 20 0 0 1 0 40"
+      fill="none"
+      stroke={COLORS.spinnerArc}
+      strokeWidth="6"
+      strokeLinecap="round"
+    >
+      <animateTransform
+        attributeName="transform"
+        type="rotate"
+        from="0 25 25"
+        to="360 25 25"
+        dur="0.9s"
+        repeatCount="indefinite"
+      />
+    </path>
+  </svg>
+);
+
+// input/textarea field
+const Field: React.FC<{
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  textarea?: boolean;
+  COLORS: typeof THEME_COLORS.light;
+}> = ({ label, value, onChange, textarea, COLORS }) => (
+  <label style={{ display: "grid", gap: 6 }}>
+    <span style={{ fontSize: 12, color: COLORS.mutedText }}>{label}</span>
+    {textarea ? (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={4}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 10,
+          border: `1px solid ${COLORS.border}`,
+          resize: "vertical",
+          background: COLORS.surface,
+          color: COLORS.mainText,
+        }}
+      />
+    ) : (
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 10,
+          border: `1px solid ${COLORS.border}`,
+          background: COLORS.surface,
+          color: COLORS.mainText,
+        }}
+      />
+    )}
+  </label>
+);
+
+// section card
+const SectionCard: React.FC<{ title: string; children: React.ReactNode; COLORS: typeof THEME_COLORS.light }> = ({
+  title,
+  children,
+  COLORS,
+}) => (
+  <div
+    style={{
+      padding: 16,
+      borderRadius: 14,
+      border: `1px solid ${COLORS.border}`,
+      background: COLORS.surface,
+      display: "grid",
+      gap: 12,
+    }}
+  >
+    <div style={{ fontWeight: 800, color: COLORS.mainText }}>{title}</div>
+    {children}
+  </div>
+);
+
+// student card
 const StudentCard: React.FC<{
   s: StudentSummary;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
-}> = ({ s, onView }) => {
+  COLORS: typeof THEME_COLORS.light;
+}> = ({ s, onView, COLORS }) => {
   const pct =
     typeof s.alignment_pct === "number"
       ? Math.max(0, Math.min(100, s.alignment_pct))
@@ -298,13 +511,14 @@ const StudentCard: React.FC<{
               width: 40,
               height: 40,
               borderRadius: "50%",
-              background: "#fff",
+              background: COLORS.surface,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 700,
               fontSize: 13,
               color: COLORS.mainText,
+              border: `1px solid ${COLORS.border}`,
             }}
           >
             {pct != null ? `${pct}%` : "—"}
@@ -314,7 +528,7 @@ const StudentCard: React.FC<{
       {!!s.badges?.length && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {s.badges.map((b) => (
-            <Badge key={b} kind={b} />
+            <Badge key={b} kind={b} COLORS={COLORS} />
           ))}
         </div>
       )}
@@ -324,15 +538,15 @@ const StudentCard: React.FC<{
             flex: 1,
             padding: "10px 0",
             borderRadius: 12,
-            border: "none",
-            background: "#e5e7eb",
-            color: "#374151",
+            border: `1px solid ${COLORS.border}`,
+            background: "transparent",
+            color: COLORS.mainText,
             fontWeight: 650,
             cursor: "pointer",
           }}
           onClick={() => onView(s.id)}
         >
-          Open
+          open
         </button>
         <button
           style={{
@@ -346,119 +560,33 @@ const StudentCard: React.FC<{
             cursor: "pointer",
           }}
           onClick={() =>
-            alert("Reports: quick-generate/view for this student (coming soon)")
+            alert("reports: quick-generate/view for this student (coming soon)")
           }
         >
-          Reports
+          reports
         </button>
       </div>
     </div>
   );
 };
 
-const Spinner: React.FC<{ size?: number }> = ({ size = 40 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 50 50"
-    aria-hidden
-    role="img"
-    style={{ display: "block" }}
-  >
-    <circle
-      cx="25"
-      cy="25"
-      r="20"
-      fill="none"
-      stroke="#e5e7eb"
-      strokeWidth="6"
-      strokeLinecap="round"
-    />
-    <path
-      d="M25 5 a20 20 0 0 1 0 40"
-      fill="none"
-      stroke="#ec4899"
-      strokeWidth="6"
-      strokeLinecap="round"
-    >
-      <animateTransform
-        attributeName="transform"
-        type="rotate"
-        from="0 25 25"
-        to="360 25 25"
-        dur="0.9s"
-        repeatCount="indefinite"
-      />
-    </path>
-  </svg>
-);
-
-const Field: React.FC<{
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  textarea?: boolean;
-}> = ({ label, value, onChange, textarea }) => (
-  <label style={{ display: "grid", gap: 6 }}>
-    <span style={{ fontSize: 12, color: COLORS.mutedText }}>{label}</span>
-    {textarea ? (
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={4}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 10,
-          border: `1px solid ${COLORS.border}`,
-          resize: "vertical",
-        }}
-      />
-    ) : (
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 10,
-          border: `1px solid ${COLORS.border}`,
-        }}
-      />
-    )}
-  </label>
-);
-
-const SectionCard: React.FC<{ title: string; children: React.ReactNode }> = ({
-  title,
-  children,
-}) => (
-  <div
-    style={{
-      padding: 16,
-      borderRadius: 14,
-      border: `1px solid ${COLORS.border}`,
-      background: "#fff",
-      display: "grid",
-      gap: 12,
-    }}
-  >
-    <div style={{ fontWeight: 800, color: COLORS.mainText }}>{title}</div>
-    {children}
-  </div>
-);
-
 export default function StudentsPage() {
+  const isDark = useIsDark();
+  const COLORS = useMemo(
+    () => (isDark ? THEME_COLORS.dark : THEME_COLORS.light),
+    [isDark]
+  );
+
   const [all, setAll] = useState<StudentSummary[]>([]);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Profile modal
+  // profile modal
   const [modalOpen, setModalOpen] = useState(false);
   const [active, setActive] = useState<StudentFull | null>(null);
-  const [tab, setTab] = useState<
-    "profile" | "goals" | "accom" | "notes" | "people"
-  >("profile");
+  const [tab, setTab] = useState<"profile" | "goals" | "accom" | "notes" | "people">("profile");
 
-  // Generate Report modal
+  // generate report modal
   const [showModal, setShowModal] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -525,7 +653,7 @@ export default function StudentsPage() {
     setTimeout(() => {
       setIsGenerating(false);
       setShowModal(false);
-      alert("Report generation complete! Your report is ready.");
+      alert("report generation complete! your report is ready.");
     }, 3000);
   };
 
@@ -547,8 +675,8 @@ export default function StudentsPage() {
       setTab("profile");
       setModalOpen(true);
     } catch (err) {
-      console.error("Failed to load student", err);
-      alert("Unable to load student profile.");
+      console.error("failed to load student", err);
+      alert("unable to load student profile.");
     }
   }
 
@@ -639,21 +767,23 @@ export default function StudentsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 28, marginBottom: 4 }}>Students</h1>
+          <h1 style={{ fontSize: 28, marginBottom: 4, color: COLORS.mainText }}>students</h1>
           <div style={{ color: COLORS.mutedText }}>
-            Manage profiles and IEP details
+            manage profiles and iep details
           </div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search students…"
+            placeholder="search students…"
             style={{
               padding: "8px 12px",
               borderRadius: 10,
               border: `1px solid ${COLORS.border}`,
               minWidth: 220,
+              background: COLORS.surface,
+              color: COLORS.mainText,
             }}
           />
           <button
@@ -662,14 +792,15 @@ export default function StudentsPage() {
             style={{
               padding: "10px 16px",
               borderRadius: 10,
-              border: "2px solid #3DAFBC", // blue border
-              background: "transparent",   // no fill
-              color: "#3DAFBC",            // same blue for text
+              border: `1px solid ${COLORS.buttonGradientEnd}`,
+              background: "transparent",
+              color: COLORS.buttonGradientEnd,
               cursor: "pointer",
               fontWeight: 600,
+              opacity: busy ? 0.7 : 1,
             }}
           >
-            {busy ? "Refreshing…" : "Refresh"}
+            {busy ? "refreshing…" : "refresh"}
           </button>
           <button
             onClick={() => setShowModal(true)}
@@ -678,12 +809,12 @@ export default function StudentsPage() {
               borderRadius: 10,
               border: "none",
               cursor: "pointer",
-              background: "linear-gradient(135deg, #08debb, #35598f)",
-              color: COLORS.surface,
+              background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+              color: THEME_COLORS.light.surface,
               fontWeight: 650,
             }}
           >
-            Generate
+            generate
           </button>
         </div>
       </div>
@@ -696,7 +827,7 @@ export default function StudentsPage() {
         }}
       >
         {filtered.map((s) => (
-          <StudentCard key={s.id} s={s} onView={openView} onEdit={openEdit} />
+          <StudentCard key={s.id} s={s} onView={openView} onEdit={openEdit} COLORS={COLORS} />
         ))}
       </div>
 
@@ -706,7 +837,7 @@ export default function StudentsPage() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,.45)",
+            background: COLORS.overlayBg,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -718,12 +849,13 @@ export default function StudentsPage() {
             style={{
               width: "min(100%, 500px)",
               padding: 24,
-              background: "#fff",
+              background: COLORS.surface,
               borderRadius: 16,
-              boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+              boxShadow: COLORS.modalShadow,
               display: "flex",
               flexDirection: "column",
               gap: 18,
+              border: `1px solid ${COLORS.border}`,
             }}
           >
             <h3
@@ -733,11 +865,11 @@ export default function StudentsPage() {
                 color: COLORS.mainText,
               }}
             >
-              Generate Report
+              generate report
             </h3>
 
             <AutocompleteMulti
-              label="Select Students"
+              label="select students"
               options={all.map((s) => ({ value: s.id, label: s.name }))}
               selected={selectedStudents}
               onChange={setSelectedStudents}
@@ -745,7 +877,7 @@ export default function StudentsPage() {
             />
 
             <AutocompleteMulti
-              label="Select Courses"
+              label="select courses"
               options={courses.map((c) => ({ value: c, label: c }))}
               selected={selectedCourses}
               onChange={setSelectedCourses}
@@ -767,7 +899,7 @@ export default function StudentsPage() {
                     color: COLORS.mainText,
                   }}
                 >
-                  Select Units
+                  select units
                 </label>
                 <div style={{ position: "relative" }}>
                   <button
@@ -781,7 +913,7 @@ export default function StudentsPage() {
                       padding: "10px 12px",
                       borderRadius: 8,
                       border: `1px solid ${COLORS.border}`,
-                      backgroundColor: "#fff",
+                      backgroundColor: COLORS.surface,
                       color: COLORS.mainText,
                       textAlign: "left",
                       cursor: "pointer",
@@ -792,12 +924,8 @@ export default function StudentsPage() {
                   >
                     <span>
                       {selectedUnits.length === 0
-                        ? "Select units..."
-                        : `${selectedUnits.length} unit${
-                            selectedUnits.length !== 1
-                              ? "s"
-                              : ""
-                          } selected`}
+                        ? "select units..."
+                        : `${selectedUnits.length} unit${selectedUnits.length !== 1 ? "s" : ""} selected`}
                     </span>
                     <svg
                       width="16"
@@ -805,9 +933,7 @@ export default function StudentsPage() {
                       viewBox="0 0 16 16"
                       fill="none"
                       style={{
-                        transform: unitsDropdownOpen
-                          ? "rotate(180deg)"
-                          : "rotate(0deg)",
+                        transform: unitsDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
                         transition: "transform 0.2s ease",
                       }}
                     >
@@ -830,63 +956,45 @@ export default function StudentsPage() {
                         marginTop: 4,
                         border: `1px solid ${COLORS.border}`,
                         borderRadius: 8,
-                        backgroundColor: "#fff",
+                        backgroundColor: COLORS.surface,
                         maxHeight: 200,
                         overflowY: "auto",
                         zIndex: 100,
-                        boxShadow:
-                          "0 4px 12px rgba(0,0,0,0.1)",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
                     >
                       {units.map((u) => {
-                        const isSelected =
-                          selectedUnits.includes(u);
+                        const isSelected = selectedUnits.includes(u);
                         return (
                           <div
                             key={u}
                             onClick={() => {
                               if (isSelected) {
-                                setSelectedUnits(
-                                  selectedUnits.filter(
-                                    (unit) => unit !== u
-                                  )
-                                );
+                                setSelectedUnits(selectedUnits.filter((unit) => unit !== u));
                               } else {
-                                setSelectedUnits([
-                                  ...selectedUnits,
-                                  u,
-                                ]);
+                                setSelectedUnits([...selectedUnits, u]);
                               }
                             }}
                             style={{
                               padding: "10px 12px",
                               cursor: "pointer",
                               borderBottom: `1px solid ${COLORS.border}`,
-                              backgroundColor: isSelected
-                                ? COLORS.altRespBg
-                                : "transparent",
-                              color: isSelected
-                                ? COLORS.altRespText
-                                : COLORS.mainText,
-                              fontWeight: isSelected
-                                ? 600
-                                : 400,
+                              backgroundColor: isSelected ? COLORS.altRespBg : "transparent",
+                              color: isSelected ? COLORS.altRespText : COLORS.mainText,
+                              fontWeight: isSelected ? 600 : 400,
                               display: "flex",
                               alignItems: "center",
                               gap: 10,
-                              transition:
-                                "all 0.15s ease",
+                              transition: "all 0.15s ease",
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.backgroundColor =
-                                  "#f9fafb";
+                                e.currentTarget.style.backgroundColor = COLORS.hoverSurface;
                               }
                             }}
                             onMouseLeave={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.backgroundColor =
-                                  "transparent";
+                                e.currentTarget.style.backgroundColor = "transparent";
                               }
                             }}
                           >
@@ -895,14 +1003,8 @@ export default function StudentsPage() {
                                 width: 18,
                                 height: 18,
                                 borderRadius: 4,
-                                border: `2px solid ${
-                                  isSelected
-                                    ? COLORS.altRespText
-                                    : COLORS.border
-                                }`,
-                                backgroundColor: isSelected
-                                  ? COLORS.altRespText
-                                  : "transparent",
+                                border: `2px solid ${isSelected ? COLORS.altRespText : COLORS.border}`,
+                                backgroundColor: isSelected ? COLORS.altRespText : "transparent",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -910,12 +1012,7 @@ export default function StudentsPage() {
                               }}
                             >
                               {isSelected && (
-                                <svg
-                                  width="12"
-                                  height="12"
-                                  viewBox="0 0 12 12"
-                                  fill="none"
-                                >
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                                   <path
                                     d="M2 6L5 9L10 3"
                                     stroke="white"
@@ -960,11 +1057,7 @@ export default function StudentsPage() {
                         {u}
                         <span
                           onClick={() =>
-                            setSelectedUnits(
-                              selectedUnits.filter(
-                                (unit) => unit !== u
-                              )
-                            )
+                            setSelectedUnits(selectedUnits.filter((unit) => unit !== u))
                           }
                           style={{
                             marginLeft: 8,
@@ -982,7 +1075,7 @@ export default function StudentsPage() {
               </div>
             )}
 
-            {/* Generating status block (from team version) */}
+            {/* generating status block */}
             {isGenerating && (
               <div
                 style={{
@@ -996,7 +1089,7 @@ export default function StudentsPage() {
                   gap: 12,
                 }}
               >
-                <Spinner size={24} />
+                <Spinner size={24} COLORS={COLORS} />
                 <div style={{ flex: 1 }}>
                   <div
                     style={{
@@ -1005,7 +1098,7 @@ export default function StudentsPage() {
                       marginBottom: 4,
                     }}
                   >
-                    Generating your report...
+                    generating your report...
                   </div>
                   <div
                     style={{
@@ -1013,8 +1106,7 @@ export default function StudentsPage() {
                       color: COLORS.mutedText,
                     }}
                   >
-                    This will take a few minutes. Feel free to
-                    continue working.
+                    this will take a few minutes. feel free to continue working.
                   </div>
                 </div>
               </div>
@@ -1035,16 +1127,14 @@ export default function StudentsPage() {
                   padding: "12px 0",
                   borderRadius: 12,
                   border: `1px solid ${COLORS.border}`,
-                  background: "#fff",
+                  background: "transparent",
                   color: COLORS.mainText,
                   fontWeight: 600,
-                  cursor: isGenerating
-                    ? "default"
-                    : "pointer",
+                  cursor: isGenerating ? "default" : "pointer",
                   opacity: isGenerating ? 0.5 : 1,
                 }}
               >
-                Cancel
+                cancel
               </button>
               <button
                 onClick={handleGenerate}
@@ -1057,31 +1147,26 @@ export default function StudentsPage() {
                   color: "white",
                   fontWeight: 600,
                   border: "none",
-                  cursor: generateDisabled
-                    ? "default"
-                    : "pointer",
-                  boxShadow:
-                    "0 4px 8px rgba(0,0,0,0.1)",
+                  cursor: generateDisabled ? "default" : "pointer",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                   opacity: generateDisabled ? 0.5 : 1,
                 }}
               >
-                {isGenerating
-                  ? "Generating..."
-                  : "Generate"}
+                {isGenerating ? "generating..." : "generate"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Full Student Profile Modal */}
+      {/* full student profile modal */}
       {modalOpen && active && (
         <div
           onClick={() => setModalOpen(false)}
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,.45)",
+            background: COLORS.overlayBg,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1095,17 +1180,19 @@ export default function StudentsPage() {
               height: "82vh",
               display: "flex",
               flexDirection: "column",
-              background: "#fff",
+              background: COLORS.surface,
               borderRadius: 16,
-              boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+              boxShadow: COLORS.modalShadow,
+              border: `1px solid ${COLORS.border}`,
             }}
           >
-            {/* Header */}
+            {/* header */}
             <div
               style={{
                 padding: 18,
                 borderBottom: `1px solid ${COLORS.border}`,
                 flex: "0 0 auto",
+                background: "transparent",
               }}
             >
               <div
@@ -1124,8 +1211,7 @@ export default function StudentsPage() {
                       color: COLORS.mainText,
                     }}
                   >
-                    {active.data?.student?.student_name ||
-                      active.id}
+                    {active.data?.student?.student_name || active.id}
                   </div>
                   <div
                     style={{
@@ -1134,10 +1220,9 @@ export default function StudentsPage() {
                     }}
                   >
                     {active.data?.student?.grade
-                      ? `Grade ${active.data.student.grade}`
+                      ? `grade ${active.data.student.grade}`
                       : "—"}
-                    {active.data?.student?.teacher &&
-                      ` • ${active.data.student.teacher}`}
+                    {active.data?.student?.teacher && ` • ${active.data.student.teacher}`}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -1147,11 +1232,12 @@ export default function StudentsPage() {
                       padding: "10px 14px",
                       borderRadius: 10,
                       border: `1px solid ${COLORS.border}`,
-                      background: "#fff",
+                      background: "transparent",
+                      color: COLORS.mainText,
                       cursor: "pointer",
                     }}
                   >
-                    Close
+                    close
                   </button>
                   <button
                     onClick={saveActive}
@@ -1165,12 +1251,12 @@ export default function StudentsPage() {
                       fontWeight: 800,
                     }}
                   >
-                    Save
+                    save
                   </button>
                 </div>
               </div>
 
-              {/* Tabs */}
+              {/* tabs */}
               <div
                 style={{
                   display: "flex",
@@ -1179,52 +1265,42 @@ export default function StudentsPage() {
                   flexWrap: "wrap",
                 }}
               >
-                {["profile", "goals", "accom", "notes", "people"].map(
-                  (t) => (
-                    <button
-                      key={t}
-                      onClick={() => setTab(t as any)}
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: 999,
-                        border: `1px solid ${
-                          tab === t
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.border
-                        }`,
-                        background:
-                          tab === t
-                            ? "rgba(236,72,153,.08)"
-                            : "#fff",
-                        color:
-                          tab === t
-                            ? COLORS.buttonGradientEnd
-                            : COLORS.mainText,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {t === "profile"
-                        ? "Profile"
-                        : t === "goals"
-                        ? "IEP Goals"
-                        : t === "accom"
-                        ? "Accommodations"
-                        : t === "notes"
-                        ? "Notes & Assessments"
-                        : "Participants"}
-                    </button>
-                  )
-                )}
+                {["profile", "goals", "accom", "notes", "people"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t as any)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 999,
+                      border: `1px solid ${tab === t ? COLORS.buttonGradientEnd : COLORS.border}`,
+                      background: tab === t ? "rgba(236,72,153,.08)" : "transparent",
+                      color: tab === t ? COLORS.buttonGradientEnd : COLORS.mainText,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t === "profile"
+                      ? "profile"
+                      : t === "goals"
+                      ? "iep goals"
+                      : t === "accom"
+                      ? "accommodations"
+                      : t === "notes"
+                      ? "notes & assessments"
+                      : "participants"}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Scrollable content */}
+            {/* scrollable content */}
             <div
               style={{
                 padding: 18,
                 overflow: "auto",
                 flex: "1 1 auto",
+                background: "transparent",
+                color: COLORS.mainText,
               }}
             >
               {tab === "profile" && (
@@ -1235,18 +1311,12 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="Student">
+                  <SectionCard title="student" COLORS={COLORS}>
                     <Field
-                      label="Name"
-                      value={
-                        active.data.student?.student_name || ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["student", "student_name"],
-                          v
-                        )
-                      }
+                      label="name"
+                      value={active.data.student?.student_name || ""}
+                      onChange={(v) => mutateActive(["student", "student_name"], v)}
+                      COLORS={COLORS}
                     />
                     <div
                       style={{
@@ -1256,26 +1326,16 @@ export default function StudentsPage() {
                       }}
                     >
                       <Field
-                        label="Grade"
-                        value={
-                          active.data.student?.grade || ""
-                        }
-                        onChange={(v) =>
-                          mutateActive(["student", "grade"], v)
-                        }
+                        label="grade"
+                        value={active.data.student?.grade || ""}
+                        onChange={(v) => mutateActive(["student", "grade"], v)}
+                        COLORS={COLORS}
                       />
                       <Field
-                        label="Date of Birth (DD/MM/YYYY)"
-                        value={
-                          active.data.student?.date_of_birth ||
-                          ""
-                        }
-                        onChange={(v) =>
-                          mutateActive(
-                            ["student", "date_of_birth"],
-                            v
-                          )
-                        }
+                        label="date of birth (dd/mm/yyyy)"
+                        value={active.data.student?.date_of_birth || ""}
+                        onChange={(v) => mutateActive(["student", "date_of_birth"], v)}
+                        COLORS={COLORS}
                       />
                     </div>
                     <div
@@ -1286,28 +1346,16 @@ export default function StudentsPage() {
                       }}
                     >
                       <Field
-                        label="Teacher"
-                        value={
-                          active.data.student?.teacher || ""
-                        }
-                        onChange={(v) =>
-                          mutateActive(
-                            ["student", "teacher"],
-                            v
-                          )
-                        }
+                        label="teacher"
+                        value={active.data.student?.teacher || ""}
+                        onChange={(v) => mutateActive(["student", "teacher"], v)}
+                        COLORS={COLORS}
                       />
                       <Field
-                        label="School"
-                        value={
-                          active.data.student?.school || ""
-                        }
-                        onChange={(v) =>
-                          mutateActive(
-                            ["student", "school"],
-                            v
-                          )
-                        }
+                        label="school"
+                        value={active.data.student?.school || ""}
+                        onChange={(v) => mutateActive(["student", "school"], v)}
+                        COLORS={COLORS}
                       />
                     </div>
                     <div
@@ -1318,79 +1366,47 @@ export default function StudentsPage() {
                       }}
                     >
                       <Field
-                        label="PEN"
-                        value={
-                          active.data.student?.pen || ""
-                        }
-                        onChange={(v) =>
-                          mutateActive(["student", "pen"], v)
-                        }
+                        label="pen"
+                        value={active.data.student?.pen || ""}
+                        onChange={(v) => mutateActive(["student", "pen"], v)}
+                        COLORS={COLORS}
                       />
                       <Field
-                        label="IEP Date (DD/MM/YYYY)"
-                        value={
-                          active.data.student?.iep_date || ""
-                        }
-                        onChange={(v) =>
-                          mutateActive(
-                            ["student", "iep_date"],
-                            v
-                          )
-                        }
+                        label="iep date (dd/mm/yyyy)"
+                        value={active.data.student?.iep_date || ""}
+                        onChange={(v) => mutateActive(["student", "iep_date"], v)}
+                        COLORS={COLORS}
                       />
                     </div>
                     <Field
-                      label="Designation"
-                      value={
-                        active.data.student?.designation ||
-                        ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["student", "designation"],
-                          v
-                        )
-                      }
+                      label="designation"
+                      value={active.data.student?.designation || ""}
+                      onChange={(v) => mutateActive(["student", "designation"], v)}
+                      COLORS={COLORS}
                     />
                     <Field
-                      label="Alignment % (optional)"
+                      label="alignment % (optional)"
                       value={
                         active.data.alignment_pct != null
-                          ? String(
-                              active.data.alignment_pct
-                            )
+                          ? String(active.data.alignment_pct)
                           : ""
                       }
                       onChange={(v) => {
                         const trimmed = v.trim();
-                        const num =
-                          trimmed === ""
-                            ? null
-                            : Number(trimmed);
-                        mutateActive(
-                          ["alignment_pct"],
-                          Number.isNaN(num)
-                            ? null
-                            : num
-                        );
+                        const num = trimmed === "" ? null : Number(trimmed);
+                        mutateActive(["alignment_pct"], Number.isNaN(num) ? null : num);
                       }}
+                      COLORS={COLORS}
                     />
                   </SectionCard>
 
-                  <SectionCard title="Performance Progress">
+                  <SectionCard title="performance progress" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Summary"
-                      value={
-                        active.data.performance_progress ||
-                        ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["performance_progress"],
-                          v
-                        )
-                      }
+                      label="summary"
+                      value={active.data.performance_progress || ""}
+                      onChange={(v) => mutateActive(["performance_progress"], v)}
+                      COLORS={COLORS}
                     />
                   </SectionCard>
                 </div>
@@ -1404,90 +1420,53 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="Academic">
+                  <SectionCard title="academic" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Goal"
-                      value={
-                        active.data.education_goals
-                          ?.academic || ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["education_goals", "academic"],
-                          v
-                        )
-                      }
+                      label="goal"
+                      value={active.data.education_goals?.academic || ""}
+                      onChange={(v) => mutateActive(["education_goals", "academic"], v)}
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Social">
+                  <SectionCard title="social" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Goal"
-                      value={
-                        active.data.education_goals?.social ||
-                        ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["education_goals", "social"],
-                          v
-                        )
-                      }
+                      label="goal"
+                      value={active.data.education_goals?.social || ""}
+                      onChange={(v) => mutateActive(["education_goals", "social"], v)}
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Behavioural">
+                  <SectionCard title="behavioural" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Goal"
-                      value={
-                        active.data.education_goals
-                          ?.behavioural || ""
-                      }
+                      label="goal"
+                      value={active.data.education_goals?.behavioural || ""}
                       onChange={(v) =>
-                        mutateActive(
-                          [
-                            "education_goals",
-                            "behavioural",
-                          ],
-                          v
-                        )
+                        mutateActive(["education_goals", "behavioural"], v)
                       }
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Communicative">
+                  <SectionCard title="communicative" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Goal"
-                      value={
-                        active.data.education_goals
-                          ?.communicative || ""
-                      }
+                      label="goal"
+                      value={active.data.education_goals?.communicative || ""}
                       onChange={(v) =>
-                        mutateActive(
-                          [
-                            "education_goals",
-                            "communicative",
-                          ],
-                          v
-                        )
+                        mutateActive(["education_goals", "communicative"], v)
                       }
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Physical">
+                  <SectionCard title="physical" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Needs"
-                      value={
-                        active.data.education_goals
-                          ?.physical || ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["education_goals", "physical"],
-                          v
-                        )
-                      }
+                      label="needs"
+                      value={active.data.education_goals?.physical || ""}
+                      onChange={(v) => mutateActive(["education_goals", "physical"], v)}
+                      COLORS={COLORS}
                     />
                   </SectionCard>
                 </div>
@@ -1501,80 +1480,48 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="Instructional">
+                  <SectionCard title="instructional" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Supports"
-                      value={
-                        active.data.accommodations
-                          ?.instructional || ""
-                      }
+                      label="supports"
+                      value={active.data.accommodations?.instructional || ""}
                       onChange={(v) =>
-                        mutateActive(
-                          [
-                            "accommodations",
-                            "instructional",
-                          ],
-                          v
-                        )
+                        mutateActive(["accommodations", "instructional"], v)
                       }
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Environmental">
+                  <SectionCard title="environmental" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Supports"
-                      value={
-                        active.data.accommodations
-                          ?.environmental || ""
-                      }
+                      label="supports"
+                      value={active.data.accommodations?.environmental || ""}
                       onChange={(v) =>
-                        mutateActive(
-                          [
-                            "accommodations",
-                            "environmental",
-                          ],
-                          v
-                        )
+                        mutateActive(["accommodations", "environmental"], v)
                       }
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Assessment">
+                  <SectionCard title="assessment" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Supports"
-                      value={
-                        active.data.accommodations
-                          ?.assessment || ""
-                      }
+                      label="supports"
+                      value={active.data.accommodations?.assessment || ""}
                       onChange={(v) =>
-                        mutateActive(
-                          [
-                            "accommodations",
-                            "assessment",
-                          ],
-                          v
-                        )
+                        mutateActive(["accommodations", "assessment"], v)
                       }
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Technology">
+                  <SectionCard title="technology" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Tools"
-                      value={
-                        active.data.accommodations
-                          ?.technology || ""
-                      }
+                      label="tools"
+                      value={active.data.accommodations?.technology || ""}
                       onChange={(v) =>
-                        mutateActive(
-                          [
-                            "accommodations",
-                            "technology",
-                          ],
-                          v
-                        )
+                        mutateActive(["accommodations", "technology"], v)
                       }
+                      COLORS={COLORS}
                     />
                   </SectionCard>
                 </div>
@@ -1588,47 +1535,29 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="Assessments">
+                  <SectionCard title="assessments" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Notes"
-                      value={
-                        active.data.assessments || ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["assessments"],
-                          v
-                        )
-                      }
+                      label="notes"
+                      value={active.data.assessments || ""}
+                      onChange={(v) => mutateActive(["assessments"], v)}
+                      COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="Transition Goals">
+                  <SectionCard title="transition goals" COLORS={COLORS}>
                     <Field
                       textarea
-                      label="Goals"
-                      value={
-                        active.data.transition_goals ||
-                        ""
-                      }
-                      onChange={(v) =>
-                        mutateActive(
-                          ["transition_goals"],
-                          v
-                        )
-                      }
+                      label="goals"
+                      value={active.data.transition_goals || ""}
+                      onChange={(v) => mutateActive(["transition_goals"], v)}
+                      COLORS={COLORS}
                     />
                   </SectionCard>
                 </div>
               )}
 
               {tab === "people" && (
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 12,
-                  }}
-                >
+                <div style={{ display: "grid", gap: 12 }}>
                   <div
                     style={{
                       display: "flex",
@@ -1642,7 +1571,7 @@ export default function StudentsPage() {
                         color: COLORS.mainText,
                       }}
                     >
-                      Participants
+                      participants
                     </div>
                     <button
                       onClick={addParticipant}
@@ -1650,95 +1579,69 @@ export default function StudentsPage() {
                         padding: "8px 12px",
                         borderRadius: 10,
                         border: `1px solid ${COLORS.border}`,
-                        background: "#fff",
+                        background: "transparent",
+                        color: COLORS.mainText,
                         cursor: "pointer",
                       }}
                     >
-                      Add
+                      add
                     </button>
                   </div>
-                  {(active.data.participants || []).map(
-                    (p: any, i: number) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "1fr 1fr auto",
-                          gap: 10,
-                          alignItems: "end",
-                        }}
-                      >
-                        <Field
-                          label="Name"
-                          value={p.name || ""}
-                          onChange={(v) => {
-                            const arr = [
-                              ...(active.data
-                                .participants || []),
-                            ];
-                            arr[i] = {
-                              ...arr[i],
-                              name: v,
-                            };
-                            setActive({
-                              ...active,
-                              data: {
-                                ...active.data,
-                                participants: arr,
-                              },
-                            });
-                          }}
-                        />
-                        <Field
-                          label="Role"
-                          value={p.role || ""}
-                          onChange={(v) => {
-                            const arr = [
-                              ...(active.data
-                                .participants || []),
-                            ];
-                            arr[i] = {
-                              ...arr[i],
-                              role: v,
-                            };
-                            setActive({
-                              ...active,
-                              data: {
-                                ...active.data,
-                                participants: arr,
-                              },
-                            });
-                          }}
-                        />
-                        <button
-                          onClick={() =>
-                            removeParticipant(i)
-                          }
-                          style={{
-                            height: 40,
-                            marginBottom: 2,
-                            borderRadius: 10,
-                            border: "none",
-                            background:
-                              "linear-gradient(135deg,#ef4444,#dc2626)",
-                            color: "#fff",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )
-                  )}
-                  {!active.data.participants?.length && (
+                  {(active.data.participants || []).map((p: any, i: number) => (
                     <div
+                      key={i}
                       style={{
-                        color: COLORS.mutedText,
-                        fontSize: 13,
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr auto",
+                        gap: 10,
+                        alignItems: "end",
                       }}
                     >
-                      No participants yet.
+                      <Field
+                        label="name"
+                        value={p.name || ""}
+                        onChange={(v) => {
+                          const arr = [...(active.data.participants || [])];
+                          arr[i] = { ...arr[i], name: v };
+                          setActive({
+                            ...active,
+                            data: { ...active.data, participants: arr },
+                          });
+                        }}
+                        COLORS={COLORS}
+                      />
+                      <Field
+                        label="role"
+                        value={p.role || ""}
+                        onChange={(v) => {
+                          const arr = [...(active.data.participants || [])];
+                          arr[i] = { ...arr[i], role: v };
+                          setActive({
+                            ...active,
+                            data: { ...active.data, participants: arr },
+                          });
+                        }}
+                        COLORS={COLORS}
+                      />
+                      <button
+                        onClick={() => removeParticipant(i)}
+                        style={{
+                          height: 40,
+                          marginBottom: 2,
+                          borderRadius: 10,
+                          border: "none",
+                          background: "linear-gradient(135deg,#ef4444,#dc2626)",
+                          color: "#fff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        remove
+                      </button>
+                    </div>
+                  ))}
+                  {!active.data.participants?.length && (
+                    <div style={{ color: COLORS.mutedText, fontSize: 13 }}>
+                      no participants yet.
                     </div>
                   )}
                 </div>
