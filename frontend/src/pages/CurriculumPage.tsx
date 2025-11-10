@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+// src/pages/CurriculumPage.tsx
+import { useEffect, useMemo, useState, useRef } from "react";
 import { apiGet, apiPost, apiGetBlobUrl } from "../lib/api";
+import { useJobCenter } from "../components/jobs/JobCenter";
 
 const COLORS = {
   good: "#16a34a",
@@ -30,17 +32,22 @@ type Curriculum = {
   courses: Record<string, Record<string, Resource[]>>;
 };
 
+type StudentSummary = {
+  id: string;
+  name: string;
+  alignment_pct?: number | null;
+  grade?: string | null;
+  teacher?: string | null;
+  badges: string[];
+};
+
 const ISSUE_OPTIONS = ["Reading", "Modality", "Time", "Assessment", "Exec-Fx", "AT/Tech"];
 
 function statusBadge({ mean, spread, status }: Resource["fit"]) {
   const symbol = status === "good" ? "▲" : status === "warn" ? "■" : "●";
-  const color =
-    status === "good" ? COLORS.good : status === "warn" ? COLORS.warn : COLORS.bad;
+  const color = status === "good" ? COLORS.good : status === "warn" ? COLORS.warn : COLORS.bad;
   return (
-    <span
-      title={`Mean ${mean}% • Spread ${spread}`}
-      style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, color }}
-    >
+    <span title={`Mean ${mean}% • Spread ${spread}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, color }}>
       {symbol} {mean}%
     </span>
   );
@@ -57,24 +64,31 @@ export default function CurriculumPage() {
   const [atRiskOnly, setAtRiskOnly] = useState<boolean>(false);
 
   const [focused, setFocused] = useState<Resource | null>(null);
-  const [analysis, setAnalysis] = useState<{
-    affected: string[];
-    consensus: string[];
-    evidence: string;
-  } | null>(null);
+  const [analysis, setAnalysis] = useState<{ affected: string[]; consensus: string[]; evidence: string } | null>(null);
   const [busyAnalyze, setBusyAnalyze] = useState(false);
 
-  // Generate modal state
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [genCourse, setGenCourse] = useState("");
-  const [genUnit, setGenUnit] = useState("");
-  const [showMessage, setShowMessage] = useState(false);
+  // JobCenter hookup (same pattern as StudentsPage)
+  const { job, start, isModalOpen, open: openJobModal, close: closeJobModal } = useJobCenter();
+  const [allStudents, setAllStudents] = useState<StudentSummary[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const studentsInputRef = useRef<HTMLInputElement>(null);
+
+  // Lightweight multi-select for students (inline, mirrors your AutocompleteMulti style without pulling code over)
+  const [qStu, setQStu] = useState("");
+  const filteredStudents = useMemo(() => {
+    const ql = qStu.toLowerCase();
+    return allStudents.filter(s => s.name.toLowerCase().includes(ql));
+  }, [allStudents, qStu]);
 
   useEffect(() => {
     (async () => {
       try {
-        const d = await apiGet<Curriculum>("/curriculum");
+        const [d, studs] = await Promise.all([
+          apiGet<Curriculum>("/curriculum"),
+          apiGet<StudentSummary[]>("/students").catch(() => [] as StudentSummary[])
+        ]);
         setData(d);
+        setAllStudents(studs);
         const firstCourse = Object.keys(d.courses)[0];
         if (firstCourse) {
           setActiveCourse(firstCourse);
@@ -86,27 +100,16 @@ export default function CurriculumPage() {
   }, []);
 
   const courses = useMemo(() => Object.keys(data?.courses || {}), [data]);
-  const units = useMemo(
-    () => (activeCourse ? Object.keys(data?.courses[activeCourse] || {}) : []),
-    [data, activeCourse]
-  );
+  const units = useMemo(() => (activeCourse ? Object.keys(data?.courses[activeCourse] || {}) : []), [data, activeCourse]);
 
   const allResources: Resource[] =
-    (data && activeCourse && activeUnit
-      ? data.courses[activeCourse][activeUnit]
-      : []) || [];
+    (data && activeCourse && activeUnit ? data.courses[activeCourse][activeUnit] : []) || [];
 
   const resources = useMemo(() => {
     let items = allResources;
-    if (issueFilter !== "All Issues") {
-      items = items.filter((r) => (r.issues || []).includes(issueFilter));
-    }
-    if (minFit > 0) {
-      items = items.filter((r) => r.fit.mean >= minFit);
-    }
-    if (atRiskOnly) {
-      items = items.filter((r) => r.fit.status !== "good");
-    }
+    if (issueFilter !== "All Issues") items = items.filter((r) => (r.issues || []).includes(issueFilter));
+    if (minFit > 0) items = items.filter((r) => r.fit.mean >= minFit);
+    if (atRiskOnly) items = items.filter((r) => r.fit.status !== "good");
     return items;
   }, [allResources, issueFilter, minFit, atRiskOnly]);
 
@@ -124,10 +127,9 @@ export default function CurriculumPage() {
     };
     setData(next);
     try {
-      await apiPost(
-        `/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`,
-        { order: newOrder.map((r) => r.filename) }
-      );
+      await apiPost(`/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`, {
+        order: newOrder.map((r) => r.filename),
+      });
     } catch {}
   };
 
@@ -142,27 +144,32 @@ export default function CurriculumPage() {
     handleReorder(working);
   };
 
+  // Analyze: fetch live analysis + try to pull prior runs for this worksheet
   const analyze = async (r: Resource) => {
     setBusyAnalyze(true);
     setFocused(r);
     setAnalysis(null);
     try {
-      const res = await apiGet<{
-        affected: string[];
-        consensus: string[];
-        evidence: string;
-      }>(
-        `/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(
-          activeUnit
-        )}/analysis?resource=${encodeURIComponent(r.filename)}`
+      const res = await apiGet<{ affected: string[]; consensus: string[]; evidence: string }>(
+        `/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/analysis?resource=${encodeURIComponent(r.filename)}`
       );
-      setAnalysis(res);
+      // Try history (optional backend)
+      let prior: { consensus?: string[]; evidence?: string } | null = null;
+      try {
+        prior = await apiGet<{ consensus?: string[]; evidence?: string }>(
+          `/align/history?course=${encodeURIComponent(activeCourse)}&unit=${encodeURIComponent(activeUnit)}&resource=${encodeURIComponent(r.filename)}`
+        );
+      } catch {
+        prior = null;
+      }
+      const merged = {
+        affected: res.affected || [],
+        consensus: res.consensus?.length ? res.consensus : prior?.consensus || ["(demo) No change needed."],
+        evidence: res.evidence || prior?.evidence || "(demo) No evidence.",
+      };
+      setAnalysis(merged);
     } catch {
-      setAnalysis({
-        affected: [],
-        consensus: ["(demo) No change needed."],
-        evidence: "(demo) No evidence.",
-      });
+      setAnalysis({ affected: [], consensus: ["(demo) No change needed."], evidence: "(demo) No evidence." });
     } finally {
       setBusyAnalyze(false);
     }
@@ -175,134 +182,36 @@ export default function CurriculumPage() {
     } catch {}
   };
 
-  const handleGenerate = () => {
-    setShowGenerateModal(true);
-    setGenCourse(activeCourse);
-    setGenUnit(activeUnit);
-  };
-
-  const confirmGenerate = async () => {
-    setShowGenerateModal(false);
-    setShowMessage(true);
-    try {
-      await apiPost("/curriculum/generate", { course: genCourse, unit: genUnit });
-    } catch {}
-    setTimeout(() => setShowMessage(false), 4000);
-  };
+  // Generate via JobCenter: we reuse the same modal behavior as StudentsPage.
+  function handleOpenGenerate() {
+    setSelectedStudents([]); // reset
+    openJobModal();
+    // prefill Course/Unit shown in the modal and used in start()
+  }
+  function handleStartAlignment() {
+    if (!selectedStudents.length || !activeCourse || !activeUnit) return;
+    start({ students: selectedStudents, courses: [activeCourse], units: [activeUnit] });
+  }
 
   if (!data) return <div className="card">Loading curriculum…</div>;
 
   return (
     <div style={{ padding: 24, position: "relative" }}>
-      {showMessage && (
-        <div
-          style={{
-            position: "fixed",
-            top: 20,
-            right: 20,
-            background: COLORS.link,
-            color: "white",
-            padding: "12px 18px",
-            borderRadius: 12,
-            boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
-            zIndex: 9999,
-          }}
-        >
-          ⚙️ Generation started — this may take a few minutes.
-        </div>
-      )}
-
-      {showGenerateModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 999,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: 24,
-              borderRadius: 12,
-              minWidth: 320,
-              boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
-            }}
-          >
-            <h3 style={{ marginBottom: 12, fontWeight: 700 }}>Generate Curriculum</h3>
-            <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-              <label>
-                Course:
-                <select
-                  value={genCourse}
-                  onChange={(e) => setGenCourse(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: 8,
-                    border: `1px solid ${COLORS.border}`,
-                    marginTop: 4,
-                  }}
-                >
-                  {courses.map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Unit:
-                <select
-                  value={genUnit}
-                  onChange={(e) => setGenUnit(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: 8,
-                    border: `1px solid ${COLORS.border}`,
-                    marginTop: 4,
-                  }}
-                >
-                  {(data?.courses[genCourse]
-                    ? Object.keys(data.courses[genCourse])
-                    : []
-                  ).map((u) => (
-                    <option key={u}>{u}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-              <button type="button" className="btn ghost" onClick={() => setShowGenerateModal(false)}>
-                Cancel
-              </button>
-              <button type="button" className="btn primary" onClick={confirmGenerate}>
-                Generate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
-      <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4 }}>Curriculum</h1>
           <div style={{ color: COLORS.graySub }}>Units • Resources • Alignment Overview</div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            className="btn ghost"
+            style={{ color: "white", background: `linear-gradient(135deg, #3DAFBC, #35598f)` }}
+            onClick={handleOpenGenerate}
+          >
+            Generate
+          </button>
         </div>
       </div>
 
@@ -329,11 +238,7 @@ export default function CurriculumPage() {
             setFocused(null);
             setAnalysis(null);
           }}
-          style={{
-            padding: "8px 10px",
-            borderRadius: 8,
-            border: `1px solid ${COLORS.border}`,
-          }}
+          style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}` }}
         >
           {courses.map((c) => (
             <option key={c}>{c}</option>
@@ -343,11 +248,7 @@ export default function CurriculumPage() {
         <select
           value={issueFilter}
           onChange={(e) => setIssueFilter(e.target.value)}
-          style={{
-            padding: "8px 10px",
-            borderRadius: 8,
-            border: `1px solid ${COLORS.border}`,
-          }}
+          style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}` }}
         >
           <option>All Issues</option>
           {ISSUE_OPTIONS.map((i) => (
@@ -357,19 +258,9 @@ export default function CurriculumPage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <label style={{ fontSize: 12, color: COLORS.muted }}>Min fit {minFit}%</label>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={minFit}
-            onChange={(e) => setMinFit(parseInt(e.target.value, 10))}
-          />
+          <input type="range" min={0} max={100} value={minFit} onChange={(e) => setMinFit(parseInt(e.target.value, 10))} />
           <label style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={atRiskOnly}
-              onChange={(e) => setAtRiskOnly(e.target.checked)}
-            />
+            <input type="checkbox" checked={atRiskOnly} onChange={(e) => setAtRiskOnly(e.target.checked)} />
             At-risk only
           </label>
         </div>
@@ -385,9 +276,6 @@ export default function CurriculumPage() {
             }}
           >
             Reset Filters
-          </button>
-          <button type="button" className="btn ghost" style={{ color: "white",background: `linear-gradient(135deg, #3DAFBC, #35598f)` }} onClick={handleGenerate}>
-            Generate
           </button>
         </div>
       </div>
@@ -420,14 +308,7 @@ export default function CurriculumPage() {
 
         {/* Resources list */}
         <section className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "2fr 1fr 1fr 160px",
-              padding: "10px 16px",
-              fontWeight: 700,
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 160px", padding: "10px 16px", fontWeight: 700 }}>
             <div>Resource</div>
             <div>Size</div>
             <div>Alignment</div>
@@ -436,7 +317,7 @@ export default function CurriculumPage() {
               <button
                 type="button"
                 className="btn ghost"
-                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400, color: "white",background: `linear-gradient(135deg, #3DAFBC, #35598f)` }}
+                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400, color: "white", background: `linear-gradient(135deg, #3DAFBC, #35598f)` }}
                 onClick={() => {
                   const input = document.createElement("input");
                   input.type = "file";
@@ -499,9 +380,7 @@ export default function CurriculumPage() {
                         ■ {iss}
                       </span>
                     ))}
-                    {(r.issues || []).length > 2 && (
-                      <span className="badge warn">+{(r.issues || []).length - 2}</span>
-                    )}
+                    {(r.issues || []).length > 2 && <span className="badge warn">+{(r.issues || []).length - 2}</span>}
                   </div>
                 )}
               </div>
@@ -519,9 +398,7 @@ export default function CurriculumPage() {
             </div>
           ))}
 
-          {!resources.length && (
-            <div style={{ padding: 16, color: COLORS.muted }}>No PDFs match current filters.</div>
-          )}
+          {!resources.length && <div style={{ padding: 16, color: COLORS.muted }}>No PDFs match current filters.</div>}
         </section>
 
         {/* Analysis sidebar */}
@@ -537,8 +414,7 @@ export default function CurriculumPage() {
                   {statusBadge(focused.fit)}
                 </div>
                 <div style={{ fontSize: 12, color: COLORS.muted }}>
-                  Modified: {focused.uploaded_at?.split("T")[0] ?? "—"} • Size:{" "}
-                  {(focused.size / 1024).toFixed(1)} KB
+                  Modified: {focused.uploaded_at?.split("T")[0] ?? "—"} • Size: {(focused.size / 1024).toFixed(1)} KB
                 </div>
                 {(focused.issues || []).length > 0 && (
                   <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -554,11 +430,7 @@ export default function CurriculumPage() {
               <div className="card" style={{ marginTop: 10 }}>
                 <div style={{ fontWeight: 700, marginBottom: 6 }}>Affected students</div>
                 <div style={{ color: COLORS.muted }}>
-                  {analysis?.affected?.length
-                    ? analysis.affected.join(", ")
-                    : busyAnalyze
-                    ? "Loading…"
-                    : "—"}
+                  {analysis?.affected?.length ? analysis.affected.join(", ") : busyAnalyze ? "Loading…" : "—"}
                 </div>
               </div>
 
@@ -579,20 +451,14 @@ export default function CurriculumPage() {
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button type="button" className="btn primary">
-                  Insert
-                </button>
-                <button type="button" className="btn ghost">
-                  Save
-                </button>
+                <button type="button" className="btn primary">Insert</button>
+                <button type="button" className="btn ghost">Save</button>
                 <button
                   type="button"
                   className="btn ghost"
                   onClick={() => {
                     if (!analysis) return;
-                    const text = `Adaptation:\n- ${analysis.consensus.join(
-                      "\n- "
-                    )}\n\nEvidence: ${analysis.evidence}`;
+                    const text = `Adaptation:\n- ${analysis.consensus.join("\n- ")}\n\nEvidence: ${analysis.evidence}`;
                     navigator.clipboard?.writeText(text);
                   }}
                 >
@@ -603,6 +469,259 @@ export default function CurriculumPage() {
           )}
         </aside>
       </div>
+
+      {/* JobCenter modal (mirrors StudentsPage flow, but pre-fills Course/Unit and adds student picker) */}
+      {isModalOpen && (
+        <div
+          onClick={closeJobModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(100%, 980px)",
+              height: "82vh",
+              background: "#fff",
+              borderRadius: 16,
+              border: `1px solid ${COLORS.border}`,
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 24px 80px rgba(0,0,0,.25)",
+            }}
+          >
+            <div style={{ padding: 20, borderBottom: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>
+                {job.status === "running" ? "Generating report…" : job.status === "done" ? "Alignment result" : "Generate report"}
+              </div>
+              <button onClick={closeJobModal} className="btn ghost">Close</button>
+            </div>
+
+            <div style={{ padding: 20, overflow: "auto", display: "grid", gap: 16 }}>
+              {(job.status === "idle" || job.status === "error") && (
+                <>
+                  <div style={{ display: "grid", gap: 12 }}>
+                    <div style={{ fontWeight: 700 }}>Course & Unit</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <input value={activeCourse} readOnly style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}` }} />
+                      <input value={activeUnit} readOnly style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}` }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <label style={{ fontSize: 14, fontWeight: 700 }}>Select students</label>
+                    <input
+                      ref={studentsInputRef}
+                      placeholder="type to search students…"
+                      value={qStu}
+                      onChange={(e) => setQStu(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const exact = allStudents.find(s => s.name.toLowerCase() === qStu.toLowerCase());
+                          if (exact) {
+                            if (!selectedStudents.includes(exact.id)) setSelectedStudents([...selectedStudents, exact.id]);
+                            setQStu("");
+                          } else if (selectedStudents.length) {
+                            handleStartAlignment();
+                          }
+                        }
+                      }}
+                      style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${COLORS.border}` }}
+                    />
+                    {qStu && (
+                      <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, maxHeight: 160, overflowY: "auto" }}>
+                        {filteredStudents.slice(0, 8).map(s => (
+                          <div
+                            key={s.id}
+                            onClick={() => {
+                              if (!selectedStudents.includes(s.id)) setSelectedStudents([...selectedStudents, s.id]);
+                              setQStu("");
+                            }}
+                            style={{ padding: "8px 12px", cursor: "pointer", borderBottom: `1px solid ${COLORS.border}` }}
+                          >
+                            {s.name}
+                          </div>
+                        ))}
+                        {!filteredStudents.length && <div style={{ padding: "8px 12px", color: COLORS.graySub }}>No match</div>}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {selectedStudents.map(id => {
+                        const s = allStudents.find(x => x.id === id);
+                        return (
+                          <span key={id} style={{ background: "#e7f9f5", color: "#0b5f56", padding: "6px 10px", borderRadius: 999, fontWeight: 700, fontSize: 12 }}>
+                            {s?.name || id}
+                            <span
+                              onClick={() => setSelectedStudents(selectedStudents.filter(x => x !== id))}
+                              style={{ marginLeft: 8, cursor: "pointer", fontWeight: 900 }}
+                            >
+                              ×
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button
+                      onClick={() => setSelectedStudents(allStudents.map(s => s.id))}
+                      className="btn ghost"
+                    >
+                      Select all students
+                    </button>
+                    <button
+                      onClick={handleStartAlignment}
+                      disabled={!selectedStudents.length}
+                      className="btn primary"
+                      style={{ opacity: selectedStudents.length ? 1 : 0.5 }}
+                    >
+                      Generate
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {job.status === "running" && (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={{ fontWeight: 700 }}>This runs locally. You can continue working.</div>
+                  <div style={{ fontSize: 13, color: COLORS.graySub }}>Close this window anytime; reopen from the sidebar dock.</div>
+                  <div style={{ fontSize: 12, color: COLORS.graySub }}>Selection</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {job.payload?.students?.map(s => <Chip key={s} text={`Student: ${s}`} />)}
+                    {job.payload?.courses?.map(c => <Chip key={c} text={`Course: ${c}`} />)}
+                    {job.payload?.units?.map(u => <Chip key={u} text={`Unit: ${u}`} />)}
+                  </div>
+                </div>
+              )}
+
+              {job.status === "done" && (
+                <div style={{ display: "grid", gap: 16 }}>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <Stat title="Overall alignment" value={(job.meta?.summary?.overall ?? 0) + "%"} />
+                    <Stat title="Students" value={String(job.meta?.summary?.studentCount ?? 0)} />
+                    <Stat title="Worksheets" value={String(job.meta?.summary?.worksheetCount ?? 0)} />
+                  </div>
+
+                  <SectionCard title="Per student average">
+                    <ListKV obj={job.meta?.summary?.avgPerStudent || {}} />
+                  </SectionCard>
+
+                  <SectionCard title="Per worksheet average">
+                    <ListKV obj={job.meta?.summary?.avgPerWorksheet || {}} />
+                  </SectionCard>
+
+                  <SectionCard title="Worksheet alignment breakdown">
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {(job.result?.matrix?.worksheets || []).map((w: string, idx: number) => {
+                        const rowAvg = Array.isArray(job.result?.row_averages) ? job.result.row_averages[idx] : undefined;
+                        const students: string[] = job.result?.matrix?.students || [];
+                        return (
+                          <div key={w} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                              <div style={{ fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w}</div>
+                              <div style={{ fontWeight: 900 }}>{rowAvg != null ? `${Math.round(rowAvg)}%` : "—"}</div>
+                            </div>
+                            <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                              {students.map((stu) => {
+                                const detail = job.result?.details?.[w]?.[stu] || {};
+                                const u = detail.understanding_fit, a = detail.accessibility_fit, ac = detail.accommodation_fit, e = detail.engagement_fit, o = detail.overall_alignment;
+                                return (
+                                  <div key={stu} style={{ display: "grid", gap: 6 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                      <div style={{ color: COLORS.graySub, fontSize: 12 }}>{stu}</div>
+                                      <div style={{ fontWeight: 700 }}>{o != null ? `${o}%` : "—"}</div>
+                                    </div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 6 }}>
+                                      <MiniMetric label="Understanding" value={u} />
+                                      <MiniMetric label="Accessibility" value={a} />
+                                      <MiniMetric label="Accommodation" value={ac} />
+                                      <MiniMetric label="Engagement" value={e} />
+                                    </div>
+                                    {!!detail.explanation && (
+                                      <div style={{ fontSize: 12, color: COLORS.graySub }}>{String(detail.explanation).length > 220 ? String(detail.explanation).slice(0, 219) + "…" : String(detail.explanation)}</div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </SectionCard>
+
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => {
+                        const raw = JSON.stringify(job.result, null, 2);
+                        const blob = new Blob([raw], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url; a.download = `alignment-${job.jobId}.json`; a.click();
+                        setTimeout(()=>URL.revokeObjectURL(url), 0);
+                      }}
+                      className="btn primary"
+                      style={{ minWidth: 220 }}
+                    >
+                      Download raw JSON
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Chip({ text }: { text: string }) {
+  return <span style={{ background: "#e7f9f5", color: "#0b5f56", padding: "6px 10px", borderRadius: 999, fontWeight: 700, fontSize: 12 }}>{text}</span>;
+}
+function Stat({ title, value }: { title: string; value: string }) {
+  return (
+    <div style={{ padding: 12, borderRadius: 12, border: `1px solid ${COLORS.border}`, background: "#fff", minWidth: 180 }}>
+      <div style={{ fontSize: 12, color: COLORS.graySub, marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 20, fontWeight: 900 }}>{value}</div>
+    </div>
+  );
+}
+function ListKV({ obj }: { obj: Record<string, number> }) {
+  const entries = Object.entries(obj);
+  if (!entries.length) return <div style={{ color: COLORS.graySub, fontSize: 13 }}>No data</div>;
+  return (
+    <div style={{ display: "grid", gap: 6 }}>
+      {entries.map(([k, v]) => (
+        <div key={k} style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>{k}</span>
+          <span style={{ fontWeight: 700 }}>{Math.round((v ?? 0) * 10) / 10}%</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+function MiniMetric({ label, value }: { label: string; value: number | undefined }) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "8px 10px" }}>
+      <div style={{ fontSize: 11, color: COLORS.graySub, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontWeight: 800 }}>{value != null ? `${Math.round(value)}%` : "—"}</div>
+    </div>
+  );
+}
+function SectionCard({ title, children }: { title: string; children: any }) {
+  return (
+    <div style={{ padding: 16, borderRadius: 14, border: `1px solid ${COLORS.border}`, background: "#fff", display: "grid", gap: 12 }}>
+      <div style={{ fontWeight: 800 }}>{title}</div>
+      {children}
     </div>
   );
 }

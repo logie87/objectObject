@@ -302,6 +302,125 @@ def _merge_deep(orig: Dict, patch: Dict) -> Dict:
             orig[k] = v
     return orig
 
+# ====== Course-reports store (course/unit rollups for pie charts) ======
+
+CUR_REPORTS_PATH = (DATA_DIR / "curriculum" / "reports.json")
+
+def _load_course_reports() -> Dict[str, Dict]:
+    """
+    Shape:
+    {
+      "courses": {
+        "<course>": {
+          "updated_at": ISO,
+          "selection": {"units": [...]},
+          "overall": int,
+          "metrics": {
+            "understanding": int,
+            "accessibility": int,
+            "accommodation": int,
+            "engagement": int
+          },
+          "students_count": int,
+          "worksheets_count": int
+        },
+        ...
+      }
+    }
+    """
+    CUR_DIR.mkdir(parents=True, exist_ok=True)
+    if not CUR_REPORTS_PATH.exists():
+        return {"courses": {}}
+    try:
+        with open(CUR_REPORTS_PATH, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+        if not isinstance(obj, dict) or "courses" not in obj:
+            return {"courses": {}}
+        if not isinstance(obj["courses"], dict):
+            obj["courses"] = {}
+        return obj
+    except Exception as e:
+        logger.warning(f"Failed loading course reports store: {e}")
+        return {"courses": {}}
+
+def _save_course_reports(obj: Dict[str, Dict]) -> None:
+    CUR_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = str(CUR_REPORTS_PATH) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, CUR_REPORTS_PATH)
+
+def _all_student_names() -> List[str]:
+    """
+    Return all student.student_name values from /data/students/*.json
+    (skips index/reports/hidden files). Missing names are ignored.
+    """
+    names: List[str] = []
+    for p in sorted(STU_DIR.glob("*.json")):
+        stem = p.stem.lower()
+        if stem in {"index", "reports"} or p.name.startswith("_") or p.name.startswith("."):
+            continue
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                j = json.load(f)
+            nm = str(j.get("student", {}).get("student_name", "")).strip()
+            if nm:
+                names.append(nm)
+        except Exception:
+            continue
+    return names
+
+def _status_from_mean(mean: int) -> str:
+    # Mirror your default thresholds
+    return "good" if mean >= 85 else ("warn" if mean >= 70 else "bad")
+
+def _apply_course_fit_overrides(course: str, units: List[str], worksheet_overall: Dict[str, int]) -> None:
+    """
+    For each unit under the course, load unit_dir/index.json and upsert per-file 'fit'
+    based on averaged overall alignment for that worksheet filename.
+    """
+    for unit in units:
+        unit_dir = CUR_DIR / course / unit
+        if not unit_dir.exists():
+            continue
+        idx_path = unit_dir / "index.json"
+        try:
+            current = {}
+            if idx_path.exists():
+                with open(idx_path, "r", encoding="utf-8") as f:
+                    current = json.load(f)
+            if not isinstance(current, dict):
+                current = {}
+
+            changed = False
+            # ensure entries keyed by actual PDF filenames
+            for pdf in unit_dir.iterdir():
+                if not (pdf.is_file() and pdf.suffix.lower() == ".pdf"):
+                    continue
+                fname = pdf.name
+                if fname in worksheet_overall:
+                    mean = int(worksheet_overall[fname])
+                    rec = current.get(fname) or {}
+                    fit = rec.get("fit") or {}
+                    # keep existing spread if present, else pick a reasonable default
+                    spread = int(fit.get("spread", 20 if mean >= 80 else 28))
+                    status = _status_from_mean(mean)
+                    current[fname] = {
+                        **rec,
+                        "fit": {"mean": mean, "spread": spread, "status": status},
+                    }
+                    changed = True
+
+            if changed:
+                tmp = str(idx_path) + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(current, f, ensure_ascii=False, indent=2)
+                os.replace(tmp, idx_path)
+        except Exception as e:
+            logger.warning(f"Failed updating fit overrides for {course}/{unit}: {e}")
+
+
+
 # ====== Student-reports store (for pie charts, latest alignment) ======
 
 STU_REPORTS_PATH = STU_DIR / "reports.json"
@@ -1572,6 +1691,180 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
     )
 
     # 6) Return the original pipeline result (frontend already expects this)
+    return result
+
+
+# ============================================================
+# ================== CURRICULUM REPORTS ROUTES ===============
+# ============================================================
+
+@app.get("/curriculum/reports")
+async def get_curriculum_reports(user=Depends(verify_jwt)):
+    """
+    Returns latest per-course rollups used by course-level pie charts.
+    """
+    return _load_course_reports()
+
+@app.get("/curriculum/{course}/report")
+async def get_course_report(course: str, user=Depends(verify_jwt)):
+    store = _load_course_reports()
+    rec = store.get("courses", {}).get(course)
+    if not rec:
+        raise HTTPException(status_code=404, detail="No report snapshot for this course")
+    return rec
+
+
+# ============================================================
+# =================== ALIGNMENT (COURSE-SELECTED) ============
+# ============================================================
+
+class CourseAlignRequest(BaseModel):
+    course: str
+    units: Optional[List[str]] = None          # if None or empty => all units under course
+    student_ids: Optional[List[str]] = None    # optional restriction; default is ALL students
+
+@app.post("/align/course-selected", response_model=IEPAlignResponse)
+async def align_course_selected(payload: CourseAlignRequest, user=Depends(verify_jwt)):
+    """
+    Evaluate a course's selected units against a student set (default: ALL students).
+    Persists a course-level rollup in /data/curriculum/reports.json:
+      overall (int), 4 pie metrics, counts, and the unit selection used.
+    Returns the full pipeline result (same shape as /align/iep-selected).
+    """
+    course = (payload.course or "").strip()
+    if not course:
+        raise HTTPException(status_code=400, detail="Missing course")
+
+    # Units to include
+    course_dir = CUR_DIR / course
+    if not course_dir.exists() or not course_dir.is_dir():
+        raise HTTPException(status_code=404, detail=f"Course not found: {course}")
+
+    if payload.units:
+        requested_units = {u for u in payload.units if isinstance(u, str) and u.strip()}
+    else:
+        # all units under course
+        requested_units = {u.name for u in course_dir.iterdir() if u.is_dir()}
+    if not requested_units:
+        raise HTTPException(status_code=400, detail="No units selected for this course")
+
+    selection = {course: sorted(list(requested_units))}
+
+    # Student set: explicit IDs -> names, else ALL students
+    if payload.student_ids:
+        student_ids = [s for s in payload.student_ids if isinstance(s, str) and s.strip()]
+        student_names: List[str] = []
+        for sid in student_ids:
+            nm = _student_name_from_id(sid)
+            if nm:
+                student_names.append(nm)
+        if not student_names:
+            raise HTTPException(status_code=400, detail="Selected students not found")
+    else:
+        student_names = _all_student_names()
+        if not student_names:
+            raise HTTPException(status_code=400, detail="No students found")
+
+    # Run the same selection-based pipeline
+    try:
+        result = run_iep_alignment_selected(
+            student_names=student_names,
+            base_students_dir=str(STU_DIR),
+            selection=selection,
+            base_curriculum_dir=str(CUR_DIR),
+        )
+    except Exception as e:
+        logger.exception("Course alignment pipeline failed")
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {e}")
+
+    if not result or not isinstance(result, dict):
+        raise HTTPException(status_code=500, detail="No result from pipeline")
+
+    # Aggregate course-level rollup from details (avg across all students & worksheets)
+    details: Dict[str, Dict[str, Dict]] = result.get("details", {}) or {}
+    mat = (result.get("matrix", {}) or {}).get("matrix", []) or []
+    worksheets_count = len(mat)
+    students_count = len(student_names)
+
+    def _avg_int(vals: List[float]) -> int:
+        if not vals:
+            return 0
+        return int(round(sum(vals) / len(vals)))
+
+    u_vals: List[int] = []
+    a11n_vals: List[int] = []
+    acc_vals: List[int] = []
+    eng_vals: List[int] = []
+    overall_vals: List[int] = []
+
+    for ws, per_ws in details.items():
+        for s_name, d in per_ws.items():
+            if not isinstance(d, dict):
+                continue
+            if "understanding_fit" in d: u_vals.append(int(d["understanding_fit"]))
+            if "accessibility_fit" in d: a11n_vals.append(int(d["accessibility_fit"]))
+            if "accommodation_fit" in d: acc_vals.append(int(d["accommodation_fit"]))
+            if "engagement_fit"   in d: eng_vals.append(int(d["engagement_fit"]))
+            if "overall_alignment" in d: overall_vals.append(int(d["overall_alignment"]))
+
+    metrics = {
+        "understanding": _avg_int(u_vals),
+        "accessibility": _avg_int(a11n_vals),
+        "accommodation": _avg_int(acc_vals),
+        "engagement":    _avg_int(eng_vals),
+    }
+    # Course overall: simple average of all overall_alignment cells (fallback to row/column means if empty)
+    if overall_vals:
+        overall = _avg_int(overall_vals)
+    else:
+        row_avgs = result.get("row_averages", []) or []
+        overall = _avg_int(row_avgs)
+
+
+    # Persist to course store
+    store = _load_course_reports()
+    courses = store.setdefault("courses", {})
+    courses[course] = {
+        "updated_at": _now_iso(),
+        "selection": {"units": sorted(list(requested_units))},
+        "overall": int(overall),
+        "metrics": {
+            "understanding": int(metrics["understanding"]),
+            "accessibility": int(metrics["accessibility"]),
+            "accommodation": int(metrics["accommodation"]),
+            "engagement":    int(metrics["engagement"]),
+        },
+        "students_count": int(students_count),
+        "worksheets_count": int(worksheets_count),
+    }
+    _save_course_reports(store)
+
+    # Build per-worksheet overall mean across students (filename -> int mean)
+    worksheet_overall: Dict[str, int] = {}
+    details: Dict[str, Dict[str, Dict]] = result.get("details", {}) or {}
+
+    def _avg_int(vals: List[float]) -> int:
+        if not vals:
+            return 0
+        return int(round(sum(vals) / len(vals)))
+
+    for ws_fname, per_ws in details.items():
+        vals = []
+        for s_name, d in per_ws.items():
+            if isinstance(d, dict) and "overall_alignment" in d:
+                vals.append(int(d["overall_alignment"]))
+        worksheet_overall[ws_fname] = _avg_int(vals)
+
+    # Persist back into per-unit index.json so /curriculum reflects new fit
+    _apply_course_fit_overrides(course, selection[course], worksheet_overall)
+
+
+    logger.info(
+        f"Course alignment persisted: course={course}, units={sorted(list(requested_units))}, "
+        f"students={students_count}, worksheets={worksheets_count}, overall={overall}"
+    )
+
+    # Return full pipeline result for UI (raw view, per-worksheet matrices, etc.)
     return result
 
 

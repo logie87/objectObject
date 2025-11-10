@@ -979,7 +979,7 @@ export default function StudentsPage() {
               </SectionCard>
               <SectionCard title="Communicative" COLORS={COLORS}>
                 <Field textarea label="goal" value={active?.data?.education_goals?.communicative || ""} onChange={(v) => mutateActive(["education_goals", "communicative"], v)} COLORS={COLORS} />
-              </SectionCard>
+              </SectionCard >
               <SectionCard title="Physical" COLORS={COLORS}>
                 <Field textarea label="needs" value={active?.data?.education_goals?.physical || ""} onChange={(v) => mutateActive(["education_goals", "physical"], v)} COLORS={COLORS} />
               </SectionCard>
