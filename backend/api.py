@@ -373,12 +373,12 @@ def _all_student_names() -> List[str]:
 def _status_from_mean(mean: int) -> str:
     # Mirror your default thresholds
     return "good" if mean >= 85 else ("warn" if mean >= 70 else "bad")
-
 def _apply_course_fit_overrides(course: str, units: List[str], worksheet_overall: Dict[str, int]) -> None:
     """
-    For each unit under the course, load unit_dir/index.json and upsert per-file 'fit'
-    based on averaged overall alignment for that worksheet filename.
+    Update per-unit sidecars (legacy) AND root curriculum/index.json (preferred).
+    worksheet_overall: filename -> int mean
     """
+    # 1) Update per-unit sidecars if they exist
     for unit in units:
         unit_dir = CUR_DIR / course / unit
         if not unit_dir.exists():
@@ -391,18 +391,16 @@ def _apply_course_fit_overrides(course: str, units: List[str], worksheet_overall
                     current = json.load(f)
             if not isinstance(current, dict):
                 current = {}
-
             changed = False
-            # ensure entries keyed by actual PDF filenames
             for pdf in unit_dir.iterdir():
                 if not (pdf.is_file() and pdf.suffix.lower() == ".pdf"):
                     continue
                 fname = pdf.name
-                if fname in worksheet_overall:
-                    mean = int(worksheet_overall[fname])
+                norm = _normalize_fname(fname)
+                if norm in worksheet_overall:
+                    mean = int(worksheet_overall[norm])
                     rec = current.get(fname) or {}
                     fit = rec.get("fit") or {}
-                    # keep existing spread if present, else pick a reasonable default
                     spread = int(fit.get("spread", 20 if mean >= 80 else 28))
                     status = _status_from_mean(mean)
                     current[fname] = {
@@ -410,15 +408,36 @@ def _apply_course_fit_overrides(course: str, units: List[str], worksheet_overall
                         "fit": {"mean": mean, "spread": spread, "status": status},
                     }
                     changed = True
-
             if changed:
                 tmp = str(idx_path) + ".tmp"
                 with open(tmp, "w", encoding="utf-8") as f:
                     json.dump(current, f, ensure_ascii=False, indent=2)
                 os.replace(tmp, idx_path)
         except Exception as e:
-            logger.warning(f"Failed updating fit overrides for {course}/{unit}: {e}")
+            logger.warning(f"Failed updating unit sidecar for {course}/{unit}: {e}")
 
+    # 2) Update ROOT index.json
+    root = _load_curriculum_root_index()
+    courses = root.setdefault("courses", {})
+    course_map = courses.get(course)
+    if not course_map:
+        _save_curriculum_root_index(root)
+        return
+    changed_root = False
+    for unit in units:
+        res_list = course_map.get(unit) or []
+        # res_list is a list of dicts with filename + fit
+        for rec in res_list:
+            fn = _normalize_fname(rec.get("filename", ""))
+            if fn in worksheet_overall:
+                new_mean = int(worksheet_overall[fn])
+                old_fit = rec.get("fit") or {}
+                spread = int(old_fit.get("spread", 20 if new_mean >= 80 else 28))
+                status = _status_from_mean(new_mean)
+                rec["fit"] = {"mean": new_mean, "spread": spread, "status": status}
+                changed_root = True
+    if changed_root:
+        _save_curriculum_root_index(root)
 
 
 # ====== Student-reports store (for pie charts, latest alignment) ======
@@ -547,6 +566,26 @@ def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)):
     except Exception as e:
         logger.warning(f"Invalid JWT: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
+    
+
+
+@app.get("/align/history")
+async def align_history(course: str, unit: str, resource: str, user=Depends(verify_jwt)):
+    """
+    Returns last alignment summary for a specific worksheet:
+    {
+      "affected": [student names below threshold],
+      "consensus": [bullet lines],
+      "evidence": "short string"
+    }
+    """
+    key = f"{course}|{unit}|{_normalize_fname(resource)}"
+    hist = _load_align_history()
+    rec = hist.get(key)
+    if not rec:
+        raise HTTPException(status_code=404, detail="No history")
+    return rec
+
 
 # ============================================================
 # ======================= MIDDLEWARE =========================
@@ -944,6 +983,137 @@ from pydantic import BaseModel, Field
 
 CUR_DIR = DATA_DIR / "curriculum"
 
+CUR_ROOT_INDEX = DATA_DIR / "curriculum" / "index.json"
+ALIGN_HISTORY_PATH = DATA_DIR / "curriculum" / "history.json"
+
+def _normalize_fname(s: str) -> str:
+    # match pipeline keys like "._File.pdf" to actual "File.pdf"
+    s = str(s or "")
+    if s.startswith("._"):
+        s = s[2:]
+    return s.strip()
+
+def _load_curriculum_root_index() -> Dict:
+    try:
+        if CUR_ROOT_INDEX.exists():
+            with open(CUR_ROOT_INDEX, "r", encoding="utf-8") as f:
+                obj = json.load(f)
+            if isinstance(obj, dict) and "courses" in obj:
+                return obj
+    except Exception as e:
+        logger.warning(f"curriculum root index read failed: {e}")
+    return {"courses": {}}
+
+def _save_curriculum_root_index(obj: Dict) -> None:
+    CUR_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = str(CUR_ROOT_INDEX) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, CUR_ROOT_INDEX)
+
+def _load_align_history() -> Dict[str, Dict]:
+    # key: f"{course}|{unit}|{filename}"
+    try:
+        if ALIGN_HISTORY_PATH.exists():
+            with open(ALIGN_HISTORY_PATH, "r", encoding="utf-8") as f:
+                obj = json.load(f)
+            if isinstance(obj, dict):
+                return obj
+    except Exception as e:
+        logger.warning(f"align history read failed: {e}")
+    return {}
+
+def _save_align_history(hist: Dict[str, Dict]) -> None:
+    tmp = str(ALIGN_HISTORY_PATH) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(hist, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, ALIGN_HISTORY_PATH)
+
+def _load_curriculum_analysis() -> Dict:
+    """
+    Shape:
+    { "<course>": { "<unit>": { "<filename>": {
+         "updated_at": ISO,
+         "students": { "<Student Name>": {... per-student detail from pipeline ...} }
+    }}}}
+    """
+    CUR_DIR.mkdir(parents=True, exist_ok=True)
+    if ALIGN_HISTORY_PATH.exists():
+        try:
+            with open(ALIGN_HISTORY_PATH, "r", encoding="utf-8") as f:
+                j = json.load(f)
+            if isinstance(j, dict):
+                return j
+        except Exception:
+            pass
+    return {}
+
+def _save_curriculum_analysis(obj: Dict) -> None:
+    tmp = str(ALIGN_HISTORY_PATH) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, ALIGN_HISTORY_PATH)
+
+def _update_index_fit_from_overall(course: str, units: list[str], worksheet_overall: Dict[str, int]) -> None:
+    """
+    Update data/curriculum/index.json 'fit' for matching filenames.
+    """
+    idx = _load_curriculum_root_index()
+    courses = idx.setdefault("courses", {})
+    cobj = courses.get(course)
+    if not isinstance(cobj, dict):
+        return
+    changed = False
+    for unit in units:
+        ulist = cobj.get(unit)
+        if not isinstance(ulist, list):
+            continue
+        for item in ulist:
+            try:
+                fname = _normalize_fname(item.get("filename"))
+                if fname in worksheet_overall:
+                    mean = int(worksheet_overall[fname])
+                    spread = int(item.get("fit", {}).get("spread", 20 if mean >= 80 else 28))
+                    status = "good" if mean >= 85 else ("warn" if mean >= 70 else "bad")
+                    item["fit"] = {"mean": mean, "spread": spread, "status": status}
+                    changed = True
+            except Exception:
+                continue
+    if changed:
+        _save_curriculum_index(idx)
+
+def _persist_analysis_details(course: str, units: list[str], details: Dict[str, Dict[str, Dict]]) -> None:
+    """
+    Write last-run per-worksheet student details into analysis.json.
+    We locate the unit for each filename by searching the index.
+    """
+    idx = _load_curriculum_root_index()
+    analysis = _load_curriculum_analysis()
+    analysis.setdefault(course, {})
+
+    # Build lookup: filename -> unit (first match)
+    fname_to_unit: Dict[str, str] = {}
+    cobj = idx.get("courses", {}).get(course, {}) if isinstance(idx.get("courses"), dict) else {}
+    for unit in units:
+        for item in cobj.get(unit, []) or []:
+            fname_to_unit[_normalize_fname(item.get("filename", ""))] = unit
+
+    now = _now_iso()
+    for raw_fname, per_student in (details or {}).items():
+        fname = _normalize_fname(raw_fname)
+        unit = fname_to_unit.get(fname)
+        if not unit:
+            # not found under selected units; skip
+            continue
+        cu = analysis[course].setdefault(unit, {})
+        cu[fname] = {
+            "updated_at": now,
+            "students": per_student or {}
+        }
+
+    _save_curriculum_analysis(analysis)
+
+
 class ResourceOut(BaseModel):
     name: str
     filename: str
@@ -992,11 +1162,36 @@ def _save_order(unit_dir: Path, filenames: List[str]) -> None:
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump({"order": filenames}, f, ensure_ascii=False, indent=2)
     os.replace(tmp, order_file)
-
 def _scan_curriculum() -> CurriculumOut:
-    CUR_DIR.mkdir(parents=True, exist_ok=True)
-    courses: Dict[str, Dict[str, List[ResourceOut]]] = {}
+    """
+    If data/curriculum/index.json exists (root index with courses->units->resources), use it.
+    Otherwise fall back to scanning folders and per-unit sidecars.
+    """
+    root = _load_curriculum_root_index()
+    if root.get("courses"):
+        # Normalize into API shape, preserve provided fit/issues exactly
+        courses: Dict[str, Dict[str, List[ResourceOut]]] = {}
+        for course, units in root["courses"].items():
+            uout: Dict[str, List[ResourceOut]] = {}
+            for unit, resources in (units or {}).items():
+                lst: List[ResourceOut] = []
+                for rec in (resources or []):
+                    # rec already has the fields as the user showed
+                    lst.append(ResourceOut(
+                        name=rec.get("name") or Path(_normalize_fname(rec.get("filename",""))).stem,
+                        filename=_normalize_fname(rec.get("filename","")),
+                        path=f"{course}/{unit}/{_normalize_fname(rec.get('filename',''))}",
+                        size=int(rec.get("size", 0)),
+                        uploaded_at=str(rec.get("uploaded_at") or _now_iso()),
+                        fit=rec.get("fit") or {"mean": 80, "spread": 15, "status": "warn"},
+                        issues=rec.get("issues", []) or []
+                    ))
+                uout[unit] = lst
+            courses[course] = uout
+        return CurriculumOut(courses=courses)
 
+    # ---- legacy fallback (unchanged): scan filesystem + per-unit sidecars ----
+    courses: Dict[str, Dict[str, List[ResourceOut]]] = {}
     for course_dir in sorted(CUR_DIR.iterdir()):
         if not course_dir.is_dir():
             continue
@@ -1006,14 +1201,10 @@ def _scan_curriculum() -> CurriculumOut:
             if not unit_dir.is_dir():
                 continue
             unit_name = unit_dir.name
-
-            # Gather PDFs, ignore index.json and order.json
             files = [p for p in unit_dir.iterdir()
                      if p.is_file()
                      and p.suffix.lower() == ".pdf"
                      and p.name not in ("index.json", "order.json")]
-
-            # Load optional sidecar unit index for issues/fit overrides: unit_dir/index.json
             unit_index = {}
             idx_path = unit_dir / "index.json"
             if idx_path.exists():
@@ -1022,10 +1213,7 @@ def _scan_curriculum() -> CurriculumOut:
                         unit_index = json.load(f)
                 except Exception:
                     unit_index = {}
-
-            # Default naive fit (demo)
             def default_fit(n: str) -> dict:
-                # Bias worse if filename hints "quiz"/"exit", better for "lab"/"hands"
                 lower = n.lower()
                 mean = 88
                 if "quiz" in lower or "exit" in lower:
@@ -1035,8 +1223,6 @@ def _scan_curriculum() -> CurriculumOut:
                 spread = 20 if mean >= 80 else 28
                 status = "good" if mean >= 85 else ("warn" if mean >= 70 else "bad")
                 return {"mean": mean, "spread": spread, "status": status}
-
-            # Compute resource items
             items: List[ResourceOut] = []
             for pdf in files:
                 meta = unit_index.get(pdf.name, {})
@@ -1051,15 +1237,12 @@ def _scan_curriculum() -> CurriculumOut:
                     fit=fit,
                     issues=issues
                 ))
-
-            # Respect order.json if present
             order = _load_order(unit_dir)
             if order:
                 order_map = {fn: i for i, fn in enumerate(order)}
                 items.sort(key=lambda r: order_map.get(r.filename, 10_000))
             else:
                 items.sort(key=lambda r: r.name.lower())
-
             units[unit_name] = items
         courses[course_name] = units
 
@@ -1067,11 +1250,10 @@ def _scan_curriculum() -> CurriculumOut:
 
 @app.get("/curriculum", response_model=CurriculumOut)
 async def get_curriculum(user=Depends(verify_jwt)):
-    """
-    Returns the curriculum tree: course -> unit -> [resources]
-    Ignores 'index.json'/'order.json'. Uses 'order.json' for ordering if present.
-    """
-    return _scan_curriculum()
+    obj = _load_curriculum_root_index()
+    # Coerce to pydantic shape
+    return CurriculumOut(courses=obj.get("courses", {}))
+
 
 @app.post("/curriculum/{course}/{unit}/reorder")
 async def reorder_unit(payload: ReorderIn, course: str, unit: str, user=Depends(verify_jwt)):
@@ -1088,57 +1270,69 @@ async def reorder_unit(payload: ReorderIn, course: str, unit: str, user=Depends(
             raise HTTPException(status_code=400, detail=f"File not in unit: {fn}")
     _save_order(unit_dir, payload.order)
     return {"ok": True}
-
 @app.get("/curriculum/{course}/{unit}/analysis", response_model=AnalysisOut)
 async def analyze_resource(course: str, unit: str, resource: str, user=Depends(verify_jwt)):
-    """
-    Demo analysis endpoint. If a sidecar '<resource>.meta.json' exists, use it.
-    Otherwise, return a simple canned result based on filename heuristics.
-    """
-    unit_dir = CUR_DIR / course / unit
-    pdf_path = unit_dir / resource
-    if not pdf_path.exists():
-        raise HTTPException(status_code=404, detail="Resource not found")
+    fname = _normalize_fname(resource)
+    store = _load_curriculum_analysis()
+    course_rec = store.get(course, {})
+    unit_rec = course_rec.get(unit, {})
+    res = unit_rec.get(fname)
 
-    sidecar = unit_dir / f"{resource}.meta.json"
-    if sidecar.exists():
-        try:
-            with open(sidecar, "r", encoding="utf-8") as f:
-                meta = json.load(f)
-            return AnalysisOut(
-                affected=meta.get("affected", []),
-                consensus=meta.get("consensus", []),
-                evidence=meta.get("evidence", ""),
-            )
-        except Exception:
-            pass
+    if isinstance(res, dict) and isinstance(res.get("students"), dict) and res["students"]:
+        per = res["students"]  # { "Student Name": {understanding_fit,...,overall_alignment,...} }
+        affected = []
+        u_vals, a_vals, ac_vals, e_vals, o_vals = [], [], [], [], []
+        for s_name, d in per.items():
+            try:
+                u_vals.append(int(d.get("understanding_fit", 0)))
+                a_vals.append(int(d.get("accessibility_fit", 0)))
+                ac_vals.append(int(d.get("accommodation_fit", 0)))
+                e_vals.append(int(d.get("engagement_fit", 0)))
+                o = int(d.get("overall_alignment", 0))
+                o_vals.append(o)
+                if o < 80:
+                    affected.append(s_name)
+            except Exception:
+                continue
 
-    # Heuristic demo
-    low = resource.lower()
+        def avg(xs): 
+            xs = [int(x) for x in xs if isinstance(x, (int, float))]
+            return int(round(sum(xs)/len(xs))) if xs else 0
+
+        u,a,ac,e,ov = avg(u_vals), avg(a_vals), avg(ac_vals), avg(e_vals), avg(o_vals)
+        consensus = []
+        if u < 80: consensus.append("Add worked examples and vocabulary pre-teach.")
+        if a < 80: consensus.append("Provide visuals/captions and guided notes.")
+        if ac < 80: consensus.append("Apply accommodations (scribe/extra time/alternate response).")
+        if e < 80: consensus.append("Chunk tasks and offer shorter, choice-based items.")
+        if not consensus:
+            consensus.append("Keep as-is; monitor for individual adjustments.")
+
+        evidence = f"Avg overall {ov}%; understanding {u}%, accessibility {a}%, accommodation {ac}%, engagement {e}%. Students: {len(per)}."
+
+        return AnalysisOut(affected=sorted(affected), consensus=consensus, evidence=evidence)
+
+    # Fallback: legacy heuristic if we have no real record
+    low = fname.lower()
     if "exit" in low or "quiz" in low:
         return AnalysisOut(
-            affected=["S1", "S3", "S8"],
-            consensus=[
-                "Reduce item count; allow oral check-in.",
-                "Time extension 1.5×; chunk into two parts.",
-            ],
-            evidence="Assessment format vs accommodations; prior time-on-task data.",
+            affected=["S1","S3","S8"],
+            consensus=["Reduce item count; allow oral check-in.","Time extension 1.5×; split into two parts."],
+            evidence="Heuristic (no prior analysis found)."
         )
     elif "video" in low or "reading" in low:
         return AnalysisOut(
-            affected=["S4", "S6", "S10", "S12"],
-            consensus=[
-                "Provide guided notes with visuals.",
-                "Enable captions and a highlighted transcript.",
-            ],
-            evidence="Lexical density analysis; modality mismatch flagged in IEPs.",
+            affected=["S4","S6","S10","S12"],
+            consensus=["Provide guided notes with visuals.","Enable captions and transcript."],
+            evidence="Heuristic (no prior analysis found)."
         )
     else:
         return AnalysisOut(
-            affected=["S2", "S7"],
+            affected=["S2","S7"],
             consensus=["Keep as-is; offer optional visual supports."],
-            evidence="High engagement; low spread.",
+            evidence="Heuristic (no prior analysis found)."
         )
+
 
 @app.post("/curriculum/{course}/{unit}/snapshot")
 async def class_snapshot(payload: SnapshotIn, course: str, unit: str, user=Depends(verify_jwt)):
@@ -1533,11 +1727,14 @@ async def search_suggest(s: Optional[str] = "", limit: int = 6, user=Depends(ver
 # ============================================================
 
 @app.post("/align/iep-selected", response_model=IEPAlignResponse)
+@app.post("/align/iep-selected", response_model=IEPAlignResponse)
 async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt)):
     """
     Run IEP alignment for an explicit subset and persist:
       - alignment_pct into each student's JSON
       - a pie-chart-friendly breakdown into /data/students/reports.json
+      - per-worksheet overall fit into /data/curriculum/index.json
+      - analyze-pane history into /data/curriculum/history.json using course|unit|filename keys
     """
     # 1) Validate + resolve student names (parallel to IDs)
     student_ids = [s for s in (payload.student_ids or []) if isinstance(s, str) and s.strip()]
@@ -1589,19 +1786,16 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
         raise HTTPException(status_code=500, detail="No result from pipeline")
 
     # 4) Compute per-student overall and metric breakdowns from result.details
-    #    details shape: { worksheet: { "<Student Name>": {understanding_fit, accessibility_fit, accommodation_fit, engagement_fit, overall_alignment, ...}, ... } }
     matrix_obj = result.get("matrix", {}) or {}
     matrix_students: List[str] = list(matrix_obj.get("students", []) or [])
     column_averages: List[float] = list(result.get("column_averages", []) or [])
     details: Dict[str, Dict[str, Dict]] = result.get("details", {}) or {}
 
-    # Helper to average safely
     def _avg_int(values: List[float]) -> int:
         if not values:
             return 0
         return int(round(sum(values) / len(values)))
 
-    # Build name -> stats
     per_student_stats: Dict[str, Dict] = {}
     for s_name in matrix_students:
         overall_from_cols = None
@@ -1613,7 +1807,7 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
             overall_from_cols = None
 
         u_vals, a11n_vals, acc_vals, eng_vals, overall_vals = [], [], [], [], []
-        for ws, per_ws in details.items():
+        for _, per_ws in details.items():
             row = per_ws.get(s_name)
             if not isinstance(row, dict):
                 continue
@@ -1629,20 +1823,15 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
             "accommodation": _avg_int(acc_vals),
             "engagement":    _avg_int(eng_vals),
         }
-
-        # Prefer pipeline's column_averages; fall back to averaging overall_alignment per worksheet
         overall = int(round(float(overall_from_cols))) if overall_from_cols is not None else _avg_int(overall_vals)
-
-        per_student_stats[s_name] = {
-            "overall": overall,
-            "metrics": metrics,
-        }
+        per_student_stats[s_name] = {"overall": overall, "metrics": metrics}
 
     # 5) Persist: (a) alignment_pct into student JSONs, (b) reports store for pie charts
     name_to_sid = {name: sid for name, sid in zip(student_names, student_ids)}
     reports_store = _load_student_reports()
     reports_students = reports_store.setdefault("students", {})
 
+    now_iso = _now_iso()
     for s_name, stats in per_student_stats.items():
         sid = name_to_sid.get(s_name)
         if not sid:
@@ -1658,9 +1847,8 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
                 logger.warning(f"Could not read student {sid} to update alignment: {e}")
                 s_json = {}
             s_json["alignment_pct"] = int(stats["overall"])
-            # optional: keep a small breadcrumb of last run
             s_json["last_alignment"] = {
-                "updated_at": _now_iso(),
+                "updated_at": now_iso,
                 "overall": int(stats["overall"]),
                 "metrics": stats["metrics"],
                 "selection": {"courses": requested_courses, "units": list(requested_units)},
@@ -1672,7 +1860,7 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
 
         # (b) update reports store (used by the UI pie charts)
         reports_students[sid] = {
-            "updated_at": _now_iso(),
+            "updated_at": now_iso,
             "overall": int(stats["overall"]),
             "metrics": {
                 "understanding": int(stats["metrics"]["understanding"]),
@@ -1685,13 +1873,103 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
 
     _save_student_reports(reports_store)
 
+    # 6) Persist per-worksheet overall into curriculum root index.json + analyze history
+    # Build filename -> (course, unit) lookup from the root index constrained to the current selection
+    idx = _load_curriculum_root_index()
+    fname_to_course_unit: Dict[str, Tuple[str, str]] = {}
+    for course, units in selection.items():
+        cobj = (idx.get("courses", {}) or {}).get(course, {}) if isinstance(idx.get("courses"), dict) else {}
+        for unit in units:
+            for rec in cobj.get(unit, []) or []:
+                fn = _normalize_fname(rec.get("filename", ""))
+                if fn:
+                    fname_to_course_unit[fn] = (course, unit)
+
+    # Compute worksheet overall means and write history with exact course|unit keys
+    hist = _load_align_history()
+    per_course_overall: Dict[str, Dict[str, int]] = {}  # course -> {fname: mean}
+    for ws_fname, per_ws in (details or {}).items():
+        norm = _normalize_fname(ws_fname)
+        vals_overall, u_vals, a11n_vals, acc_vals, eng_vals = [], [], [], [], []
+        affected = []
+        for s_name, d in (per_ws or {}).items():
+            if not isinstance(d, dict):
+                continue
+            o = int(d.get("overall_alignment", 0))
+            u = int(d.get("understanding_fit", 0))
+            a = int(d.get("accessibility_fit", 0))
+            ac = int(d.get("accommodation_fit", 0))
+            e = int(d.get("engagement_fit", 0))
+            vals_overall.append(o)
+            u_vals.append(u); a11n_vals.append(a); acc_vals.append(ac); eng_vals.append(e)
+            if o < 70:
+                affected.append(s_name)
+
+        mean_overall = _avg_int(vals_overall)
+        # Attribute to the correct course/unit if we can, else skip index update but still store 'Multiple'
+        course_unit = fname_to_course_unit.get(norm)
+        if course_unit:
+            c, u = course_unit
+            per_course_overall.setdefault(c, {})[norm] = mean_overall
+
+            # History key uses exact course|unit|filename so /align/history works for the unit pane
+            metrics_sorted = sorted(
+                [("Understanding", _avg_int(u_vals)),
+                 ("Accessibility", _avg_int(a11n_vals)),
+                 ("Accommodation", _avg_int(acc_vals)),
+                 ("Engagement", _avg_int(eng_vals))],
+                key=lambda kv: kv[1]
+            )
+            consensus = []
+            for label, _score in metrics_sorted[:2]:
+                if label == "Accessibility":
+                    consensus.append("Provide captions/large-print & guided notes.")
+                elif label == "Accommodation":
+                    consensus.append("Offer scribe/reader and 1.5× time with chunking.")
+                elif label == "Understanding":
+                    consensus.append("Add step-by-step worked examples before tasks.")
+                elif label == "Engagement":
+                    consensus.append("Include choice of modality and shorter tasks.")
+            if not consensus:
+                consensus = ["Keep as-is; provide optional visual supports."]
+
+            evidence = (f"Overall {mean_overall}%. "
+                        f"U {_avg_int(u_vals)}%, Acc {_avg_int(a11n_vals)}%, "
+                        f"Accom {_avg_int(acc_vals)}%, Eng {_avg_int(eng_vals)}%.")
+            key = f"{c}|{u}|{norm}"
+            hist[key] = {"affected": affected, "consensus": consensus, "evidence": evidence}
+        else:
+            # If we can't resolve unit, store under 'Multiple' for visibility
+            evidence = (f"Overall {mean_overall}%. "
+                        f"U {_avg_int(u_vals)}%, Acc {_avg_int(a11n_vals)}%, "
+                        f"Accom {_avg_int(acc_vals)}%, Eng {_avg_int(eng_vals)}%.")
+            # Attribute to the first selected course for determinism
+            first_course = next(iter(selection.keys()))
+            key = f"{first_course}|Multiple|{norm}"
+            hist[key] = {"affected": affected, "consensus": ["Keep as-is; provide optional visual supports."], "evidence": evidence}
+
+    _save_align_history(hist)
+
+    # Push worksheet means into both per-unit sidecars and ROOT index.json
+    for course, units in selection.items():
+        ws_overall = per_course_overall.get(course, {})
+        if ws_overall:
+            _apply_course_fit_overrides(course, units, ws_overall)
+            # Also persist raw per-student details snapshot for Analyze modal browsing
+            try:
+                _persist_analysis_details(course, units, details)
+            except Exception as e:
+                logger.warning(f"Persist analysis details failed for {course}: {e}")
+
     logger.info(
         f"Alignment persisted for {len(per_student_stats)} students; "
-        f"courses={requested_courses}; units={list(requested_units)}"
+        f"courses={requested_courses}; units={list(requested_units)}; "
+        f"updated curriculum index for {sum(len(v) for v in per_course_overall.values())} worksheets."
     )
 
-    # 6) Return the original pipeline result (frontend already expects this)
+    # 7) Return the original pipeline result (frontend already expects this)
     return result
+
 
 
 # ============================================================
@@ -1821,7 +2099,7 @@ async def align_course_selected(payload: CourseAlignRequest, user=Depends(verify
         overall = _avg_int(row_avgs)
 
 
-    # Persist to course store
+       # Persist to course store (existing)
     store = _load_course_reports()
     courses = store.setdefault("courses", {})
     courses[course] = {
@@ -1848,24 +2126,67 @@ async def align_course_selected(payload: CourseAlignRequest, user=Depends(verify
             return 0
         return int(round(sum(vals) / len(vals)))
 
+    # Also create a small per-worksheet "history" summary for the Analyze side panel
+    hist = _load_align_history()
     for ws_fname, per_ws in details.items():
-        vals = []
+        norm = _normalize_fname(ws_fname)
+        vals_overall, u_vals, a11n_vals, acc_vals, eng_vals = [], [], [], [], []
+        affected = []
         for s_name, d in per_ws.items():
-            if isinstance(d, dict) and "overall_alignment" in d:
-                vals.append(int(d["overall_alignment"]))
-        worksheet_overall[ws_fname] = _avg_int(vals)
+            if not isinstance(d, dict):
+                continue
+            o = int(d.get("overall_alignment", 0))
+            u = int(d.get("understanding_fit", 0))
+            a = int(d.get("accessibility_fit", 0))
+            ac = int(d.get("accommodation_fit", 0))
+            e = int(d.get("engagement_fit", 0))
+            vals_overall.append(o)
+            u_vals.append(u); a11n_vals.append(a); acc_vals.append(ac); eng_vals.append(e)
+            if o < 70:  # threshold for "affected"
+                affected.append(s_name)
+        worksheet_overall[norm] = _avg_int(vals_overall)
 
-    # Persist back into per-unit index.json so /curriculum reflects new fit
+        # crude but real consensus based on weakest metric signals
+        metrics_sorted = sorted(
+            [("Understanding", _avg_int(u_vals)),
+             ("Accessibility", _avg_int(a11n_vals)),
+             ("Accommodation", _avg_int(acc_vals)),
+             ("Engagement", _avg_int(eng_vals))],
+            key=lambda kv: kv[1]
+        )
+        consensus = []
+        for label, score in metrics_sorted[:2]:
+            if label == "Accessibility":
+                consensus.append("Provide captions/large-print & guided notes.")
+            elif label == "Accommodation":
+                consensus.append("Offer scribe/reader and 1.5× time with chunking.")
+            elif label == "Understanding":
+                consensus.append("Add step-by-step worked examples before tasks.")
+            elif label == "Engagement":
+                consensus.append("Include choice of modality and shorter tasks.")
+        if not consensus:
+            consensus = ["Keep as-is; provide optional visual supports."]
+
+        evidence = (f"Overall {worksheet_overall[norm]}%. "
+                    f"U { _avg_int(u_vals)}%, Acc { _avg_int(a11n_vals)}%, "
+                    f"Accom { _avg_int(acc_vals)}%, Eng { _avg_int(eng_vals)}%.")
+
+        key = f"{course}|{sorted(list(requested_units))[0] if len(requested_units)==1 else 'Multiple'}|{norm}"
+        # If units>1, we'll store under 'Multiple' (analyze pane asks specific unit; single-unit runs are exact)
+        hist[key] = {"affected": affected, "consensus": consensus, "evidence": evidence}
+
+    _save_align_history(hist)
+
+    # Persist back into per-unit sidecar AND ROOT index.json so /curriculum reflects new fit
     _apply_course_fit_overrides(course, selection[course], worksheet_overall)
-
 
     logger.info(
         f"Course alignment persisted: course={course}, units={sorted(list(requested_units))}, "
         f"students={students_count}, worksheets={worksheets_count}, overall={overall}"
     )
 
-    # Return full pipeline result for UI (raw view, per-worksheet matrices, etc.)
     return result
+
 
 
 # ============================================================

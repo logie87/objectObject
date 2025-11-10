@@ -41,7 +41,7 @@ type StudentSummary = {
   badges: string[];
 };
 
-const ISSUE_OPTIONS = ["Reading", "Modality", "Time", "Assessment", "Exec-Fx", "AT/Tech"];
+const ISSUE_OPTIONS = ["Reading", "Modality", "Time"];
 
 function statusBadge({ mean, spread, status }: Resource["fit"]) {
   const symbol = status === "good" ? "▲" : status === "warn" ? "■" : "●";
@@ -67,18 +67,37 @@ export default function CurriculumPage() {
   const [analysis, setAnalysis] = useState<{ affected: string[]; consensus: string[]; evidence: string } | null>(null);
   const [busyAnalyze, setBusyAnalyze] = useState(false);
 
-  // JobCenter hookup (same pattern as StudentsPage)
   const { job, start, isModalOpen, open: openJobModal, close: closeJobModal } = useJobCenter();
   const [allStudents, setAllStudents] = useState<StudentSummary[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const studentsInputRef = useRef<HTMLInputElement>(null);
 
-  // Lightweight multi-select for students (inline, mirrors your AutocompleteMulti style without pulling code over)
   const [qStu, setQStu] = useState("");
   const filteredStudents = useMemo(() => {
     const ql = qStu.toLowerCase();
     return allStudents.filter(s => s.name.toLowerCase().includes(ql));
   }, [allStudents, qStu]);
+
+  // Helper: refresh curriculum and keep current selection if still valid
+  const refreshCurriculum = async (keepFocus = true) => {
+    const d = await apiGet<Curriculum>("/curriculum");
+    setData(d);
+    let nextCourse = activeCourse;
+    let nextUnit = activeUnit;
+    if (!d.courses[nextCourse]) {
+      nextCourse = Object.keys(d.courses)[0] || "";
+    }
+    if (nextCourse && !d.courses[nextCourse][nextUnit]) {
+      nextUnit = Object.keys(d.courses[nextCourse] || {})[0] || "";
+    }
+    setActiveCourse(nextCourse);
+    setActiveUnit(nextUnit);
+
+    if (keepFocus && focused && nextCourse && nextUnit) {
+      const updated = (d.courses[nextCourse]?.[nextUnit] || []).find(r => r.filename === focused.filename);
+      if (updated) setFocused(updated);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -98,6 +117,13 @@ export default function CurriculumPage() {
       } catch {}
     })();
   }, []);
+
+  // When a JobCenter alignment finishes, pull fresh curriculum to show persisted fit numbers
+  useEffect(() => {
+    if (job.status === "done") {
+      refreshCurriculum(true).catch(() => {});
+    }
+  }, [job.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const courses = useMemo(() => Object.keys(data?.courses || {}), [data]);
   const units = useMemo(() => (activeCourse ? Object.keys(data?.courses[activeCourse] || {}) : []), [data, activeCourse]);
@@ -144,7 +170,6 @@ export default function CurriculumPage() {
     handleReorder(working);
   };
 
-  // Analyze: fetch live analysis + try to pull prior runs for this worksheet
   const analyze = async (r: Resource) => {
     setBusyAnalyze(true);
     setFocused(r);
@@ -153,7 +178,6 @@ export default function CurriculumPage() {
       const res = await apiGet<{ affected: string[]; consensus: string[]; evidence: string }>(
         `/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/analysis?resource=${encodeURIComponent(r.filename)}`
       );
-      // Try history (optional backend)
       let prior: { consensus?: string[]; evidence?: string } | null = null;
       try {
         prior = await apiGet<{ consensus?: string[]; evidence?: string }>(
@@ -182,11 +206,9 @@ export default function CurriculumPage() {
     } catch {}
   };
 
-  // Generate via JobCenter: we reuse the same modal behavior as StudentsPage.
   function handleOpenGenerate() {
-    setSelectedStudents([]); // reset
+    setSelectedStudents([]);
     openJobModal();
-    // prefill Course/Unit shown in the modal and used in start()
   }
   function handleStartAlignment() {
     if (!selectedStudents.length || !activeCourse || !activeUnit) return;
@@ -197,7 +219,6 @@ export default function CurriculumPage() {
 
   return (
     <div style={{ padding: 24, position: "relative" }}>
-      {/* Header */}
       <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4 }}>Curriculum</h1>
@@ -215,7 +236,6 @@ export default function CurriculumPage() {
         </div>
       </div>
 
-      {/* Filter row */}
       <div
         className="card"
         style={{
@@ -280,9 +300,7 @@ export default function CurriculumPage() {
         </div>
       </div>
 
-      {/* Main grid */}
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 380px", gap: 20 }}>
-        {/* Units sidebar */}
         <aside className="card" style={{ padding: 12 }}>
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Units</div>
           <div style={{ display: "grid", gap: 8 }}>
@@ -306,7 +324,6 @@ export default function CurriculumPage() {
           </div>
         </aside>
 
-        {/* Resources list */}
         <section className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 160px", padding: "10px 16px", fontWeight: 700 }}>
             <div>Resource</div>
@@ -401,7 +418,6 @@ export default function CurriculumPage() {
           {!resources.length && <div style={{ padding: 16, color: COLORS.muted }}>No PDFs match current filters.</div>}
         </section>
 
-        {/* Analysis sidebar */}
         <aside className="card" style={{ padding: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>
             {focused ? focused.name : "Select a resource to analyze"}
@@ -470,7 +486,6 @@ export default function CurriculumPage() {
         </aside>
       </div>
 
-      {/* JobCenter modal (mirrors StudentsPage flow, but pre-fills Course/Unit and adds student picker) */}
       {isModalOpen && (
         <div
           onClick={closeJobModal}

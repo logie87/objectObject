@@ -1,5 +1,12 @@
-// components/jobs/jobCenter.tsx
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { apiPost } from "../../lib/api";
 
 export type AlignPayload = {
@@ -63,7 +70,7 @@ export function useJobCenter(): Ctx {
 // tiny pub/sub for toast without prop drilling
 const listeners = new Set<(msg: { title: string; action?: () => void }) => void>();
 export function toast(msg: { title: string; action?: () => void }) {
-  listeners.forEach(l => l(msg));
+  listeners.forEach((l) => l(msg));
 }
 export function subscribeToast(fn: (msg: { title: string; action?: () => void }) => void) {
   listeners.add(fn);
@@ -85,109 +92,166 @@ export const JobCenterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // when true, a completed job will be cleared on modal close (used when opened via dock)
   const [clearOnClose, setClearOnClose] = useState(false);
 
+  // persist state
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(job));
   }, [job]);
 
+  // ensure "running" visual state remains
   useEffect(() => {
     if (job.status === "running" && !inflight.current) {
-      // keep "running" visual state; no auto-retry
+      // no auto-retry
     }
   }, [job.status]);
 
+  // HARD CLEAR on unmount / pagehide (covers logout -> navigate("/"))
+  useEffect(() => {
+    const hardClear = () => {
+      if (inflight.current) inflight.current.abort();
+      inflight.current = null;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {}
+    };
+
+    // pagehide fires on SPA navigation away (e.g., to "/")
+    window.addEventListener("pagehide", hardClear);
+    // expose an escape hatch for external callers if needed
+    // (Topbar doesn't call this, but harmless and can be used in tests)
+    // @ts-ignore
+    window.__clearJobDock = hardClear;
+
+    return () => {
+      hardClear();
+      window.removeEventListener("pagehide", hardClear);
+      // @ts-ignore
+      try { delete window.__clearJobDock; } catch {}
+    };
+  }, []);
+
   const open = useCallback(() => setIsModalOpen(true), []);
+
+  const clearPersistedJob = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }, []);
 
   const close = useCallback(() => {
     setIsModalOpen(false);
     if (clearOnClose && job.status === "done") {
       setClearOnClose(false);
+      clearPersistedJob();
       setJob({ status: "idle", jobId: null, payload: null, meta: null, result: null, error: null });
     }
-  }, [clearOnClose, job.status]);
+  }, [clearOnClose, job.status, clearPersistedJob]);
 
   const clear = useCallback(() => {
     if (inflight.current) inflight.current.abort();
     inflight.current = null;
     setClearOnClose(false);
+    clearPersistedJob();
     setJob({ status: "idle", jobId: null, payload: null, meta: null, result: null });
-  }, []);
+  }, [clearPersistedJob]);
 
-  const runAlignment = useCallback(async (p: AlignPayload, jobId: string, signal: AbortSignal) => {
-    const payload = { student_ids: p.students, courses: p.courses, units: p.units };
-    const startedAt = Date.now();
+  const runAlignment = useCallback(
+    async (p: AlignPayload, jobId: string, signal: AbortSignal) => {
+      const payload = { student_ids: p.students, courses: p.courses, units: p.units };
+      const startedAt = Date.now();
 
-    let result: AlignResult | null = null;
-    try {
-      result = await apiPost<AlignResult>("/align/iep-selected", payload, { signal });
+      let result: AlignResult | null = null;
+      try {
+        result = await apiPost<AlignResult>("/align/iep-selected", payload, { signal });
 
-      const avgPerWorksheet: Record<string, number> = {};
-      const avgPerStudent: Record<string, number> = {};
-      const students = (result.matrix?.students ?? []) as string[];
-      const worksheets = (result.matrix?.worksheets ?? []) as string[];
-      const rowAvgs = (result.row_averages ?? []) as number[];
-      const colAvgs = (result.column_averages ?? []) as number[];
+        const avgPerWorksheet: Record<string, number> = {};
+        const avgPerStudent: Record<string, number> = {};
+        const students = (result.matrix?.students ?? []) as string[];
+        const worksheets = (result.matrix?.worksheets ?? []) as string[];
+        const rowAvgs = (result.row_averages ?? []) as number[];
+        const colAvgs = (result.column_averages ?? []) as number[];
 
-      worksheets.forEach((w, i) => { avgPerWorksheet[w] = rowAvgs[i] ?? NaN; });
-      students.forEach((s, j) => { avgPerStudent[s] = colAvgs[j] ?? NaN; });
+        worksheets.forEach((w, i) => {
+          avgPerWorksheet[w] = rowAvgs[i] ?? NaN;
+        });
+        students.forEach((s, j) => {
+          avgPerStudent[s] = colAvgs[j] ?? NaN;
+        });
 
-      const overall = (() => {
-        const vals = [...rowAvgs, ...colAvgs].filter(x => typeof x === "number" && !Number.isNaN(x));
-        if (!vals.length) return undefined;
-        const sum = vals.reduce((a, b) => a + b, 0);
-        return Math.round((sum / vals.length) * 10) / 10;
-      })();
+        const overall = (() => {
+          const vals = [...rowAvgs, ...colAvgs].filter((x) => typeof x === "number" && !Number.isNaN(x));
+          if (!vals.length) return undefined;
+          const sum = vals.reduce((a, b) => a + b, 0);
+          return Math.round((sum / vals.length) * 10) / 10;
+        })();
 
-      const meta: AlignResultMeta = {
+        const meta: AlignResultMeta = {
+          jobId,
+          startedAt,
+          finishedAt: Date.now(),
+          summary: {
+            studentCount: students.length,
+            worksheetCount: worksheets.length,
+            avgPerStudent,
+            avgPerWorksheet,
+            overall,
+          },
+        };
+
+        setJob({ status: "done", jobId, payload: p, meta, result, error: null });
+
+        toast({
+          title: "Alignment ready — open",
+          action: () => setIsModalOpen(true),
+        });
+      } catch (e: any) {
+        if (signal.aborted) return;
+        setJob((prev) => ({ ...prev, status: "error", error: String(e?.message || e) }));
+        toast({ title: "Alignment failed — click to retry", action: () => setIsModalOpen(true) });
+      } finally {
+        inflight.current = null;
+      }
+    },
+    []
+  );
+
+  const start = useCallback(
+    (p: AlignPayload) => {
+      if (inflight.current) inflight.current.abort();
+      const ctrl = new AbortController();
+      inflight.current = ctrl;
+      const jobId = `${Date.now()}`;
+      setClearOnClose(false);
+      setJob({
+        status: "running",
         jobId,
-        startedAt,
-        finishedAt: Date.now(),
-        summary: {
-          studentCount: students.length,
-          worksheetCount: worksheets.length,
-          avgPerStudent,
-          avgPerWorksheet,
-          overall
-        }
-      };
-
-      setJob({ status: "done", jobId, payload: p, meta, result, error: null });
-
-      toast({
-        title: "Alignment ready — open",
-        action: () => setIsModalOpen(true),
+        payload: p,
+        meta: { jobId, startedAt: Date.now() },
+        result: null,
+        error: null,
       });
-    } catch (e: any) {
-      if (signal.aborted) return;
-      setJob(prev => ({ ...prev, status: "error", error: String(e?.message || e) }));
-      toast({ title: "Alignment failed — click to retry", action: () => setIsModalOpen(true) });
-    } finally {
-      inflight.current = null;
-    }
-  }, []);
-
-  const start = useCallback((p: AlignPayload) => {
-    if (inflight.current) inflight.current.abort();
-    const ctrl = new AbortController();
-    inflight.current = ctrl;
-    const jobId = `${Date.now()}`;
-    setClearOnClose(false);
-    setJob({ status: "running", jobId, payload: p, meta: { jobId, startedAt: Date.now() }, result: null, error: null });
-    setIsModalOpen(true);
-    void runAlignment(p, jobId, ctrl.signal);
-  }, [runAlignment]);
+      setIsModalOpen(true);
+      void runAlignment(p, jobId, ctrl.signal);
+    },
+    [runAlignment]
+  );
 
   const reopenFromSidebar = useCallback(() => {
     setIsModalOpen(true);
     if (job.status === "done") setClearOnClose(true);
   }, [job.status]);
 
-  const ctx: Ctx = useMemo(() => ({
-    job, start, open, close, clear, isModalOpen, reopenFromSidebar
-  }), [job, start, open, close, clear, isModalOpen, reopenFromSidebar]);
-
-  return (
-    <JobCenterContext.Provider value={ctx}>
-      {children}
-    </JobCenterContext.Provider>
+  const ctx: Ctx = useMemo(
+    () => ({
+      job,
+      start,
+      open,
+      close,
+      clear,
+      isModalOpen,
+      reopenFromSidebar,
+    }),
+    [job, start, open, close, clear, isModalOpen, reopenFromSidebar]
   );
+
+  return <JobCenterContext.Provider value={ctx}>{children}</JobCenterContext.Provider>;
 };
