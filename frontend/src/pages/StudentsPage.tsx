@@ -1311,7 +1311,7 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="student" COLORS={COLORS}>
+                  <SectionCard title="Student" COLORS={COLORS}>
                     <Field
                       label="name"
                       value={active.data.student?.student_name || ""}
@@ -1400,12 +1400,12 @@ export default function StudentsPage() {
                     />
                   </SectionCard>
 
-                  <SectionCard title="performance progress" COLORS={COLORS}>
+                  <SectionCard title="Performance progress" COLORS={COLORS}>
                     <Field
                       textarea
                       label="summary"
                       value={active.data.performance_progress || ""}
-                      onChange={(v) => mutateActive(["performance_progress"], v)}
+                      onChange={(v) => mutateActive(["Performance_progress"], v)}
                       COLORS={COLORS}
                     />
                   </SectionCard>
@@ -1420,7 +1420,7 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="academic" COLORS={COLORS}>
+                  <SectionCard title="Academic" COLORS={COLORS}>
                     <Field
                       textarea
                       label="goal"
@@ -1429,7 +1429,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="social" COLORS={COLORS}>
+                  <SectionCard title="Social" COLORS={COLORS}>
                     <Field
                       textarea
                       label="goal"
@@ -1438,7 +1438,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="behavioural" COLORS={COLORS}>
+                  <SectionCard title="Behavioural" COLORS={COLORS}>
                     <Field
                       textarea
                       label="goal"
@@ -1449,7 +1449,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="communicative" COLORS={COLORS}>
+                  <SectionCard title="Communicative" COLORS={COLORS}>
                     <Field
                       textarea
                       label="goal"
@@ -1460,7 +1460,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="physical" COLORS={COLORS}>
+                  <SectionCard title="Physical" COLORS={COLORS}>
                     <Field
                       textarea
                       label="needs"
@@ -1480,7 +1480,7 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="instructional" COLORS={COLORS}>
+                  <SectionCard title="Instructional" COLORS={COLORS}>
                     <Field
                       textarea
                       label="supports"
@@ -1491,7 +1491,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="environmental" COLORS={COLORS}>
+                  <SectionCard title="Environmental" COLORS={COLORS}>
                     <Field
                       textarea
                       label="supports"
@@ -1502,7 +1502,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="assessment" COLORS={COLORS}>
+                  <SectionCard title="Assessment" COLORS={COLORS}>
                     <Field
                       textarea
                       label="supports"
@@ -1513,7 +1513,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="technology" COLORS={COLORS}>
+                  <SectionCard title="Technology" COLORS={COLORS}>
                     <Field
                       textarea
                       label="tools"
@@ -1535,7 +1535,7 @@ export default function StudentsPage() {
                     gap: 12,
                   }}
                 >
-                  <SectionCard title="assessments" COLORS={COLORS}>
+                  <SectionCard title="Assessments" COLORS={COLORS}>
                     <Field
                       textarea
                       label="notes"
@@ -1544,7 +1544,7 @@ export default function StudentsPage() {
                       COLORS={COLORS}
                     />
                   </SectionCard>
-                  <SectionCard title="transition goals" COLORS={COLORS}>
+                  <SectionCard title="Transition Goals" COLORS={COLORS}>
                     <Field
                       textarea
                       label="goals"
@@ -1571,7 +1571,7 @@ export default function StudentsPage() {
                         color: COLORS.mainText,
                       }}
                     >
-                      participants
+                      Participants
                     </div>
                     <button
                       onClick={addParticipant}
