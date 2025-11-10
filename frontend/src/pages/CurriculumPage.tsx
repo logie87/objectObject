@@ -15,6 +15,7 @@ const COLORS = {
 };
 
 type FitStatus = "good" | "warn" | "bad";
+
 type Resource = {
   name: string;
   filename: string;
@@ -24,6 +25,7 @@ type Resource = {
   fit: { mean: number; spread: number; status: FitStatus };
   issues?: string[];
 };
+
 type Curriculum = {
   courses: Record<string, Record<string, Resource[]>>;
 };
@@ -61,6 +63,12 @@ export default function CurriculumPage() {
     evidence: string;
   } | null>(null);
   const [busyAnalyze, setBusyAnalyze] = useState(false);
+
+  // Generate modal state
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [genCourse, setGenCourse] = useState("");
+  const [genUnit, setGenUnit] = useState("");
+  const [showMessage, setShowMessage] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -103,7 +111,7 @@ export default function CurriculumPage() {
   }, [allResources, issueFilter, minFit, atRiskOnly]);
 
   const handleReorder = async (newOrder: Resource[]) => {
-    if (!data) return;
+    if (!data || !activeCourse || !activeUnit) return;
     const next: Curriculum = {
       ...data,
       courses: {
@@ -116,9 +124,10 @@ export default function CurriculumPage() {
     };
     setData(next);
     try {
-      await apiPost(`/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`, {
-        order: newOrder.map((r) => r.filename),
-      });
+      await apiPost(
+        `/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`,
+        { order: newOrder.map((r) => r.filename) }
+      );
     } catch {}
   };
 
@@ -159,17 +168,129 @@ export default function CurriculumPage() {
     }
   };
 
-  async function openResource(r: Resource) {
+  const openResource = async (r: Resource) => {
     try {
       const url = await apiGetBlobUrl(`/curriculum/${r.path}`);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch {}
-  }
+  };
+
+  const handleGenerate = () => {
+    setShowGenerateModal(true);
+    setGenCourse(activeCourse);
+    setGenUnit(activeUnit);
+  };
+
+  const confirmGenerate = async () => {
+    setShowGenerateModal(false);
+    setShowMessage(true);
+    try {
+      await apiPost("/curriculum/generate", { course: genCourse, unit: genUnit });
+    } catch {}
+    setTimeout(() => setShowMessage(false), 4000);
+  };
 
   if (!data) return <div className="card">Loading curriculum…</div>;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, position: "relative" }}>
+      {showMessage && (
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            background: COLORS.link,
+            color: "white",
+            padding: "12px 18px",
+            borderRadius: 12,
+            boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
+            zIndex: 9999,
+          }}
+        >
+          ⚙️ Generation started — this may take a few minutes.
+        </div>
+      )}
+
+      {showGenerateModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 999,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 24,
+              borderRadius: 12,
+              minWidth: 320,
+              boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h3 style={{ marginBottom: 12, fontWeight: 700 }}>Generate Curriculum</h3>
+            <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
+              <label>
+                Course:
+                <select
+                  value={genCourse}
+                  onChange={(e) => setGenCourse(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: 8,
+                    border: `1px solid ${COLORS.border}`,
+                    marginTop: 4,
+                  }}
+                >
+                  {courses.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Unit:
+                <select
+                  value={genUnit}
+                  onChange={(e) => setGenUnit(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: 8,
+                    border: `1px solid ${COLORS.border}`,
+                    marginTop: 4,
+                  }}
+                >
+                  {(data?.courses[genCourse]
+                    ? Object.keys(data.courses[genCourse])
+                    : []
+                  ).map((u) => (
+                    <option key={u}>{u}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button type="button" className="btn ghost" onClick={() => setShowGenerateModal(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn primary" onClick={confirmGenerate}>
+                Generate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <div
         style={{
           marginBottom: 16,
@@ -181,12 +302,11 @@ export default function CurriculumPage() {
       >
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4 }}>Curriculum</h1>
-          <div style={{ color: COLORS.graySub }}>
-            Units • Resources • Alignment Overview
-          </div>
+          <div style={{ color: COLORS.graySub }}>Units • Resources • Alignment Overview</div>
         </div>
       </div>
 
+      {/* Filter row */}
       <div
         className="card"
         style={{
@@ -236,9 +356,7 @@ export default function CurriculumPage() {
         </select>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <label style={{ fontSize: 12, color: COLORS.muted }}>
-            Min fit {minFit}%
-          </label>
+          <label style={{ fontSize: 12, color: COLORS.muted }}>Min fit {minFit}%</label>
           <input
             type="range"
             min={0}
@@ -258,6 +376,7 @@ export default function CurriculumPage() {
 
         <div style={{ display: "flex", justifyContent: "end", gap: 8 }}>
           <button
+            type="button"
             className="btn ghost"
             onClick={() => {
               setIssueFilter("All Issues");
@@ -267,16 +386,22 @@ export default function CurriculumPage() {
           >
             Reset Filters
           </button>
+          <button type="button" className="btn ghost" style={{ color: "green" }} onClick={handleGenerate}>
+            Generate
+          </button>
         </div>
       </div>
 
+      {/* Main grid */}
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 380px", gap: 20 }}>
+        {/* Units sidebar */}
         <aside className="card" style={{ padding: 12 }}>
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Units</div>
           <div style={{ display: "grid", gap: 8 }}>
             {units.map((u) => (
               <button
                 key={u}
+                type="button"
                 className={`unit-btn ${u === activeUnit ? "active" : ""}`}
                 onClick={() => {
                   setActiveUnit(u);
@@ -293,12 +418,12 @@ export default function CurriculumPage() {
           </div>
         </aside>
 
+        {/* Resources list */}
         <section className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "2fr 1fr 1fr 160px",
-              // background: COLORS.headerBg,
               padding: "10px 16px",
               fontWeight: 700,
             }}
@@ -309,17 +434,16 @@ export default function CurriculumPage() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>Actions</span>
               <button
+                type="button"
                 className="btn ghost"
-                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400 , color: "green",}}
+                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400, color: "green" }}
                 onClick={() => {
                   const input = document.createElement("input");
                   input.type = "file";
                   input.accept = ".pdf";
                   input.multiple = true;
-                  input.onchange = async (e) => {
-                    const files = (e.target as HTMLInputElement).files;
-                    if (!files) return;
-                    // Handle upload logic here
+                  input.onchange = (e) => {
+                    const files = Array.from((e.target as HTMLInputElement).files || []);
                     console.log("Upload files:", files);
                   };
                   input.click();
@@ -342,11 +466,11 @@ export default function CurriculumPage() {
                 padding: "10px 16px",
                 borderTop: `1px solid ${COLORS.divider}`,
                 alignItems: "center",
-                // background: focused?.path === r.path ? COLORS.focusBg : "transparent",
                 cursor: "grab",
               }}
             >
               <button
+                type="button"
                 className="btn resources"
                 onClick={() => openResource(r)}
                 style={{
@@ -383,6 +507,7 @@ export default function CurriculumPage() {
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button
+                  type="button"
                   className="btn ghost curric-btn"
                   onClick={() => analyze(r)}
                   disabled={busyAnalyze && focused?.path === r.path}
@@ -395,30 +520,32 @@ export default function CurriculumPage() {
           ))}
 
           {!resources.length && (
-            <div style={{ padding: 16, color: COLORS.muted }}>
-              No PDFs match current filters.
-            </div>
+            <div style={{ padding: 16, color: COLORS.muted }}>No PDFs match current filters.</div>
           )}
         </section>
 
+        {/* Analysis sidebar */}
         <aside className="card" style={{ padding: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>
             {focused ? focused.name : "Select a resource to analyze"}
           </div>
           {focused && (
             <>
-              <div className="card" style={{}}>
+              <div className="card">
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ fontWeight: 700 }}>Group Fit</div>
                   {statusBadge(focused.fit)}
                 </div>
                 <div style={{ fontSize: 12, color: COLORS.muted }}>
-                  Modified: {focused.uploaded_at.split("T")[0]} • Size: {(focused.size / 1024).toFixed(1)} KB
+                  Modified: {focused.uploaded_at?.split("T")[0] ?? "—"} • Size:{" "}
+                  {(focused.size / 1024).toFixed(1)} KB
                 </div>
                 {(focused.issues || []).length > 0 && (
                   <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {(focused.issues || []).map((iss) => (
-                      <span key={iss} className="badge warn">■ {iss}</span>
+                      <span key={iss} className="badge warn">
+                        ■ {iss}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -436,9 +563,7 @@ export default function CurriculumPage() {
               </div>
 
               <div className="card" style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                  Consensus adaptation
-                </div>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Consensus adaptation</div>
                 {busyAnalyze && !analysis ? (
                   <div style={{ color: COLORS.muted }}>Analyzing…</div>
                 ) : (
@@ -454,9 +579,14 @@ export default function CurriculumPage() {
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button className="btn primary">Insert</button>
-                <button className="btn ghost">Save</button>
+                <button type="button" className="btn primary">
+                  Insert
+                </button>
+                <button type="button" className="btn ghost">
+                  Save
+                </button>
                 <button
+                  type="button"
                   className="btn ghost"
                   onClick={() => {
                     if (!analysis) return;
