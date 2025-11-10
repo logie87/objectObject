@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiGetBlobUrl, apiPut } from "../lib/api";
 
 const COLORS = {
-  buttonGradientStart: "#a78bfa",
-  buttonGradientEnd: "#ec4899",
+  buttonGradientStart: "#3DAFBC",
+  buttonGradientEnd: "#3DAFBC",
   cardBg: "#ffffff",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
   mainText: "#374151",
-  avatarBg: "#eef2ff",
+  avatarBg: "#f2f3f6ff",
   tagBg: "#f3f4f6",
   border: "#e5e7eb",
   noticeBg: "#f8fafc",
@@ -313,8 +313,10 @@ export default function ReportsPage() {
                   flex: 1,
                   padding: "10px 0",
                   borderRadius: 12,
-                  border: `1px solid ${COLORS.border}`,
-                  background: COLORS.white,
+                  border: "none",
+                  background: "#e5e7eb",
+                  color: "#374151",
+                  fontWeight: 650,
                   cursor: "pointer",
                 }}
                 onClick={() => viewReport(r.id)}
@@ -326,8 +328,10 @@ export default function ReportsPage() {
                   flex: 1,
                   padding: "10px 0",
                   borderRadius: 12,
-                  border: `1px solid ${COLORS.border}`,
-                  background: COLORS.white,
+                  border: "none",
+                  background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+                  color: "white",
+                  fontWeight: 650,
                   cursor: "pointer",
                 }}
                 onClick={() => renameReport(r.id, r.title)}

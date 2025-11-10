@@ -2,15 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { apiDelete, apiGet, apiGetBlobUrl, apiPostForm, apiPut } from "../lib/api";
 
 const COLORS = {
-  buttonGradientStart: "#a78bfa",
-  buttonGradientEnd: "#ec4899",
-  deleteGradientStart: "#ef4444",
-  deleteGradientEnd: "#dc2626",
+  buttonGradientStart: "#3DAFBC",
+  buttonGradientEnd: "#35598f",
+  deleteButton: "#c43b3bff",
   cardBg: "#ffffff",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
   mainText: "#374151",
-  avatarBg: "#ecfeff",
+  avatarBg: "#f2f3f6ff",
   tagBg: "#f3f4f6",
   border: "#e5e7eb",
   noticeBg: "#f8fafc",
@@ -281,8 +280,10 @@ export default function LibraryPage() {
                   flex: 1,
                   padding: "10px 0",
                   borderRadius: 12,
-                  border: `1px solid ${COLORS.border}`,
-                  background: COLORS.white,
+                  border: "none",
+                  background: "#e5e7eb",
+                  color: "#374151",
+                  fontWeight: 650,
                   cursor: "pointer",
                 }}
                 onClick={() => viewDoc(d.id)}
@@ -294,8 +295,10 @@ export default function LibraryPage() {
                   flex: 1,
                   padding: "10px 0",
                   borderRadius: 12,
-                  border: `1px solid ${COLORS.border}`,
-                  background: COLORS.white,
+                  border: "none",
+                  background: COLORS.buttonGradientStart,
+                  color: "white",
+                  fontWeight: 650,
                   cursor: "pointer",
                 }}
                 onClick={() => renameDoc(d.id, d.title)}
@@ -306,10 +309,11 @@ export default function LibraryPage() {
                 style={{
                   padding: "10px 16px",
                   borderRadius: 12,
-                  border: "none",
+                  border: "3px solid #ff6a59ff",
                   cursor: "pointer",
-                  background: `linear-gradient(135deg, ${COLORS.deleteGradientStart}, ${COLORS.deleteGradientEnd})`,
-                  color: COLORS.white,
+                  fontWeight: 650,
+                  background: "none",
+                  color: "#ff6a59ff",
                 }}
                 onClick={() => deleteDoc(d.id)}
                 title="Delete from library"
