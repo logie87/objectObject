@@ -1,4 +1,3 @@
-# api.py
 import hashlib
 import json
 import logging
@@ -8,6 +7,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+from pipelines import run_iep_alignment_selected
 
 import jwt
 import uvicorn
@@ -132,6 +133,19 @@ class ReportUpdate(BaseModel):
 
 security = HTTPBearer()
 
+class IEPAlignRequest(BaseModel):
+    student_ids: List[str]
+    courses: List[str]
+    units: List[str]
+
+class IEPAlignResponse(BaseModel):
+    meta: Dict
+    matrix: Dict
+    details: Dict
+    row_averages: List[float]
+    column_averages: List[float]
+
+
 # ============================================================
 # ==================== DATABASE HELPERS ======================
 # ============================================================
@@ -211,6 +225,22 @@ def ensure_reports_dir():
             json.dump({"reports": {}}, f)
 
 # ====== Students FS helpers ======
+
+def _student_name_from_id(sid: str) -> Optional[str]:
+    p = _student_file_for_id(sid)
+    if not p.exists():
+        return None
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        nm = data.get("student", {}).get("student_name")
+        if isinstance(nm, str) and nm.strip():
+            return nm.strip()
+    except Exception as e:
+        logger.warning(f"Failed reading student {sid}: {e}")
+    return None
+
+
 def _student_file_for_id(sid: str) -> Path:
     # id is filename without extension, guard against path traversal
     safe = "".join(ch for ch in sid if ch.isalnum() or ch in "-_")
@@ -1307,6 +1337,79 @@ async def search_suggest(s: Optional[str] = "", limit: int = 6, user=Depends(ver
     out.sort(key=lambda x: x.score, reverse=True)
     return out[:limit]
 
+
+# ============================================================
+# =================== ALIGNMENT (IEP-SELECTED) ===============
+# ============================================================
+
+@app.post("/align/iep-selected", response_model=IEPAlignResponse)
+async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt)):
+    """
+    Run IEP alignment for an explicit subset:
+      - payload.student_ids: list of student file IDs (stems under /data/students/*.json)
+      - payload.courses: list of course names (dir names under /data/curriculum)
+      - payload.units: list of unit names (dir names under each course)
+
+    The API will:
+      - map student_ids -> student.student_name from each JSON
+      - build selection = { course: [units that actually exist under that course ∩ payload.units] }
+      - call pipelines.run_iep_alignment_selected(...)
+    """
+    # 1) Resolve student names
+    student_ids = [s for s in (payload.student_ids or []) if isinstance(s, str) and s.strip()]
+    if not student_ids:
+        raise HTTPException(status_code=400, detail="No students selected")
+
+    student_names: List[str] = []
+    for sid in student_ids:
+        nm = _student_name_from_id(sid)
+        if nm:
+            student_names.append(nm)
+        else:
+            logger.warning(f"Student ID not found or missing name: {sid}")
+
+    if not student_names:
+        raise HTTPException(status_code=400, detail="Selected students not found")
+
+    # 2) Build selection map {course: [units...]} filtering to existing units only
+    selection: Dict[str, List[str]] = {}
+    requested_courses = [c for c in (payload.courses or []) if isinstance(c, str) and c.strip()]
+    requested_units   = {u for u in (payload.units or []) if isinstance(u, str) and u.strip()}
+
+    if not requested_courses or not requested_units:
+        raise HTTPException(status_code=400, detail="Select at least one course and one unit")
+
+    for course in requested_courses:
+        course_dir = CUR_DIR / course
+        if not course_dir.exists() or not course_dir.is_dir():
+            logger.info(f"Course not found: {course}")
+            continue
+        # include only requested units that exist under this course
+        existing_units = [u.name for u in course_dir.iterdir() if u.is_dir()]
+        units_for_course = [u for u in existing_units if u in requested_units]
+        if units_for_course:
+            selection[course] = units_for_course
+
+    if not selection:
+        raise HTTPException(status_code=400, detail="No matching units found under selected courses")
+
+    # 3) Run pipeline
+    try:
+        result = run_iep_alignment_selected(
+            student_names=student_names,
+            base_students_dir=str(STU_DIR),
+            selection=selection,
+            base_curriculum_dir=str(CUR_DIR),
+        )
+    except Exception as e:
+        logger.exception("Alignment pipeline failed")
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {e}")
+
+    if not result or not isinstance(result, dict):
+        raise HTTPException(status_code=500, detail="No result from pipeline")
+
+    logger.info(f"Alignment done for {len(student_names)} students, {sum(len(v) for v in selection.values())} units")
+    return result
 
 
 # ============================================================

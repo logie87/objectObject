@@ -1,9 +1,5 @@
-// studentspage.tsx
-// adds dark mode support by reading `<html data-theme="dark">` or the `dark` class
-// listens for theme changes via mutationobserver, matchmedia, and storage events
-
 import React, { useEffect, useMemo, useState } from "react";
-import { apiGet, apiPut } from "../lib/api";
+import { apiGet, apiPut, apiPost } from "../lib/api";
 
 const COLORS = {
   readingBadgeBg: "rgba(240, 246, 157, 1)",
@@ -53,6 +49,14 @@ type Resource = {
 
 type Curriculum = {
   courses: Record<string, Record<string, Resource[]>>;
+};
+
+type IEPAlignResponse = {
+  meta: { students: string[]; worksheets: string[] };
+  matrix: { students: string[]; worksheets: string[]; matrix: number[][] };
+  details: Record<string, any>;
+  row_averages: number[];
+  column_averages: number[];
 };
 
 // theme palettes (light + dark)
@@ -748,18 +752,26 @@ export default function StudentsPage() {
     setSelectedUnits([]);
   }, [selectedCourses]);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    console.log({
-      students: selectedStudents,
-      courses: selectedCourses,
-      units: selectedUnits,
-    });
-    setTimeout(() => {
-      setIsGenerating(false);
+    try {
+      const payload = {
+        student_ids: selectedStudents, // file IDs from /students list
+        courses: selectedCourses,
+        units: selectedUnits,
+      };
+      const res = await apiPost<IEPAlignResponse>("/align/iep-selected", payload);
+      console.log("IEP alignment result:", res);
       setShowModal(false);
-      alert("report generation complete! your report is ready.");
-    }, 3000);
+      const worksheets = res?.meta?.worksheets?.length ?? 0;
+      const students = res?.meta?.students?.length ?? 0;
+      alert(`Alignment complete: ${worksheets} worksheets × ${students} students.`);
+    } catch (err: any) {
+      console.error("alignment failed", err);
+      alert(err?.message || "Failed to run alignment.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const focusCoursesInput = () => {

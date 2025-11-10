@@ -34,7 +34,7 @@ from pdf2image import convert_from_path
 import pytesseract
 from PIL import Image
 
-from llm import run_llm
+from .llm import run_llm
 from logger import SimpleAppLogger
 
 # ---------- Configuration / Schema ----------
