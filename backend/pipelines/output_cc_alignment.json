@@ -1,0 +1,402 @@
+{
+  "meta": {
+    "subject": "Mathematics",
+    "grade_band": "6-9",
+    "competencies": [
+      "questioning_and_investigating",
+      "connecting_and_reflecting",
+      "reasoning_and_analyzing",
+      "understanding_and_solving",
+      "communicating_and_representing"
+    ],
+    "worksheets": [
+      "Unit 1 - Rations, Rates, Proportions_Ch2-get ready.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf",
+      "Unit 2 - Understanding Percent_Ch4-get ready.pdf",
+      "Unit 2 - Understanding Percent_Ch4.1.pdf",
+      "Unit 2 - Understanding Percent_Ch4.2.pdf",
+      "Unit 2 - Understanding Percent_Learning Guide 2 Understanding Percent.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3-get ready.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.1.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.2.pdf",
+      "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf"
+    ]
+  },
+  "matrix": {
+    "competencies": [
+      "questioning_and_investigating",
+      "connecting_and_reflecting",
+      "reasoning_and_analyzing",
+      "understanding_and_solving",
+      "communicating_and_representing"
+    ],
+    "worksheets": [
+      "Unit 1 - Rations, Rates, Proportions_Ch2-get ready.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf",
+      "Unit 2 - Understanding Percent_Ch4-get ready.pdf",
+      "Unit 2 - Understanding Percent_Ch4.1.pdf",
+      "Unit 2 - Understanding Percent_Ch4.2.pdf",
+      "Unit 2 - Understanding Percent_Learning Guide 2 Understanding Percent.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3-get ready.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.1.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.2.pdf",
+      "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf"
+    ],
+    "matrix": [
+      [
+        25,
+        85,
+        25,
+        95,
+        75
+      ],
+      [
+        75,
+        85,
+        85,
+        95,
+        85
+      ],
+      [
+        75,
+        78,
+        85,
+        85,
+        85
+      ],
+      [
+        45,
+        75,
+        75,
+        85,
+        75
+      ],
+      [
+        25,
+        85,
+        75,
+        75,
+        65
+      ],
+      [
+        85,
+        75,
+        75,
+        85,
+        85
+      ],
+      [
+        75,
+        75,
+        85,
+        85,
+        85
+      ],
+      [
+        85,
+        65,
+        85,
+        75,
+        85
+      ],
+      [
+        45,
+        25,
+        85,
+        72,
+        35
+      ],
+      [
+        75,
+        85,
+        85,
+        85,
+        85
+      ],
+      [
+        85,
+        85,
+        75,
+        95,
+        85
+      ],
+      [
+        85,
+        75,
+        85,
+        95,
+        75
+      ]
+    ]
+  },
+  "details": {
+    "Unit 1 - Rations, Rates, Proportions_Ch2-get ready.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 25,
+        "explanation": "The worksheet touches upon ratios and equivalent fractions but does not engage students in posing complex problems or rich lines of inquiry as required by the 'Questioning And Investigating' competency."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 85,
+        "explanation": "The worksheet closely aligns with 'Connecting And Reflecting' by incorporating ratio connections and reflective elements in problem-solving but could better integrate First Peoples perspectives."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 25,
+        "explanation": "The worksheet touches upon ratios and fractions but lacks exercises that directly involve abstract reasoning or pattern recognition."
+      },
+      "understanding_and_solving": {
+        "alignment": 95,
+        "explanation": "The worksheet effectively applies strategies and models mathematics in diverse contexts as per indicator (grade band 6-9), but it slightly lacks explicit connections to real-life problem solving."
+      },
+      "communicating_and_representing": {
+        "alignment": 75,
+        "explanation": "The worksheet aligns well with communicating and representing math ideas for grade band 6-9 by providing exercises that require students to explain mathematical concepts using language and representations."
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 75,
+        "explanation": "The worksheet largely aligns with Questioning And Investigating for grade band 6-9 by including a variety of complex problems and lines of inquiry but lacks explicit examples or prompts that directly stimulate curiosity."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 85,
+        "explanation": "The worksheet aligns well with 'Connecting And Reflecting' as it integrates math concepts through exercises and reflective questions but could include more explicit connections to First Peoples perspectives."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 85,
+        "explanation": "The worksheet provides relevant exercises that address all parts of reasoning and analyzing core competency but lacks deeper exploration into abstract situations."
+      },
+      "understanding_and_solving": {
+        "alignment": 95,
+        "explanation": "The worksheet effectively covers all key aspects of problem solving with ratios and rates for grade bands 6-9 as per core competency indicators."
+      },
+      "communicating_and_representing": {
+        "alignment": 85,
+        "explanation": "The worksheet mostly aligns with the core competency of Communicating And Representing as it includes activities that require students to explain and justify math ideas using precise language, although more explicit alignment towards justifying solutions could"
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 75,
+        "explanation": "The worksheet largely aligns with posing rich problems and lines of inquiry as per core competency indicators but lacks explicit examples that connect directly to varied contextual problem-posing."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 78,
+        "explanation": "The worksheet covers key aspects of connecting math ideas to real life (e.g., practicing and applying unit rates), but lacks explicit connection with First Peoppers perspectives."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 85,
+        "explanation": "The worksheet covers logical reasoning and pattern analysis for rates but lacks direct activities involving quantity sense."
+      },
+      "understanding_and_solving": {
+        "alignment": 85,
+        "explanation": "The worksheet effectively addresses core competency indicators by including problem-solving tasks that require multiple strategies and real-life contexts."
+      },
+      "communicating_and_representing": {
+        "alignment": 85,
+        "explanation": "The worksheet covers key concepts of explaining and justifying math ideas using precise language as indicated in core competency but lacks explicit exercises directly asking students to justify their solutions."
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 45,
+        "explanation": "The worksheet addresses ratios and rates but lacks direct examples or problems that compare complex quantities across varied contexts as required by the core competency."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 75,
+        "explanation": "The worksheet aligns well with Connecting And Reflecting by integrating math concepts and First Peoples perspectives; however, it lacks explicit reflection components."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 75,
+        "explanation": "The worksheet covers logical reasoning and pattern recognition but lacks direct activities that promote abstract situations as per competency indicators."
+      },
+      "understanding_and_solving": {
+        "alignment": 85,
+        "explanation": "The worksheet addresses core competency by providing numerous opportunities for students to engage in comparing ratios and rates using different representations such as words, notation, fractions, decimals, and percentages."
+      },
+      "communicating_and_representing": {
+        "alignment": 75,
+        "explanation": "The worksheet covers ratios and rates which align with part of 'Communicating And Representing,' but it lacks exercises explicitly focusing on justifying math ideas using precise mathematical language."
+      }
+    },
+    "Unit 2 - Understanding Percent_Ch4-get ready.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 25,
+        "explanation": "The worksheet only partially aligns with posing rich problems and lines of inquiry as indicated in Grade Band 6-9 for core competency; it mostly focuses on basic percentage calculation."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 85,
+        "explanation": "The worksheet closely aligns with 'Connecting And Reflecting' by integrating various math concepts and perspectives; however, it lacks explicit connection to First Peoppers’ viewpoints."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 75,
+        "explanation": "The worksheet introduces and applies concepts related to percentages which align with logical reasoning in abstract situations as required by grade band 6-9."
+      },
+      "understanding_and_solving": {
+        "alignment": 75,
+        "explanation": "The worksheet effectively engages students in applying strategies to solve problems involving percents and converting between fractions, decimals, and percents; however, it could further incorporate modeling with mathematics."
+      },
+      "communicating_and_representing": {
+        "alignment": 65,
+        "explanation": "The worksheet partially aligns with 'Communicating And Representing' by including activities that require students to explain and justify math ideas using precise language but lacks direct exercises on communicating solutions effectively."
+      }
+    },
+    "Unit 2 - Understanding Percent_Ch4.1.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 85,
+        "explanation": "The worksheet aligns well with core competency as it prompts students to pose rich problems and lines of inquiry involving percentages through grids; however, direct questions about posing complex or varied contextual problems are minimal."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 75,
+        "explanation": "The worksheet aligns well with 'Connecting And Reflecting,' particularly in integrating math concepts and connecting to personal interests through percent representation exercises."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 75,
+        "explanation": "The worksheet provides a good practice for representing and understanding percents using hundred grids but lacks exercises that involve direct logical reasoning or abstract pattern recognition as required by the competency."
+      },
+      "understanding_and_solving": {
+        "alignment": 85,
+        "explanation": "The worksheet mostly aligns with applying multiple strategies to represent percents using hundred grids but lacks explicit instruction for selecting efficient strategies in diverse contexts."
+      },
+      "communicating_and_representing": {
+        "alignment": 85,
+        "explanation": "The worksheet effectively encourages students to use mathematical language and representations in explaining their thinking about percents but lacks clear instructions on justifying math ideas."
+      }
+    },
+    "Unit 2 - Understanding Percent_Ch4.2.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 75,
+        "explanation": "The worksheet mostly aligns with investigating and questioning by presenting problems that require students to pose rich questions and inquiries across varied contexts."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 75,
+        "explanation": "The worksheet includes relevant connections between math concepts and other areas/interests as well as First Peoples perspectives but lacks explicit reflection prompts."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 85,
+        "explanation": "The worksheet aligns well with logical reasoning and pattern analysis competencies for grade band 6-9."
+      },
+      "understanding_and_solving": {
+        "alignment": 85,
+        "explanation": "The worksheet largely aligns with the core competency by applying multiple strategies to solve problems involving fractions, decimals, and percents but lacks depth in diverse context application."
+      },
+      "communicating_and_representing": {
+        "alignment": 85,
+        "explanation": "The worksheet aligns well with core competency 'Communicating And Representing,' as it effectively guides students to convert between fractions, decimals, and percents while explaining their reasoning."
+      }
+    },
+    "Unit 2 - Understanding Percent_Learning Guide 2 Understanding Percent.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 85,
+        "explanation": "The worksheet closely aligns with 'Questioning And Investigating' by engaging students in complex problem solving and inquiry-based learning."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 65,
+        "explanation": "The worksheet partially aligns with 'Connecting And Reflecting' by integrating percent concepts but lacks explicit First Peoples perspectives and reflection activities."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 85,
+        "explanation": "The worksheet largely aligns with core competency in reasoning and analyzing through pattern recognition and logical estimation tasks but lacks direct exercises that require abstract situations."
+      },
+      "understanding_and_solving": {
+        "alignment": 75,
+        "explanation": "The worksheet mostly aligns with indicator A and B of applying multiple strategies to solve problems by engaging students in converting percents between forms using grids and decimal/fraction conversions."
+      },
+      "communicating_and_representing": {
+        "alignment": 85,
+        "explanation": "The worksheet heavily aligns with communicating and representing mathematical ideas in percent form but lacks explicit exercises requiring explanation and justification."
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3-get ready.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 45,
+        "explanation": "The worksheet includes elements of inquiry and investigation in a math context but lacks complex problems across varied scenarios as indicated for core competency."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 25,
+        "explanation": "The worksheet partially aligns with 'Connecting And Reflecting' as it involves math but lacks connection to other areas and reflections."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 85,
+        "explanation": "The worksheet focuses primarily on mathematical reasoning and problem solving related to factors and perimeters but lacks direct exercises that emphasize logical thinking in abstract situations as indicated by the competency description."
+      },
+      "understanding_and_solving": {
+        "alignment": 72,
+        "explanation": "The worksheet largely addresses core competency by involving problem solving and multiple strategy applications for both real-life and abstract problems."
+      },
+      "communicating_and_representing": {
+        "alignment": 35,
+        "explanation": "The worksheet touches upon using mathematical language but lacks direct questions or activities related to explaining and justifying math ideas in precise form."
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3.1.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 75,
+        "explanation": "The worksheet includes complex problems related to squares and square roots across varied contexts but lacks explicit connection of posing questions which is essential for investigating as per the core competency."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 85,
+        "explanation": "The worksheet largely aligns with 'Connecting And Reflecting' by integrating math concepts and requiring reflection; however, it lacks explicit connection to First Peoples perspectives."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 85,
+        "explanation": "The worksheet largely aligns with reasoning and analyzing as it engages students in pattern recognition (e.g., drawing quadrilaterals to determine perfect squares), estimation strategies (discussing whether numbers like 10 are or aren't perfect squares based o"
+      },
+      "understanding_and_solving": {
+        "alignment": 85,
+        "explanation": "The worksheet mostly aligns with the competency by engaging students in applying strategies and technologies to solve problems related to squares and square roots but could include more real-life context."
+      },
+      "communicating_and_representing": {
+        "alignment": 85,
+        "explanation": "The worksheet aligns well with 'Communicating And Representing' as it involves explaining and justifying mathematical ideas related to prime factorization and perfect squares."
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3.2.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 85,
+        "explanation": "The worksheet effectively integrates complex and rich problem posing within varied contexts related to the Pythagorean relationship but lacks direct questions that engage students in investigating or questioning."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 85,
+        "explanation": "The worksheet strongly aligns with Connecting And Reflecting as it integrates math concepts within real-life contexts and encourages reflection on mathematical thinking."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 75,
+        "explanation": "The worksheet generally aligns well with reasoning and analyzing by incorporating pattern recognition (Pythagorean relationship), estimation strategies, and abstract situations related to number sense in geometry."
+      },
+      "understanding_and_solving": {
+        "alignment": 95,
+        "explanation": "The worksheet effectively aligns with the core competency by presenting various problems that require using tools and strategies to solve real-life and abstract issues involving squares."
+      },
+      "communicating_and_representing": {
+        "alignment": 85,
+        "explanation": "The worksheet largely aligns with core competency by incorporating tasks that require students to use mathematical language and representations but could better emphasize justifying math ideas."
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf": {
+      "questioning_and_investigating": {
+        "alignment": 85,
+        "explanation": "The worksheet effectively engages students in posing rich problems and lines of inquiry relating to right triangles but could provide more varied contexts."
+      },
+      "connecting_and_reflecting": {
+        "alignment": 75,
+        "explanation": "The worksheet incorporates key aspects of connecting math with personal interests and reflecting on mathematical thinking but lacks direct integration of First Peoples perspectives."
+      },
+      "reasoning_and_analyzing": {
+        "alignment": 85,
+        "explanation": "The worksheet effectively incorporates abstract reasoning and pattern recognition in understanding Pythagorean relationships."
+      },
+      "understanding_and_solving": {
+        "alignment": 95,
+        "explanation": "The worksheet effectively engages students with real-world applications of solving problems using strategies and technology related to right triangles."
+      },
+      "communicating_and_representing": {
+        "alignment": 75,
+        "explanation": "The worksheet incorporates most aspects of communicating and representing mathematical ideas for grade band 6-9 but lacks depth in justifying math decisions."
+      }
+    }
+  }
+}
