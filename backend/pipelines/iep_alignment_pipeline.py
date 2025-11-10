@@ -229,7 +229,7 @@ Scoring rules:
 - explanation must be concise.
 - Do not output ANY extra text outside the JSON.
 
-Produce the JSON now.
+Produce the JSON in a form "{...}" without any whitespaces now.
 """
 
 
@@ -382,8 +382,8 @@ def evaluate_alignment_for_pair(
         student, worksheet_text, worksheet_id, worksheet_title
     )
     raw_output = run_llm(prompt=prompt)
-    cleaned_output = raw_output.strip("```json").strip()
-    parsed_json = json.loads(cleaned_output)
+    print(raw_output)
+    parsed_json = json.loads(raw_output)
     # parsed_json, raw_json_text = extract_json_from_text(raw_output)
     if not parsed_json:
         # Attempt a second pass: ask the model to respond in JSON only (rare)
