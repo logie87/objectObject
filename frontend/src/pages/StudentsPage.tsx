@@ -5,6 +5,28 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../lib/api";
 
+const COLORS = {
+  readingBadgeBg: "rgba(245, 255, 107, 0.7)",
+  readingBadgeText: "#3A3A5C",
+  timeBadgeBg: "rgba(196, 255, 160, 0.7)",
+  timeBadgeText: "#3A3A5C",
+  altRespBg: "rgba(148, 255, 212, 0.7)",
+  altRespText: "#3A3A5C",
+  pieGradientStart: "#34d399",
+  pieGradientEnd: "#22c55e",
+  pieEmpty: "#e5e7eb",
+  buttonGradientStart: "#3DAFBC",
+  buttonGradientEnd: "#3DAFBC",
+  spinnerTrack: "#e5e7eb",
+  spinnerArc: "#ec4899",
+  cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
+  mutedText: "#6b7280",
+  mainText: "#374151",
+  avatarBg: "#f2f3f6ff",
+  border: "#e5e7eb",
+  surface: "#ffffff",
+};
+
 type StudentSummary = {
   id: string;
   name: string;
