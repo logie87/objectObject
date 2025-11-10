@@ -174,7 +174,7 @@ export default function LibraryPage() {
   const neutralBtnFg = readRootTheme() === "dark" ? C.mainText : "#374151";
 
   return (
-    <div style={{ padding: 24, background: C.pageBg, color: C.mainText, minHeight: "100vh" }}>
+    <div style={{ padding: 24, color: C.mainText, minHeight: "100vh" }}>
       <div
         style={{
           marginBottom: 16,
