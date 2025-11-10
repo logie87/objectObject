@@ -49,186 +49,286 @@
     ],
     "matrix": [
       [
-        63,
-        83,
-        81,
-        45,
-        82,
-        83
-      ],
-      [
-        84,
-        76,
-        86,
-        70,
         77,
+        84,
+        82,
+        47,
+        73,
         79
       ],
       [
+        80,
+        78,
+        86,
         81,
+        86,
+        78
+      ],
+      [
+        81,
+        71,
+        81,
+        76,
+        78,
+        67
+      ],
+      [
+        79,
+        77,
         82,
-        82,
-        0,
-        75,
+        77,
+        77,
         81
       ],
       [
-        86,
-        80,
-        78,
-        83,
-        73,
-        86
-      ],
-      [
-        86,
+        92,
         76,
-        79,
-        0,
-        83,
+        78,
+        71,
+        63,
         76
       ],
       [
-        81,
-        81,
-        76,
-        81,
+        88,
         84,
-        83
-      ],
-      [
-        76,
+        83,
+        64,
         81,
-        76,
-        86,
-        81,
-        82
-      ],
-      [
-        86,
-        78,
-        80,
-        70,
-        72,
         81
       ],
       [
-        78,
-        78,
-        72,
+        86,
+        69,
+        86,
+        71,
         81,
-        78,
-        65
+        81
       ],
       [
-        78,
-        85,
-        81,
-        81,
-        53,
-        80
-      ],
-      [
-        81,
-        81,
-        78,
-        81,
         76,
-        80
+        78,
+        79,
+        81,
+        69,
+        81
       ],
       [
         85,
+        66,
+        85,
+        41,
+        51,
+        63
+      ],
+      [
         81,
-        83,
+        84,
+        77,
+        71,
+        65,
+        77
+      ],
+      [
+        81,
+        78,
+        78,
+        58,
+        81,
+        78
+      ],
+      [
+        77,
+        84,
+        78,
+        80,
         79,
-        79,
-        83
+        76
       ]
     ]
   },
   "details": {
     "Unit 1 - Rations, Rates, Proportions_Ch2-get ready.pdf": {
       "Maya Thompson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 65,
+        "understanding_fit": 80,
+        "accessibility_fit": 75,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 77,
+        "explanation": "The worksheet provides appropriate academic challenge with clear steps and visuals for understanding ratios; however, it lacks direct sensory accommodations. The step-by-step instructions align well with the instructional needs, but more explicit examples woul"
+      },
+      "Liam Chen": {
+        "understanding_fit": 80,
+        "accessibility_fit": 90,
+        "accommodation_fit": 95,
+        "engagement_fit": 70,
+        "overall_alignment": 84,
+        "explanation": "The worksheet's ratio and fraction problems align well with Liam's academic goals but may need to be broken down further due to his ADHD. The provided accommodations support necessary attention strategies which seem highly suitable for him."
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 85,
+        "accessibility_fit": 90,
+        "accommodation_fit": 80,
+        "engagement_fit": 75,
+        "overall_alignment": 82,
+        "explanation": "The worksheet aligns well with Sofia's academic goals by focusing on ratios and equivalent fractions which are key concepts in her IEP; it also provides accommodations such as sentence frames, visual aids for vocabulary, and an extended time that supports her "
+      },
+      "Noah Williams": {
+        "understanding_fit": 20,
+        "accessibility_fit": 45,
         "accommodation_fit": 85,
-        "engagement_fit": 40,
-        "overall_alignment": 63,
-        "explanation": "The worksheet provides academic practice in ratios and fractions which aligns with Maya's learning goals but lacks sensitivity to her need for breaks during overwhelming situations. While it offers visual aids that could help accommodate these needs, the asses"
+        "engagement_fit": 30,
+        "overall_alignment": 47,
+        "explanation": "The worksheet lacks direct relevance to Noah's academic needs; while it offers visual supports and concrete materials which align with his accommodations, the content is not conducive to engagement or understanding of math concepts."
+      },
+      "Ava Johnson": {
+        "understanding_fit": 65,
+        "accessibility_fit": 80,
+        "accommodation_fit": 75,
+        "engagement_fit": 70,
+        "overall_alignment": 73,
+        "explanation": "The worksheet provides basic practice on ratios and equivalent fractions but lacks direct connection to decoding words. Accessibility is high due to the use of familiar contexts; however, multisensory instructional methods like guided reading groups are absent"
+      },
+      "Alex Johnson": {
+        "understanding_fit": 80,
+        "accessibility_fit": 65,
+        "accommodation_fit": 90,
+        "engagement_fit": 75,
+        "overall_alignment": 79,
+        "explanation": "The worksheet has strong academic content that matches Alex's understanding goals and provides accessible accommodations such as text-to-speech. It also engages through interactive elements but could be improved by integrating more visual support in reading ta"
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 75,
+        "accessibility_fit": 90,
+        "accommodation_fit": 85,
+        "engagement_fit": 60,
+        "overall_alignment": 80,
+        "explanation": "The worksheet has clear alignment with academic goals and provides accessible content. Accommodations like visual supports are well implemented; however, engagement can be improved for better motivational fit."
       },
       "Liam Chen": {
         "understanding_fit": 80,
         "accessibility_fit": 75,
         "accommodation_fit": 90,
         "engagement_fit": 65,
-        "overall_alignment": 83,
-        "explanation": "The worksheet supports academic understanding with pattern recognition tasks and math problems but may not directly address behavioral goals. It provides good accessibility through clear instructions and visual aids; however, more frequent cues for redirection"
+        "overall_alignment": 78,
+        "explanation": "The worksheet supports academic understanding through its focus on ratios and proportion reasoning. It has good accessibility features but could offer more direct support for attention-related challenges during task completion. The accommodations align well wi"
       },
       "Sofia Martinez": {
-        "understanding_fit": 80,
-        "accessibility_fit": 70,
+        "understanding_fit": 85,
+        "accessibility_fit": 90,
         "accommodation_fit": 95,
-        "engagement_fit": 60,
-        "overall_alignment": 81,
-        "explanation": "The worksheet aligns well with Sofia's academic goals by providing practice in multi-paragraph writing and equivalent fractions. However, while the use of graphic organizers is a good accommodation fit, it could be further personalized to her needs for written"
+        "engagement_fit": 75,
+        "overall_alignment": 86,
+        "explanation": "The worksheet content aligns well with academic goals and Sofia's IEP accommodations. It includes sentence frames for writing tasks (supporting written expression), uses graphic organizers which aid multi-paragraph composition planning. However, it could be im"
       },
       "Noah Williams": {
-        "understanding_fit": 20,
-        "accessibility_fit": 50,
-        "accommodation_fit": 70,
-        "engagement_fit": 40,
-        "overall_alignment": 45,
-        "explanation": "The worksheet focuses on concepts unrelated to Noah's current math goals. While it is accessible and offers accommodations for learning difficulties but lacks engagement strategies tailored to his interests."
+        "understanding_fit": 85,
+        "accessibility_fit": 90,
+        "accommodation_fit": 80,
+        "engagement_fit": 70,
+        "overall_alignment": 81,
+        "explanation": "The worksheet's focus on ratios and proportional reasoning is consistent with Noah's academic goals. However, the abstract nature of ratio problems may not align well with his need for concrete materials as outlined in the accommodations metadata. Additionally"
       },
       "Ava Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 65,
-        "accommodation_fit": 90,
+        "understanding_fit": 85,
+        "accessibility_fit": 90,
+        "accommodation_fit": 95,
         "engagement_fit": 75,
-        "overall_alignment": 82,
-        "explanation": "The worksheet largely supports academic understanding but could improve in accessibility. Accommodations are highly suitable for student's needs and engage the imagination-focused Ava well."
+        "overall_alignment": 86,
+        "explanation": "The worksheet aligns well with Ava's goals and challenges by incorporating ratio problems that support her academic strength in stories (as they often involve proportions). It also addresses the need for a quiet space which caters to sensory processing. Howeve"
       },
       "Alex Johnson": {
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 78,
+        "explanation": "The worksheet provides support for academic goals but needs more accommodations aligned with the IEP and could enhance engagement through varied activities."
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 90,
+        "accessibility_fit": 75,
+        "accommodation_fit": 85,
+        "engagement_fit": 65,
+        "overall_alignment": 81,
+        "explanation": "The worksheet aligns well with the student's academic understanding and provides clear step-by-step guidance. It may need some simplification for better sensory accessibility but effectively uses visual supports to aid comprehension; accommodations are mostly "
+      },
+      "Liam Chen": {
+        "understanding_fit": 65,
+        "accessibility_fit": 70,
+        "accommodation_fit": 85,
+        "engagement_fit": 60,
+        "overall_alignment": 71,
+        "explanation": "The worksheet aligns reasonably well with Liam's academic understanding goals through the use of clear and time-limited tasks suitable for ADHD. It scores higher in accommodations that support his learning environment needs but falls short slightly on engageme"
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 81,
+        "explanation": "The worksheet supports Sofia's academic understanding by providing structured sentence scrambling and rate calculations which are aligned with her learning goals. It is moderately accessible given the challenges of both ELL status and written expression disabi"
+      },
+      "Noah Williams": {
+        "understanding_fit": 70,
+        "accessibility_fit": 90,
+        "accommodation_fit": 85,
+        "engagement_fit": 60,
+        "overall_alignment": 76,
+        "explanation": "The worksheet provides concrete materials and visuals that align with Noah's need for hands-on learning and supports his academic understanding goals. It is accessible given the accommodations provided but may lack sufficient engagement elements to maintain hi"
+      },
+      "Ava Johnson": {
+        "understanding_fit": 65,
+        "accessibility_fit": 80,
+        "accommodation_fit": 75,
+        "engagement_fit": 90,
+        "overall_alignment": 78,
+        "explanation": "The worksheet provides a strong foundation for understanding rates with practical exercises (65). It is accessible but could offer more contextual support to fully address dyslexia challenges. The accommodations are well-aligned with the goals and would likely"
+      },
+      "Alex Johnson": {
+        "understanding_fit": 70,
+        "accessibility_fit": 50,
+        "accommodation_fit": 60,
+        "engagement_fit": 80,
+        "overall_alignment": 67,
+        "explanation": "The worksheet's comprehension questions and use of visual cues align with Alex's goals but lacks direct connection to his IEP needs for dyslexia. The accommodations are mostly beneficial; however, more specific instructions could enhance accessibility further."
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 70,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 79,
+        "explanation": "The worksheet aligns well with Maya's learning goals and needs. It provides clear instructions for math concepts (understanding fit), includes environmental accommodations conducive to her sensory processing challenges (accessibility fit). Accommodations like "
+      },
+      "Liam Chen": {
         "understanding_fit": 70,
         "accessibility_fit": 85,
         "accommodation_fit": 90,
         "engagement_fit": 65,
-        "overall_alignment": 83,
-        "explanation": "The worksheet supports academic understanding through content relevant to ratios and rates but lacks comprehensive visual support. It aligns well with accessibility needs for a student with dyslexia via text-to-speech integration potential in tasks like readin"
-      }
-    },
-    "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf": {
-      "Maya Thompson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 95,
-        "engagement_fit": 70,
-        "overall_alignment": 84,
-        "explanation": "The worksheet aligns well with Maya's strength in math and the use of visual supports. However, it lacks direct sensory considerations which are key to her needs."
-      },
-      "Liam Chen": {
-        "understanding_fit": 80,
-        "accessibility_fit": 70,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 76,
-        "explanation": "The worksheet aligns well with Liam's academic goals but could offer better engagement strategies. Accommodations like flexible seating and extended time are fitting for his attention challenges."
+        "overall_alignment": 77,
+        "explanation": "The worksheet effectively breaks down math tasks into manageable parts for Liam and uses visual organizers. It aligns with his goal of completing assignments accurately but might need more real-life context to sustain engagement."
       },
       "Sofia Martinez": {
-        "understanding_fit": 80,
-        "accessibility_fit": 95,
+        "understanding_fit": 65,
+        "accessibility_fit": 90,
         "accommodation_fit": 75,
-        "engagement_fit": 85,
-        "overall_alignment": 86,
-        "explanation": "The worksheet focuses on ratios and proportions with an emphasis on visual aids that suit Sofia's learning disability in written expression. It accommodates her ELL status by pre-teaching key vocabulary visually; however, it could better address the behavioral"
+        "engagement_fit": 80,
+        "overall_alignment": 82,
+        "explanation": "The worksheet provides foundational understanding of ratios and proportions (supporting academic goals) but lacks direct connection to multi-paragraph compositions which are a major goal. Accessibility accommodations align well with Sofia's needs as they allow"
       },
       "Noah Williams": {
-        "understanding_fit": 40,
+        "understanding_fit": 70,
         "accessibility_fit": 85,
         "accommodation_fit": 90,
         "engagement_fit": 65,
-        "overall_alignment": 70,
-        "explanation": "The worksheet largely supports academic goals with concrete materials for math but lacks direct instruction and repetition that Noah needs. Its accessibility is high due to visual aids, though it could be improved by providing simpler language or additional pr"
+        "overall_alignment": 77,
+        "explanation": "The worksheet aligns fairly well with Noah's academic goals but could provide more direct instruction and repetition. It is highly accessible in terms of accommodations that meet his needs for visual supports and modified tasks. The hands-on aspect can engage "
       },
       "Ava Johnson": {
         "understanding_fit": 70,
@@ -236,275 +336,175 @@
         "accommodation_fit": 90,
         "engagement_fit": 65,
         "overall_alignment": 77,
-        "explanation": "The worksheet supports academic understanding but requires better alignment with reading comprehension goals. The accommodations align well with the student's needs; however, engagement could be enhanced by integrating more creative elements."
+        "explanation": "The worksheet aligns fairly well with Ava's academic goals by focusing on ratios and proportional reasoning which are core to her IEP targets. However, some content might be too advanced for a 3rd grader struggling with dyslexia without explicit supports like "
       },
       "Alex Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 95,
-        "accommodation_fit": 75,
-        "engagement_fit": 65,
-        "overall_alignment": 79,
-        "explanation": "The worksheet aligns well with Alex's academic goals and provides accommodations that cater to his challenges. However, there are areas for improvement in engagement due to the reading-intensive nature of some activities."
-      }
-    },
-    "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf": {
-      "Maya Thompson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 75,
-        "accommodation_fit": 90,
-        "engagement_fit": 60,
-        "overall_alignment": 81,
-        "explanation": "The worksheet largely supports academic understanding goals with math concepts but could better engage the student. Accessibility is good considering Maya's sensory and change-related challenges are addressed by allowing for visual cues; however, more direct i"
-      },
-      "Liam Chen": {
         "understanding_fit": 60,
         "accessibility_fit": 85,
         "accommodation_fit": 90,
-        "engagement_fit": 75,
-        "overall_alignment": 82,
-        "explanation": "The worksheet is highly accessible and aligns well with accommodations. It has moderate academic support but can enhance in-depth understanding of rates."
-      },
-      "Sofia Martinez": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 85,
-        "engagement_fit": 75,
-        "overall_alignment": 82,
-        "explanation": "The worksheet provides a good mix of activities that support Sofia's academic goals but lacks direct links to her writing challenges. It offers visual prompts and structured tasks which are accessible for ELL students and align with the accommodations provided"
-      },
-      "Noah Williams": {
-        "understanding_fit": 0,
-        "accessibility_fit": 0,
-        "accommodation_fit": 0,
-        "engagement_fit": 0,
-        "overall_alignment": 0,
-        "explanation": ""
-      },
-      "Ava Johnson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 65,
-        "accommodation_fit": 80,
-        "engagement_fit": 85,
-        "overall_alignment": 75,
-        "explanation": "The worksheet offers some understanding of rates but lacks direct connection to multisensory phonics patterns crucial for dyslexic students like Ava. While engaging and designed with accessibility in mind (e.g., preferential seating), it doesn't fully integrat"
-      },
-      "Alex Johnson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 85,
-        "accommodation_fit": 60,
-        "engagement_fit": 90,
-        "overall_alignment": 81,
-        "explanation": "The worksheet provides clear objectives but could include visual supports for concept comprehension; while it offers some accommodations aligned with Alex's needs like pre-teaching vocabulary and preferential seating, there is a lack of direct support for his "
-      }
-    },
-    "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf": {
-      "Maya Thompson": {
-        "understanding_fit": 90,
-        "accessibility_fit": 85,
-        "accommodation_fit": 92,
-        "engagement_fit": 75,
-        "overall_alignment": 86,
-        "explanation": "The worksheet aligns well with academic goals through the use of step-by-step instructions and a choice in demonstrating learning. Accessibility is supported by environmental accommodations like preferential seating but lacks consistency throughout longer task"
-      },
-      "Liam Chen": {
-        "understanding_fit": 70,
-        "accessibility_fit": 85,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 80,
-        "explanation": "The worksheet aligns well with academic goals through math and science tasks; however, it could provide more explicit links to the student's strength in pattern recognition. The accommodations are highly suitable for Liam’s needs but might be enhanced by integ"
-      },
-      "Sofia Martinez": {
-        "understanding_fit": 60,
-        "accessibility_fit": 90,
-        "accommodation_fit": 85,
-        "engagement_fit": 75,
-        "overall_alignment": 78,
-        "explanation": "The worksheet aligns well with Sofia's academic goals by focusing on ratios and proportions but lacks enough focus on providing direct support for ELL students. Accommodations are mostly suitable, though some may require further tailoring to her specific needs"
-      },
-      "Noah Williams": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 75,
-        "engagement_fit": 85,
-        "overall_alignment": 83,
-        "explanation": "The worksheet's visual supports align with Noah's need for concrete materials and the use of simplified language. However, direct teaching could be emphasized more to enhance understanding further."
-      },
-      "Ava Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 65,
-        "accommodation_fit": 75,
         "engagement_fit": 70,
-        "overall_alignment": 73,
-        "explanation": "The worksheet provides a structured approach to understanding ratios and proportions which aligns with Ava's academic goals but lacks immediate accommodations for her dyslexia. The assessments could be more accessible by providing extra time or visual cues."
-      },
-      "Alex Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 100,
-        "engagement_fit": 75,
-        "overall_alignment": 86,
-        "explanation": "The worksheet supports Alex's academic goals by focusing on ratios and proportions. It aligns well with his strength in verbal skills but may need to accommodate reading difficulties due to the dense textual content. Environmental adjustments are appropriately"
+        "overall_alignment": 81,
+        "explanation": "The worksheet is well-aligned with Alex's academic understanding goals but could include more support for comprehension. The accommodations align closely with his needs and are likely to help him succeed. It provides an engaging format while also considering v"
       }
     },
     "Unit 2 - Understanding Percent_Ch4-get ready.pdf": {
       "Maya Thompson": {
-        "understanding_fit": 80,
+        "understanding_fit": 85,
         "accessibility_fit": 90,
         "accommodation_fit": 100,
         "engagement_fit": 75,
-        "overall_alignment": 86,
-        "explanation": "The worksheet supports academic goals with clear tasks and visuals for understanding percentages. It is highly accessible given Maya's sensory needs as it avoids overwhelming auditory or excessively noisy activities."
+        "overall_alignment": 92,
+        "explanation": "The worksheet aligns well with Maya's academic strength and understanding in math/science. It incorporates visual aids for accessibility due to sensory challenges but could provide additional structure or practice opportunities to enhance engagement."
       },
       "Liam Chen": {
+        "understanding_fit": 80,
+        "accessibility_fit": 65,
+        "accommodation_fit": 75,
+        "engagement_fit": 85,
+        "overall_alignment": 76,
+        "explanation": "The worksheet aligns fairly well with academic understanding goals by offering visual representations of percents and repeating decimals. Accessibility could be improved due to a lack of accommodations for attention challenges. The inclusion of extension probl"
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 65,
+        "accessibility_fit": 80,
+        "accommodation_fit": 75,
+        "engagement_fit": 90,
+        "overall_alignment": 78,
+        "explanation": "The worksheet moderately aligns with Sofia's understanding goals and highly accommodates her needs. However, it may require adjustments for better accessibility to shaded grids due to potential difficulty in perception."
+      },
+      "Noah Williams": {
+        "understanding_fit": 30,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 71,
+        "explanation": "The worksheet does not align well with Noah's academic understanding goals. The accommodations are mostly suitable but might need tweaking for full success."
+      },
+      "Ava Johnson": {
+        "understanding_fit": 40,
+        "accessibility_fit": 65,
+        "accommodation_fit": 75,
+        "engagement_fit": 85,
+        "overall_alignment": 63,
+        "explanation": "The worksheet aligns moderately with the academic understanding goals but lacks direct phonics instruction and decoding practice. It is accessible in terms of structure yet offers limited support for reading comprehension challenges inherent to dyslexia; howev"
+      },
+      "Alex Johnson": {
         "understanding_fit": 70,
         "accessibility_fit": 85,
         "accommodation_fit": 90,
         "engagement_fit": 60,
         "overall_alignment": 76,
-        "explanation": "The worksheet aligns fairly well with Liam's academic strengths in math and problem-solving. Accessibility accommodations cater to his ADHD challenges effectively. However, the engagement aspect could be improved by incorporating more interactive elements."
-      },
-      "Sofia Martinez": {
-        "understanding_fit": 60,
-        "accessibility_fit": 90,
-        "accommodation_fit": 75,
-        "engagement_fit": 80,
-        "overall_alignment": 79,
-        "explanation": "The worksheet partially aligns with Sofia's academic understanding goals by including exercises on fractions and percents but lacks direct focus on multi-paragraph composition. The accessibility aspects are highly suitable for her needs as the format is visual"
-      },
-      "Noah Williams": {
-        "understanding_fit": 0,
-        "accessibility_fit": 0,
-        "accommodation_fit": 0,
-        "engagement_fit": 0,
-        "overall_alignment": 0,
-        "explanation": ""
-      },
-      "Ava Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 75,
-        "accommodation_fit": 90,
-        "engagement_fit": 85,
-        "overall_alignment": 83,
-        "explanation": "The worksheet effectively introduces percentages in a visually engaging way that can help Ava decode one-syllable and common two-syllable words. However, it assumes some prior knowledge of decimals which may be challenging for her dyslexia. The provided accomm"
-      },
-      "Alex Johnson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 80,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 76,
-        "explanation": "The worksheet supports understanding through conceptual questions; however, it lacks direct connection to Alex's comprehension goals. The workbook is accessible with visual aids and oral responses accommodated well. Successful completion would heavily rely on "
+        "explanation": "The worksheet aligns well with Alex's academic comprehension goals by presenting content in a visually engaging format. Accessibility is high due to visual supports and chunked tasks that fit within student strengths of verbal communication and structured rout"
       }
     },
     "Unit 2 - Understanding Percent_Ch4.1.pdf": {
       "Maya Thompson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 80,
-        "accommodation_fit": 95,
-        "engagement_fit": 60,
-        "overall_alignment": 81,
-        "explanation": "The worksheet focuses on understanding percentages but lacks sensory accommodations. Strong alignment with IEP goals in providing visual supports and clear instructions enhances accessibility fit."
+        "understanding_fit": 80,
+        "accessibility_fit": 95,
+        "accommodation_fit": 100,
+        "engagement_fit": 75,
+        "overall_alignment": 88,
+        "explanation": "The worksheet aligns well with the academic goals but needs to be more accessible and engaging for sensory-sensitive students. It fully supports accommodations."
       },
       "Liam Chen": {
-        "understanding_fit": 70,
-        "accessibility_fit": 60,
+        "understanding_fit": 80,
+        "accessibility_fit": 90,
         "accommodation_fit": 95,
-        "engagement_fit": 80,
-        "overall_alignment": 81,
-        "explanation": "The worksheet aligns well with Liam's academic goals by offering a chance to apply percent understanding in math-related contexts. However, the challenges of attention and impulsivity might impact his performance on time-limited tasks. The accommodations provi"
+        "engagement_fit": 70,
+        "overall_alignment": 84,
+        "explanation": "The worksheet aligns well with academic goals but may not engage all students; it does provide necessary accommodations for attentional challenges."
       },
       "Sofia Martinez": {
         "understanding_fit": 80,
-        "accessibility_fit": 70,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 76,
-        "explanation": "The worksheet aligns well with Sofia's academic understanding goals and offers relevant exercises. Accessibility accommodations are suitable for her needs but could be enhanced further. The provided supports highly cater to the stated IEP accommodations; hence"
-      },
-      "Noah Williams": {
-        "understanding_fit": 85,
         "accessibility_fit": 75,
         "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 81,
-        "explanation": "The worksheet supports Noah's academic goals by teaching percent concepts visually but could better align with his needs for direct support and repetition. Accessibility can be improved to make the content more engaging through hands-on activities."
-      },
-      "Ava Johnson": {
-        "understanding_fit": 90,
-        "accessibility_fit": 70,
-        "accommodation_fit": 85,
-        "engagement_fit": 80,
-        "overall_alignment": 84,
-        "explanation": "The worksheet largely supports Ava's academic understanding of percent by providing practical examples and visual representations. Accessibility considerations may need enhancement as it does not fully accommodate sensory needs associated with dyslexia; howeve"
-      },
-      "Alex Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 75,
         "engagement_fit": 85,
         "overall_alignment": 83,
-        "explanation": "The worksheet aligns well with Alex's academic goals by incorporating visually supportive methods for understanding percents; however, it slightly underutilizes the specified accommodations related to text-to-speech and chunked tasks. It is highly accessible d"
+        "explanation": "The worksheet aligns well with Sofia's academic goals by providing a practical application of representing percents. It accommodates her learning disability and ELL status through sentence frames and visual supports but could be more accessible if it included "
+      },
+      "Noah Williams": {
+        "understanding_fit": 65,
+        "accessibility_fit": 70,
+        "accommodation_fit": 80,
+        "engagement_fit": 40,
+        "overall_alignment": 64,
+        "explanation": "While the worksheet provides a foundation for understanding percents through visuals and practical examples that are within Noah's grasp with accommodations like concrete materials and simplified language (85), it does not fully engage him due to its abstract "
+      },
+      "Ava Johnson": {
+        "understanding_fit": 70,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 81,
+        "explanation": "The worksheet aligns well with Ava's academic goals in representing percentages through visually engaging activities like shading grids (70). The quiet environment and close seating are accommodations that cater to her needs effectively (90), enhancing accessi"
+      },
+      "Alex Johnson": {
+        "understanding_fit": 70,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 81,
+        "explanation": "While the worksheet engages with percent concepts and includes accommodations like visual aids that align well with Alex's IEP goals for understanding percents; however, it lacks direct supports to aid reading comprehension which is crucial due to his dyslexia"
       }
     },
     "Unit 2 - Understanding Percent_Ch4.2.pdf": {
       "Maya Thompson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 80,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 76,
-        "explanation": "The worksheet provides relevant content and exercises for Maya's understanding of percentages. It aligns well with her academic goals but lacks direct reference to math-specific challenges related to autism spectrum disorder (ASD). The accommodations listed ar"
+        "understanding_fit": 85,
+        "accessibility_fit": 90,
+        "accommodation_fit": 95,
+        "engagement_fit": 75,
+        "overall_alignment": 86,
+        "explanation": "The worksheet aligns well with Maya's academic goals and challenges by providing visual instructions which cater to her sensitivity. The accommodations meet the key needs for a supportive learning environment."
       },
       "Liam Chen": {
-        "understanding_fit": 80,
-        "accessibility_fit": 70,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 81,
-        "explanation": "The worksheet aligns well with academic goals due to its focus on applying math skills but could be more accessible for a student struggling with attention. Accommodations are highly suited and engagement is moderate."
+        "understanding_fit": 70,
+        "accessibility_fit": 55,
+        "accommodation_fit": 80,
+        "engagement_fit": 60,
+        "overall_alignment": 69,
+        "explanation": "The worksheet aligns moderately with academic goals focusing on percent conversion but could better adapt to the student's need for clear instructions and time management. Accommodations such as flexible seating are not directly applicable; however, shortened "
       },
       "Sofia Martinez": {
         "understanding_fit": 90,
         "accessibility_fit": 85,
-        "accommodation_fit": 75,
-        "engagement_fit": 65,
-        "overall_alignment": 76,
-        "explanation": "The worksheet is largely aligned with Sofia's goals in understanding percentages and supports her academic objectives by focusing on conversion exer04-19 PM elhi3 of fractions to decimals and percents (understanding_fit: high), but lacks enough content directl"
+        "accommodation_fit": 95,
+        "engagement_fit": 75,
+        "overall_alignment": 86,
+        "explanation": "The worksheet supports Sofia's academic understanding goals effectively by directly engaging with the conversion of fractions to decimals and percents. It is reasonably accessible but might require more support for students who struggle without visual aids or "
       },
       "Noah Williams": {
-        "understanding_fit": 85,
-        "accessibility_fit": 90,
-        "accommodation_fit": 95,
-        "engagement_fit": 70,
-        "overall_alignment": 86,
-        "explanation": "The worksheet closely aligns with Noah's academic goals by focusing on math concepts relevant to his IEP. It is highly accessible and accommodates visual supports well but could enhance engagement through more hands-on activities that suit his learning style."
+        "understanding_fit": 60,
+        "accessibility_fit": 75,
+        "accommodation_fit": 85,
+        "engagement_fit": 65,
+        "overall_alignment": 71,
+        "explanation": "The worksheet addresses key concepts but may not be fully aligned with Noah's math comprehension level. It is accessible and engaging given his cooperative nature, while the accommodations align well with his needs."
       },
       "Ava Johnson": {
-        "understanding_fit": 60,
-        "accessibility_fit": 80,
-        "accommodation_fit": 75,
-        "engagement_fit": 90,
-        "overall_alignment": 81,
-        "explanation": "The worksheet provides a clear understanding of percentages but lacks direct application to reading. It is highly accessible and motivating for Ava; however, more structured guidance could better align with her IEP goals."
-      },
-      "Alex Johnson": {
-        "understanding_fit": 60,
+        "understanding_fit": 70,
         "accessibility_fit": 85,
         "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 81,
+        "explanation": "The worksheet aligns well with Ava's strength in stories and discussions. However, it lacks direct dyslexia-focused content that addresses her specific needs for decoding skills improvement."
+      },
+      "Alex Johnson": {
+        "understanding_fit": 85,
+        "accessibility_fit": 90,
+        "accommodation_fit": 75,
         "engagement_fit": 70,
-        "overall_alignment": 82,
-        "explanation": "The worksheet provides good support for understanding percent conversions and calculations. It is highly accessible with necessary accommodations but may require some scaffolding due to text complexity. Engagement potential could be higher if interactive eleme"
+        "overall_alignment": 81,
+        "explanation": "The worksheet supports Alex's comprehension goals but lacks some interactive elements to maintain engagement. Accommodations are mostly present; however, they could be better aligned with chunked tasks for his ADHD-inattentive designation."
       }
     },
     "Unit 2 - Understanding Percent_Learning Guide 2 Understanding Percent.pdf": {
       "Maya Thompson": {
-        "understanding_fit": 90,
-        "accessibility_fit": 85,
-        "accommodation_fit": 92,
-        "engagement_fit": 75,
-        "overall_alignment": 86,
-        "explanation": "The worksheet aligns well with Maya's academic goals and her need for visual supports. Accommodations are suitable but could be tailored further to reduce sensory overload."
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 76,
+        "explanation": "Worksheet supports academic goals with clear examples but may not fully engage due to sensory input. Strong accommodations align well; however, more varied choices could improve understanding and accessibility."
       },
       "Liam Chen": {
         "understanding_fit": 80,
@@ -512,239 +512,239 @@
         "accommodation_fit": 90,
         "engagement_fit": 65,
         "overall_alignment": 78,
-        "explanation": "The worksheet aligns well with Liam's academic strength and goal to understand percentages through visual means. It may not fully account for his attention challenges due to task complexity but provides a good balance of accommodations such as clear instructio"
+        "explanation": "The worksheet aligns well with Liam's academic goals by incorporating pattern recognition and problem-solving tasks. Accessibility could be enhanced for better attention management due to the lengthy written component which is not ideal given his challenges; h"
       },
       "Sofia Martinez": {
-        "understanding_fit": 70,
+        "understanding_fit": 75,
         "accessibility_fit": 80,
         "accommodation_fit": 90,
         "engagement_fit": 60,
-        "overall_alignment": 80,
-        "explanation": "The worksheet aligns well with Sofia's academic goals but lacks clear instructions for ELL students. Accommodations are mostly appropriate; however, the lack of visual prompts on the hundred grids might limit her understanding and engagement."
+        "overall_alignment": 79,
+        "explanation": "The worksheet aligns well with Sofia's IEP goals by integrating key concepts like fractions and percents; however, it lacks direct instruction on multi-paragraph composition planning. Accommodations provided are beneficial for her learning disability but could"
       },
       "Noah Williams": {
         "understanding_fit": 80,
         "accessibility_fit": 65,
-        "accommodation_fit": 75,
-        "engagement_fit": 60,
-        "overall_alignment": 70,
-        "explanation": "The worksheet addresses Noah's academic goals by providing math-related content and visual supports. However, the level of difficulty may not be fully appropriate for his grade or specific needs in reading tasks as outlined in the IEP. While there are accommod"
+        "accommodation_fit": 90,
+        "engagement_fit": 70,
+        "overall_alignment": 81,
+        "explanation": "The worksheet aligns fairly well with Noah's academic goals by incorporating visual supports and breaking down tasks to suit his learning needs. It accommodates the listed requirements but could offer more hands-on elements given Noah's preference for tactile "
       },
       "Ava Johnson": {
-        "understanding_fit": 60,
-        "accessibility_fit": 70,
+        "understanding_fit": 70,
+        "accessibility_fit": 50,
         "accommodation_fit": 85,
-        "engagement_fit": 75,
-        "overall_alignment": 72,
-        "explanation": "The worksheet does not align well with Ava's IEP goals for academic understanding as it lacks direct connection to her dyslexia needs. However, the structured approach and multisensory elements could be beneficial given proper accommodations; thus a moderate s"
+        "engagement_fit": 60,
+        "overall_alignment": 69,
+        "explanation": "The worksheet aligns well with Ava's learning goals but lacks direct dyslexia accommodations. It scores higher in engagement and accessibility fit due to its multisensory approach that can benefit her enjoy of stories."
       },
       "Alex Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 60,
-        "accommodation_fit": 75,
-        "engagement_fit": 90,
+        "understanding_fit": 65,
+        "accessibility_fit": 80,
+        "accommodation_fit": 90,
+        "engagement_fit": 70,
         "overall_alignment": 81,
-        "explanation": "The worksheet aligns moderately well with Alex's IEP goals. It provides a solid foundation for understanding percents but lacks direct accommodations and could be more accessible in terms of text difficulty; however, it is engaging due to interactive elements "
+        "explanation": "The worksheet supports comprehension learning with visuals and structured tasks which align well. However, it could improve in reading below grade level texts directly without text-to-speech assistance. Accommodations are strong but would benefit from more foc"
       }
     },
     "Unit 3 - Pythagorean Relationships_Ch3-get ready.pdf": {
-      "Maya Thompson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 85,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 78,
-        "explanation": "The worksheet aligns reasonably well with the student's academic goals and provides strong visual supports. It lacks elements directly addressing sensory input which is critical for Maya; however, it offers choices in demonstrating learning that can be benefic"
-      },
-      "Liam Chen": {
-        "understanding_fit": 80,
-        "accessibility_fit": 75,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 78,
-        "explanation": "The worksheet largely supports Liam's understanding of math concepts and provides clear tasks that align with his ability to recognize patterns. However, it falls short in directly addressing social cues for turn-taking during collaborative activities found wi"
-      },
-      "Sofia Martinez": {
-        "understanding_fit": 60,
-        "accessibility_fit": 75,
-        "accommodation_fit": 85,
-        "engagement_fit": 70,
-        "overall_alignment": 72,
-        "explanation": "The worksheet is well-aligned with Sofia's academic goals and strengths. It supports her in understanding Pythagorean relationships but could be more accessible to ELL students as it does not provide language support or explicitly connect vocabulary."
-      },
-      "Noah Williams": {
-        "understanding_fit": 70,
-        "accessibility_fit": 95,
-        "accommodation_fit": 80,
-        "engagement_fit": 60,
-        "overall_alignment": 81,
-        "explanation": "The worksheet supports Noah's academic goals by focusing on math with visual aids. However, the content does not align well with his challenges in reading and completing tasks independently without prompting."
-      },
-      "Ava Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 75,
-        "engagement_fit": 65,
-        "overall_alignment": 78,
-        "explanation": "The worksheet provides a mix of relevant content and supports learning goals with its math-focused activity. Accommodations align well but lack multisensory elements that could cater to dyslexia better. Engagement is moderate; the imaginative student enjoys st"
-      },
-      "Alex Johnson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 50,
-        "accommodation_fit": 80,
-        "engagement_fit": 60,
-        "overall_alignment": 65,
-        "explanation": "The worksheet supports academic understanding with its focus on math skills that Alex can relate to. However, the text-heavy content and lack of visuals may not fully cater to accessibility needs for reading comprehension or concentration challenges due to Dys"
-      }
-    },
-    "Unit 3 - Pythagorean Relationships_Ch3.1.pdf": {
-      "Maya Thompson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 75,
-        "accommodation_fit": 90,
-        "engagement_fit": 65,
-        "overall_alignment": 78,
-        "explanation": "The worksheet aligns well with academic understanding goals and accommodations but could be more accessible to the student's sensory needs. Engagement requires further tailoring."
-      },
-      "Liam Chen": {
-        "understanding_fit": 90,
-        "accessibility_fit": 85,
-        "accommodation_fit": 90,
-        "engagement_fit": 75,
-        "overall_alignment": 85,
-        "explanation": "The worksheet aligns well with Liam's math and science understanding goals through pattern recognition tasks. Accommodations are suitable for his attention challenges but could improve environmental adjustments to enhance engagement further."
-      },
-      "Sofia Martinez": {
-        "understanding_fit": 80,
-        "accessibility_fit": 60,
-        "accommodation_fit": 90,
-        "engagement_fit": 75,
-        "overall_alignment": 81,
-        "explanation": "The worksheet aligns well with academic goals but requires more tailored vocabulary and visual supports. Accommodations fit the student's needs effectively."
-      },
-      "Noah Williams": {
-        "understanding_fit": 60,
-        "accessibility_fit": 85,
-        "accommodation_fit": 90,
-        "engagement_fit": 70,
-        "overall_alignment": 81,
-        "explanation": "The worksheet partially supports Noah's understanding of basic math concepts but lacks direct connection to his IEP goals for academic growth in mathematics; however, it is highly accessible and accommodating with visual aids and repeated practice which align "
-      },
-      "Ava Johnson": {
-        "understanding_fit": 20,
-        "accessibility_fit": 80,
-        "accommodation_fit": 50,
-        "engagement_fit": 60,
-        "overall_alignment": 53,
-        "explanation": "The worksheet has limited relevance to the student's IEP goals and provides insufficient accommodations. However, its accessibility is suitable for Ava due to lower reading requirements."
-      },
-      "Alex Johnson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 65,
-        "accommodation_fit": 90,
-        "engagement_fit": 85,
-        "overall_alignment": 80,
-        "explanation": "The worksheet content aligns moderately well with Alex's comprehension goals but could better cater to his reading and focus needs. The accommodations are very supportive for the student."
-      }
-    },
-    "Unit 3 - Pythagorean Relationships_Ch3.2.pdf": {
-      "Maya Thompson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 60,
-        "accommodation_fit": 90,
-        "engagement_fit": 75,
-        "overall_alignment": 81,
-        "explanation": "The worksheet has clear steps and visual aids that cater to Maya's strength in math but lacks sensory accommodations; however, it provides excellent choice for demonstrating understanding. The alignment is good with minor adjustments needed."
-      },
-      "Liam Chen": {
-        "understanding_fit": 80,
-        "accessibility_fit": 75,
-        "accommodation_fit": 90,
-        "engagement_fit": 60,
-        "overall_alignment": 81,
-        "explanation": "The worksheet largely aligns with Liam's strength in math and the self-monitoring strategies but may require additional engagement techniques. It meets accommodations well but could be more accessible for attention challenges."
-      },
-      "Sofia Martinez": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 75,
-        "engagement_fit": 65,
-        "overall_alignment": 78,
-        "explanation": "The worksheet aligns well with Sofia's academic goals but could better engage her. Accommodations are generally appropriate though may need to be adjusted for effectiveness."
-      },
-      "Noah Williams": {
-        "understanding_fit": 70,
-        "accessibility_fit": 65,
-        "accommodation_fit": 90,
-        "engagement_fit": 80,
-        "overall_alignment": 81,
-        "explanation": "The worksheet partially supports Noah's academic goals by introducing a relevant math concept but requires direct teacher support and repetition for understanding. The accommodations align well with his needs; however, engagement could be increased through mor"
-      },
-      "Ava Johnson": {
-        "understanding_fit": 60,
-        "accessibility_fit": 80,
-        "accommodation_fit": 90,
-        "engagement_fit": 75,
-        "overall_alignment": 76,
-        "explanation": "The worksheet aligns moderately well with Ava's academic goals by focusing on multisensory learning which is key for dyslexic students. However, it lacks direct support strategies that could make the content more accessible and engaging given her love of stori"
-      },
-      "Alex Johnson": {
-        "understanding_fit": 80,
-        "accessibility_fit": 65,
-        "accommodation_fit": 90,
-        "engagement_fit": 75,
-        "overall_alignment": 80,
-        "explanation": "The worksheet largely aligns with Alex's academic understanding goals through conceptual questions and visual supports for key vocabulary. Accessibility needs improvement due to text density without audio alternatives; however, accommodations are well-matched "
-      }
-    },
-    "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf": {
       "Maya Thompson": {
         "understanding_fit": 80,
         "accessibility_fit": 90,
         "accommodation_fit": 95,
         "engagement_fit": 75,
         "overall_alignment": 85,
-        "explanation": "The worksheet supports academic understanding through concrete examples and opportunities for oral responses which aligns with Maya's strength. Sensory input challenges are considered in the quiet workspace accommodation; however, additional sensory-friendly e"
+        "explanation": "The worksheet supports academic understanding goals with math content; however, it could better address sensory challenges. Accommodations are well-matched to the student's needs but less focused on engagement and motivation."
       },
       "Liam Chen": {
-        "understanding_fit": 80,
+        "understanding_fit": 60,
+        "accessibility_fit": 75,
+        "accommodation_fit": 80,
+        "engagement_fit": 50,
+        "overall_alignment": 66,
+        "explanation": "The worksheet is accessible and provides accommodations for Liam's challenges but lacks direct engagement with his interests. It aligns somewhat well academically."
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 85,
+        "accessibility_fit": 90,
+        "accommodation_fit": 95,
+        "engagement_fit": 70,
+        "overall_alignment": 85,
+        "explanation": "The worksheet aligns well with Sofia's academic goal and needs but lacks clear engagement strategies for ELL learners."
+      },
+      "Noah Williams": {
+        "understanding_fit": 20,
+        "accessibility_fit": 50,
+        "accommodation_fit": 65,
+        "engagement_fit": 30,
+        "overall_alignment": 41,
+        "explanation": "The worksheet lacks clear math goals and direct teaching methods required by Noah. While accommodations are adequate for his challenges with routine activities."
+      },
+      "Ava Johnson": {
+        "understanding_fit": 30,
+        "accessibility_fit": 40,
+        "accommodation_fit": 75,
+        "engagement_fit": 60,
+        "overall_alignment": 51,
+        "explanation": "The worksheet lacks academic content relevant to Ava's goals but does offer multisensory aspects and small-group interactions that align with her social goal. It provides structured accommodations for learning difficulties."
+      },
+      "Alex Johnson": {
+        "understanding_fit": 75,
+        "accessibility_fit": 60,
+        "accommodation_fit": 85,
+        "engagement_fit": 40,
+        "overall_alignment": 63,
+        "explanation": "The worksheet supports academic understanding but lacks clear alignment with Alex's reading challenges. The accommodations are well-aligned and would likely support success."
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3.1.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 81,
+        "explanation": "The worksheet aligns well with Maya's academic understanding goals by providing concrete examples in a variety of formats. While it offers visual support which is helpful for her sensory needs, more direct engagement strategies could enhance motivation given t"
+      },
+      "Liam Chen": {
+        "understanding_fit": 90,
+        "accessibility_fit": 85,
+        "accommodation_fit": 80,
+        "engagement_fit": 82,
+        "overall_alignment": 84,
+        "explanation": "The worksheet aligns well with Liam's academic goals and challenges. It supports his strength in math through pattern recognition tasks but requires simplification to manage impulsivity better. The visual elements could enhance focus more effectively for atten"
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 70,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 77,
+        "explanation": "Worksheet offers good academic support and accommodations but could enhance engagement; accessibility is excellent given the visual aids for vocabulary."
+      },
+      "Noah Williams": {
+        "understanding_fit": 40,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 71,
+        "explanation": "The worksheet does not adequately support academic understanding goals for Noah as it requires abstract math concepts. Accessibility and accommodations are well-aligned with his needs but the motivational aspects could be improved."
+      },
+      "Ava Johnson": {
+        "understanding_fit": 10,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 75,
+        "overall_alignment": 65,
+        "explanation": "The worksheet is inappropriate for Ava's IEP goals as it does not match her academic needs. The content about Pythagorean relationships and prime factorization doesn’t support accurate decoding skills directly. However, the visual aids could potentially engage"
+      },
+      "Alex Johnson": {
+        "understanding_fit": 70,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 77,
+        "explanation": "The worksheet largely supports Alex's comprehension goals with its focus on math concepts. Accessibility features and accommodations such as text-to-speech and chunked tasks align well with his needs for routine structure and visual support."
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3.2.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 75,
+        "accessibility_fit": 60,
+        "accommodation_fit": 90,
+        "engagement_fit": 80,
+        "overall_alignment": 81,
+        "explanation": "The worksheet closely aligns with Maya's academic goals by incorporating the concept of Pythagorean relationships in a clear and structured format. Accessibility needs are partially met as there is room for more sensory-friendly materials within examples; howe"
+      },
+      "Liam Chen": {
+        "understanding_fit": 85,
         "accessibility_fit": 70,
         "accommodation_fit": 90,
         "engagement_fit": 65,
-        "overall_alignment": 81,
-        "explanation": "The worksheet aligns well with Liam's academic goals by focusing on problem-solving within math. It is moderately accessible given his attention challenges but lacks frequent checks to monitor focus and task progress regularly throughout the exercise."
+        "overall_alignment": 78,
+        "explanation": "The worksheet aligns well with Liam's understanding of Pythagorean relationships by providing relevant content and opportunities for pattern recognition. While it is generally accessible due to clear instructions and the breakdown into manageable tasks, some a"
       },
       "Sofia Martinez": {
-        "understanding_fit": 80,
-        "accessibility_fit": 90,
-        "accommodation_fit": 75,
-        "engagement_fit": 85,
-        "overall_alignment": 83,
-        "explanation": "The worksheet supports Sofia's academic goals by integrating graphic organizers and visual aids for understanding Pythagorean relationships. It aligns well with her strength in completing assignments but may need more explicit connection to IEP goals such as p"
-      },
-      "Noah Williams": {
-        "understanding_fit": 60,
-        "accessibility_fit": 85,
-        "accommodation_fit": 90,
-        "engagement_fit": 70,
-        "overall_alignment": 79,
-        "explanation": "The worksheet aligns fairly well with Noah's academic understanding goals but requires clearer connection to real-world applications. It is highly accessible and accommodates his learning needs effectively. Engagement could be improved by incorporating more ha"
-      },
-      "Ava Johnson": {
-        "understanding_fit": 70,
-        "accessibility_fit": 80,
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
         "accommodation_fit": 90,
         "engagement_fit": 65,
-        "overall_alignment": 79,
-        "explanation": "The worksheet aligns fairly well with Ava's academic goals but lacks specific elements tailored to her dyslexia. It offers good accessibility and provides effective accommodations that are likely beneficial for Ava."
+        "overall_alignment": 78,
+        "explanation": "The worksheet focuses heavily on mathematical understanding of Pythagorean relationships which aligns with Sofia's academic goals; however, it lacks specific accommodations for her ELL and written expression needs. The provided sentence frames in the instructi"
+      },
+      "Noah Williams": {
+        "understanding_fit": 30,
+        "accessibility_fit": 65,
+        "accommodation_fit": 75,
+        "engagement_fit": 40,
+        "overall_alignment": 58,
+        "explanation": "The worksheet introduces a math concept (Pythagorean relationship) that is not Noah's current focus. Accessibility and accommodations are suitable for his needs but the lack of hands-on elements affect engagement."
+      },
+      "Ava Johnson": {
+        "understanding_fit": 80,
+        "accessibility_fit": 65,
+        "accommodation_fit": 90,
+        "engagement_fit": 70,
+        "overall_alignment": 81,
+        "explanation": "The worksheet aligns reasonably well with Ava's IEP goals. It supports her understanding of Pythagorean relationships and provides engaging content. However, it lacks explicit links to phonics patterns crucial for dyslexia support and multisensory instructiona"
       },
       "Alex Johnson": {
         "understanding_fit": 85,
-        "accessibility_fit": 90,
-        "accommodation_fit": 80,
+        "accessibility_fit": 60,
+        "accommodation_fit": 90,
         "engagement_fit": 75,
-        "overall_alignment": 83,
-        "explanation": "The worksheet focuses on a single topic which supports Alex's comprehension goal but lacks frequent checkpoints for understanding. The steps provided and visuals can aid accessibility; however, the text-based questions may hinder his learning due to reading ch"
+        "overall_alignment": 78,
+        "explanation": "The worksheet supports the academic goals by directly applying Pythagorean concepts but requires improvements in accessibility and engagement."
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 77,
+        "explanation": "The worksheet aligns well with Maya's academic understanding goals and provides good accommodations. Accessibility needs improvement due to sensory inputs; engagement could be enhanced by incorporating choice for demonstration."
+      },
+      "Liam Chen": {
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
+        "accommodation_fit": 90,
+        "engagement_fit": 80,
+        "overall_alignment": 84,
+        "explanation": "The worksheet aligns well with Liam's academic goals through content relevance and the inclusion of extension problems. However, more breaks could be integrated to address his attentional challenges better. The provided accommodations are highly beneficial for"
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 75,
+        "accessibility_fit": 80,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 78,
+        "explanation": "The worksheet aligns fairly well with the student's academic goals by integrating visual aids and graphic organizers into learning about right triangles. It is highly accessible due to its clear instructions for ELL students, yet it lacks dynamic elements whic"
+      },
+      "Noah Williams": {
+        "understanding_fit": 75,
+        "accessibility_fit": 80,
+        "accommodation_fit": 90,
+        "engagement_fit": 65,
+        "overall_alignment": 80,
+        "explanation": "The worksheet aligns well with Noah's understanding of math by breaking down concepts into visual supports and using concrete materials. It provides accessibility through environmental accommodations but could enhance engagement through more hands-on tasks tai"
+      },
+      "Ava Johnson": {
+        "understanding_fit": 85,
+        "accessibility_fit": 70,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 79,
+        "explanation": "The worksheet supports Ava's academic goals through its focus on Pythagorean relationships which align with her IEP objectives. However, the lack of direct engagement in stories and discussions might not fully motivate her as a friendly imaginative student."
+      },
+      "Alex Johnson": {
+        "understanding_fit": 70,
+        "accessibility_fit": 85,
+        "accommodation_fit": 90,
+        "engagement_fit": 60,
+        "overall_alignment": 76,
+        "explanation": "The worksheet aligns well with the student's academic goals and needs but could be made more engaging. The accommodations provided match key requirements for success."
       }
     }
   }

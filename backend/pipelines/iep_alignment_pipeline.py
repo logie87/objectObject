@@ -379,7 +379,7 @@ def evaluate_alignment_for_pair(
         logger.warning(f"Failed to parse JSON from LLM: {e}")
         parsed_json = None
 
-    if not parsed_json or set(parsed_json.keys()) != EXPECTED_KEYS:
+    if parsed_json is None or set(parsed_json.keys()) != set(EXPECTED_KEYS):
         normalized = evaluate_alignment_for_pair(
             student, worksheet_text, worksheet_id, worksheet_title
         )
