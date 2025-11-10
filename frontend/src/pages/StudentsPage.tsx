@@ -874,7 +874,7 @@ export default function StudentsPage() {
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4, color: COLORS.mainText }}>Students</h1>
           <div style={{ color: COLORS.mutedText }}>
-            Manage profiles and iep details
+            Manage profiles and IEP details
           </div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -905,7 +905,7 @@ export default function StudentsPage() {
               opacity: busy ? 0.7 : 1,
             }}
           >
-            {busy ? "refreshing…" : "refresh"}
+            {busy ? "refreshing…" : "Refresh"}
           </button>
           <button
             onClick={() => setShowModal(true)}
@@ -919,7 +919,7 @@ export default function StudentsPage() {
               fontWeight: 650,
             }}
           >
-            generate
+            Generate
           </button>
         </div>
       </div>
@@ -946,7 +946,7 @@ export default function StudentsPage() {
               color: COLORS.mainText,
             }}
           >
-            generate report
+            Generate report
           </h3>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
@@ -1361,7 +1361,7 @@ export default function StudentsPage() {
                 {t === "profile"
                   ? "Profile"
                   : t === "goals"
-                  ? "Iep goals"
+                  ? "IEP goals"
                   : t === "accom"
                   ? "Accommodations"
                   : t === "notes"
@@ -1451,7 +1451,7 @@ export default function StudentsPage() {
                     COLORS={COLORS}
                   />
                   <Field
-                    label="iep date (dd/mm/yyyy)"
+                    label="IEP date (dd/mm/yyyy)"
                     value={active?.data?.student?.iep_date || ""}
                     onChange={(v) => mutateActive(["student", "iep_date"], v)}
                     COLORS={COLORS}
