@@ -13,6 +13,8 @@ Usage:
     --iep-dir ./ieps \
     --worksheets-dir ./worksheets \
     --out output_scores.json
+
+    python iep_alignment_pipeline.py --iep-dir "../data/students" --worksheets-dir "../data/curriculum/Math 8 Adapted" --out output_scores.json
 """
 
 import argparse
@@ -65,6 +67,7 @@ EXPECTED_KEYS = [
 # ---------- Helpers ----------
 
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+logging.getLogger("httpx").setLevel(logging.ERROR)
 logger = SimpleAppLogger(str(LOG_DIR), "alignment_pipeline", logging.INFO).get_logger()
 
 
@@ -218,7 +221,6 @@ Key accommodations: {key_accommodations}
 WORKSHEET METADATA:
 Worksheet ID: {worksheet_id}
 Worksheet Title: {worksheet_title}
-Worksheet Summary (first 500 characters): {worksheet_snippet}
 
 WORKSHEET FULL TEXT:
 {worksheet_text}
@@ -240,7 +242,7 @@ Scoring rules:
 - explanation must be concise.
 - Do not output ANY extra text outside the JSON.
 
-Produce the JSON in a form "{...}" without any whitespaces now.
+Produce the JSON now.
 """
 
 
@@ -257,11 +259,7 @@ def compile_alignment_prompt(
     key_accommodations = "; ".join(
         [f"{k}: {v}" for k, v in list(student.accommodations.items())[:3]]
     )
-    worksheet_snippet = (
-        (worksheet_text[:500].replace("\n", " ").strip() + "...")
-        if len(worksheet_text) > 500
-        else worksheet_text.replace("\n", " ")
-    )
+
     prompt = ALIGNMENT_PROMPT_TEMPLATE.format(
         student_name=student.student_name,
         grade=student.grade,
@@ -272,8 +270,7 @@ def compile_alignment_prompt(
         key_accommodations=key_accommodations or "N/A",
         worksheet_id=worksheet_id,
         worksheet_title=worksheet_title or "N/A",
-        worksheet_snippet=worksheet_snippet,
-        worksheet_text=worksheet_text[:3000],  # keep prompt size bounded
+        worksheet_text=worksheet_text[:2500],  # keep prompt size bounded
     )
     return prompt
 
@@ -372,7 +369,7 @@ def evaluate_alignment_for_pair(
     raw_output = run_llm(prompt=prompt)
     # print(raw_output)
     logger.info(
-        f"LLM Output for {student}, {worksheet_title} [{worksheet_text[:30]}]: {raw_output}"
+        f"LLM Output for {student.student_name}, {worksheet_title}: {raw_output[:150]}"
     )
     try:
         parsed_json = json.loads(raw_output.strip("`json").strip())
