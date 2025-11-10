@@ -115,7 +115,7 @@ def ocr_pdf(path: Path, dpi=300, pages_limit=None) -> str:
 def extract_text_from_pdf(path: Path, ocr_if_empty=True, pages_limit=None) -> str:
     text = extract_text_from_searchable_pdf(path)
     if (not text or len(text) < 50) and ocr_if_empty:
-        print(f"[info] Performing OCR for (probably scanned) PDF: {path}")
+        logger.info(f"Performing OCR for (probably scanned) PDF: {path}")
         text = ocr_pdf(path, pages_limit=pages_limit)
     return text
 
@@ -371,6 +371,9 @@ def evaluate_alignment_for_pair(
     )
     raw_output = run_llm(prompt=prompt)
     # print(raw_output)
+    logger.info(
+        f"LLM Output for {student}, {worksheet_title} [{worksheet_text[:30]}]: {raw_output}"
+    )
     try:
         parsed_json = json.loads(raw_output.strip("`json").strip())
     except Exception as e:
@@ -438,9 +441,9 @@ def collect_worksheets_texts(worksheets_dir: Path) -> Dict[str, Dict]:
             try:
                 text = extract_text_from_file(fpath)
                 if not text:
-                    print(f"[warn] No text found in {fpath}")
+                    logger.warning(f"No text found in {fpath}")
             except Exception as e:
-                print(f"[warn] Failed to extract text from {fpath}: {e}")
+                logger.warning(f"Failed to extract text from {fpath}: {e}")
                 text = ""
             worksheets[worksheet_id] = {
                 "text": text,
@@ -469,12 +472,12 @@ def run_pipeline(iep_dir: str, worksheets_dir: str, out_path: str):
     # Load IEPs
     students = load_ieps_from_dir(iep_dir_p)
     student_names = [s.student_name for s in students]
-    print(f"[info] Loaded {len(students)} student profiles: {student_names}")
+    logger.info(f"Loaded {len(students)} student profiles: {student_names}")
 
     # Extract worksheets
     worksheets = collect_worksheets_texts(worksheets_dir_p)
     worksheet_ids = list(worksheets.keys())
-    print(f"[info] Found {len(worksheets)} worksheet files")
+    logger.info(f"Found {len(worksheets)} worksheet files")
 
     # Results map: worksheet_id -> student -> overall score
     results_overall = {wid: {} for wid in worksheet_ids}
@@ -506,7 +509,7 @@ def run_pipeline(iep_dir: str, worksheets_dir: str, out_path: str):
         "details": full_results,
     }
     write_json_file(api_payload, out_p)
-    print(f"[info] Wrote results to {out_p}")
+    logger.info(f"[info] Wrote results to {out_p}")
 
 
 # ---------- CLI ----------
