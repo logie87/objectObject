@@ -338,7 +338,11 @@ const StudentCard: React.FC<{
           style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "none",
                    background: `linear-gradient(135deg, ${THEME_COLORS.light.buttonGradientStart}, ${THEME_COLORS.light.buttonGradientEnd})`,
                    color: "white", fontWeight: 650, cursor: "pointer" }}
-          onClick={() => onView(s.id)}
+          onClick={() => {
+            const q = `${s.name}`;
+            const url = `/app/reports?q=${encodeURIComponent(q)}`;
+            window.location.assign(url);
+          }}
         >
           Reports
         </button>
@@ -346,6 +350,7 @@ const StudentCard: React.FC<{
     </div>
   );
 };
+
 
 // ===== Page =====
 export default function StudentsPage() {

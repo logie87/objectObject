@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiGetBlobUrl, apiPut } from "../lib/api";
 
-/* light & dark palettes pulled from :root[data-theme] */
 const LIGHT = {
   buttonGradientStart: "#3DAFBC",
   buttonGradientEnd: "#3DAFBC",
@@ -32,7 +31,6 @@ const DARK = {
   pageBg: "#0b1020",
 };
 
-/* read current theme from :root */
 type Theme = "light" | "dark";
 function readRootTheme(): Theme {
   if (typeof document === "undefined") return "light";
@@ -42,14 +40,12 @@ function readRootTheme(): Theme {
   return "light";
 }
 
-/* react to outside theme changes (your existing toggle updates :root) */
 function usePalette() {
   const [theme, setTheme] = useState<Theme>(readRootTheme());
   useEffect(() => {
     const root = document.documentElement;
     const mo = new MutationObserver(() => setTheme(readRootTheme()));
     mo.observe(root, { attributes: true, attributeFilter: ["data-theme", "class"] });
-    // also reflect cross-tab storage changes if your switch writes to localStorage
     const onStorage = (e: StorageEvent) => {
       if (e.key === "theme") setTheme(readRootTheme());
     };
@@ -62,7 +58,6 @@ function usePalette() {
   return theme === "dark" ? DARK : LIGHT;
 }
 
-/* icons inherit color from parent via currentColor */
 const Icons = {
   Report: () => (
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -95,6 +90,117 @@ type ReportMeta = {
 
 type CategoriesResp = { categories: string[] };
 
+type ParsedQuery = {
+  terms: string[];
+  tags: string[];
+  file?: string;
+  title?: string;
+  category?: string;
+  sha?: string;
+  after?: Date;
+  before?: Date;
+  sizeGt?: number;
+  sizeLt?: number;
+  isUntagged?: boolean;
+};
+
+function parseSize(v: string): number | null {
+  const m = v.trim().toLowerCase().match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  const unit = m[2] || "b";
+  if (unit === "gb") return n * 1024 * 1024 * 1024;
+  if (unit === "mb") return n * 1024 * 1024;
+  if (unit === "kb") return n * 1024;
+  return n;
+}
+
+function parseDate(v: string): Date | null {
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function parseQuery(q: string): ParsedQuery {
+  const out: ParsedQuery = { terms: [], tags: [] };
+  const parts = q
+    .trim()
+    .match(/("[^"]+"|\S+)/g)
+    ?.map((p) => p.replace(/^"(.+)"$/, "$1")) || [];
+  for (const raw of parts) {
+    const p = raw.trim();
+    const [k, ...rest] = p.split(":");
+    const val = rest.join(":");
+    if (rest.length) {
+      const v = val.trim();
+      if (k === "tag" && v) out.tags.push(v.toLowerCase());
+      else if (k === "file" && v) out.file = v.toLowerCase();
+      else if (k === "title" && v) out.title = v.toLowerCase();
+      else if (k === "category" && v) out.category = v.toLowerCase();
+      else if (k === "sha" && v) out.sha = v.toLowerCase();
+      else if (k === "after") {
+        const d = parseDate(v);
+        if (d) out.after = d;
+      } else if (k === "before") {
+        const d = parseDate(v);
+        if (d) out.before = d;
+      } else if (k === "size>") {
+        const n = parseSize(v);
+        if (n != null) out.sizeGt = n;
+      } else if (k === "size<") {
+        const n = parseSize(v);
+        if (n != null) out.sizeLt = n;
+      } else {
+        out.terms.push(p.toLowerCase());
+      }
+    } else if (p === "is:untagged") {
+      out.isUntagged = true;
+    } else {
+      out.terms.push(p.toLowerCase());
+    }
+  }
+  return out;
+}
+
+function includes(hay: string | null | undefined, needle: string) {
+  return (hay || "").toLowerCase().includes(needle);
+}
+
+function matchReport(r: ReportMeta, pq: ParsedQuery) {
+  if (pq.tags.length && !pq.tags.every((t) => (r.tags || []).some((x) => x.toLowerCase().includes(t)))) return false;
+  if (pq.isUntagged && (r.tags && r.tags.length)) return false;
+  if (pq.file && !includes(r.filename, pq.file)) return false;
+  if (pq.title && !includes(r.title, pq.title)) return false;
+  if (pq.category && !includes(r.category, pq.category)) return false;
+  if (pq.sha && !includes(r.sha256, pq.sha)) return false;
+  if (pq.after && new Date(r.generated_at) < pq.after) return false;
+  if (pq.before && new Date(r.generated_at) > pq.before) return false;
+  if (pq.sizeGt != null && r.size <= pq.sizeGt) return false;
+  if (pq.sizeLt != null && r.size >= pq.sizeLt) return false;
+  if (pq.terms.length) {
+    const hay = `${r.title} ${r.filename} ${(r.tags || []).join(" ")} ${r.category} ${r.sha256}`.toLowerCase();
+    for (const term of pq.terms) {
+      if (!hay.includes(term)) return false;
+    }
+  }
+  return true;
+}
+
+function highlight(text: string, needles: string[], color: string) {
+  if (!needles.length) return text;
+  const uniq = Array.from(new Set(needles.filter(Boolean))).sort((a, b) => b.length - a.length);
+  if (!uniq.length) return text;
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rx = new RegExp(`(${uniq.map(esc).join("|")})`, "ig");
+  const parts = text.split(rx);
+  return parts.map((part, i) =>
+    uniq.some((n) => part.toLowerCase() === n.toLowerCase()) ? (
+      <mark key={i} style={{ background: "transparent", color, fontWeight: 700 }}>{part}</mark>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default function ReportsPage() {
   const C = usePalette();
 
@@ -104,6 +210,7 @@ export default function ReportsPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState<string>("");
   const [sort, setSort] = useState<"recent" | "title" | "size">("recent");
+  const [search, setSearch] = useState<string>("");
 
   const totalSize = useMemo(() => reports.reduce((s, d) => s + (d.size || 0), 0), [reports]);
 
@@ -135,8 +242,20 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => {
+    const initQ = new URLSearchParams(window.location.search).get("q") || "";
+    if (initQ) setSearch(initQ);
+  }, []);
+
+  useEffect(() => {
     refresh().catch((err) => tell(`Load failed: ${String(err)}`));
   }, [category, sort]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (search) url.searchParams.set("q", search);
+    else url.searchParams.delete("q");
+    window.history.replaceState(null, "", url.toString());
+  }, [search]);
 
   async function viewReport(id: string) {
     try {
@@ -159,6 +278,23 @@ export default function ReportsPage() {
     }
   }
 
+  const parsed = useMemo(() => parseQuery(search), [search]);
+
+  const filteredReports = useMemo(() => {
+    if (!search.trim()) return reports;
+    return reports.filter((r) => matchReport(r, parsed));
+  }, [reports, search, parsed]);
+
+  const highlightTerms = useMemo(() => {
+    const t = [...parsed.terms];
+    if (parsed.title) t.push(parsed.title);
+    if (parsed.file) t.push(parsed.file);
+    if (parsed.category) t.push(parsed.category);
+    if (parsed.sha) t.push(parsed.sha);
+    t.push(...parsed.tags);
+    return t.filter(Boolean);
+  }, [parsed]);
+
   return (
     <div style={{ padding: 24, color: C.mainText, minHeight: "100vh" }}>
       <div
@@ -174,7 +310,7 @@ export default function ReportsPage() {
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4 }}>Reports</h1>
           <div style={{ color: C.mutedText }}>
-            Generated reports • {reports.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
+            Generated reports • {filteredReports.length}/{reports.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
           </div>
         </div>
 
@@ -222,6 +358,25 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      <div style={{ marginBottom: 20 }}>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder='Filter by student/worksheet name'
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            borderRadius: 12,
+            border: `1px solid ${C.border}`,
+            background: C.cardBg,
+            color: C.mainText,
+            fontSize: 15,
+            boxShadow: C.cardShadow,
+          }}
+        />
+      </div>
+
       {notice && (
         <div
           style={{
@@ -244,7 +399,7 @@ export default function ReportsPage() {
           gap: 24,
         }}
       >
-        {reports.map((r) => (
+        {filteredReports.map((r) => (
           <div
             key={r.id}
             style={{
@@ -286,12 +441,14 @@ export default function ReportsPage() {
                   }}
                   title={r.title}
                 >
-                  {r.title}
+                  {highlight(r.title, highlightTerms, C.buttonGradientEnd)}
                 </div>
                 <div style={{ color: C.mutedText, fontSize: 13, marginTop: 4 }}>
                   {(r.size / 1024 / 1024).toFixed(2)} MB • {new Date(r.generated_at).toLocaleString()}
                 </div>
-                <div style={{ color: C.mutedText, fontSize: 12, marginTop: 6 }}>{r.category}</div>
+                <div style={{ color: C.mutedText, fontSize: 12, marginTop: 6 }}>
+                  {highlight(r.category, highlightTerms, C.buttonGradientEnd)}
+                </div>
                 {r.tags?.length ? (
                   <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {r.tags.map((t) => (
@@ -306,11 +463,14 @@ export default function ReportsPage() {
                           border: `1px solid ${C.border}`,
                         }}
                       >
-                        {t}
+                        {highlight(t, highlightTerms, C.buttonGradientEnd)}
                       </span>
                     ))}
                   </div>
                 ) : null}
+                <div style={{ color: C.mutedText, fontSize: 12, marginTop: 6, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                  {highlight(r.filename, highlightTerms, C.buttonGradientEnd)}
+                </div>
               </div>
             </div>
 
@@ -350,7 +510,7 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {!reports.length && !busy && (
+      {!filteredReports.length && !busy && (
         <div style={{ marginTop: 24, color: C.mutedText }}>
           No reports found{category ? ` in “${category}”` : ""}.
         </div>

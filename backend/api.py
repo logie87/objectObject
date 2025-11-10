@@ -125,6 +125,8 @@ class ReportMeta(BaseModel):
     generated_at: str
     category: str
     tags: List[str] = []
+    students: List[str] = []  # <— NEW: searchable student names
+
 
 class ReportUpdate(BaseModel):
     title: Optional[str] = None
@@ -532,6 +534,7 @@ def _rebuild_reports_index() -> Dict[str, Dict]:
         title = meta.get("title") or p.stem
         category = meta.get("category") or _guess_category_from_name(p.name)
         tags = meta.get("tags") or []
+        students = meta.get("students") or []  # <— NEW: preserve previously stored names
         existing[rid] = {
             "id": rid,
             "filename": p.name,
@@ -541,7 +544,9 @@ def _rebuild_reports_index() -> Dict[str, Dict]:
             "generated_at": datetime.fromtimestamp(stat.st_mtime).isoformat(timespec="seconds") + "Z",
             "category": category,
             "tags": tags,
+            "students": students,  # <— NEW
         }
+
     # remove stale
     stale = [rid for rid, m in existing.items() if not (REPORTS_DIR / m["filename"]).exists()]
     for rid in stale:
@@ -550,68 +555,112 @@ def _rebuild_reports_index() -> Dict[str, Dict]:
     _save_reports_index(idx)
     return idx
 
+# ====== Robust PDF writer for alignment reports (ReportLab if available, else text-PDF) ======
 
 def _create_pdf_report(
     title: str,
     category: str,
     tags: Optional[List[str]] = None,
-    payload: Optional[dict] = None,  # OPTIONAL: pass the alignment result dict for richer content
+    payload: Optional[dict] = None,  # pass the alignment result dict so we can include student names in filename
 ) -> Dict[str, str]:
     """
     Write a readable PDF into /data/reports and upsert /data/reports/index.json.
-    If ReportLab is available, render a proper report with tables/paragraphs.
-    Otherwise, fall back to a simple text PDF (still non-empty & viewable).
+    If ReportLab is available, render a proper report. Otherwise, fall back to a text PDF.
 
-    Returns: {"id": rid, "filename": filename}
+    Filenames now include student names (from payload.meta.students or matrix.students),
+    e.g., "IEP Alignment — Math 10 - Alex_Johnson-Liam_Chen-20251110-104455.pdf",
+    and then are renamed to have the {id}- prefix after hashing for stable IDs.
     """
     ensure_reports_dir()
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # --- Build a safe, human-readable base filename
+    # --- Extract student names (minimal, robust)
+    def _students_from_payload(pl: Optional[dict]) -> List[str]:
+        if not isinstance(pl, dict):
+            return []
+        meta_students = (pl.get("meta", {}) or {}).get("students") or []
+        matrix_students = (pl.get("matrix", {}) or {}).get("students") or []
+        names = [str(n).strip() for n in (meta_students or matrix_students) if isinstance(n, str) and n.strip()]
+        # de-dupe preserving order
+        seen = set()
+        out = []
+        for n in names:
+            if n not in seen:
+                seen.add(n)
+                out.append(n)
+        return out
+
+    def _slug_students(names: List[str]) -> str:
+        if not names:
+            return ""
+        # limit to first 3 names, trim long parts
+        trimmed = []
+        for n in names[:3]:
+            # replace spaces with underscores, keep basic ASCII-alnum+underscores only
+            n2 = "".join(ch if ch.isalnum() else ("_" if ch.isspace() else "") for ch in n).strip("_")
+            if len(n2) > 24:
+                n2 = n2[:24]
+            if n2:
+                trimmed.append(n2)
+        suffix = "-".join(trimmed)
+        if len(names) > 3:
+            suffix += f"-and-{len(names)-3}-more"
+        return suffix
+
+    students = _students_from_payload(payload)
+    students_suffix = _slug_students(students)
+
+    # --- Build a safe, human-readable base filename (now with student names)
     now = datetime.now()
     now_str = now.strftime("%Y%m%d-%H%M%S")
     safe_title = _safe_filename(title) or "report"
-    tmp_name = f"{safe_title}-{now_str}.pdf"
+    base = f"{safe_title}"
+    if students_suffix:
+        base += f" - {students_suffix}"
+    tmp_name = f"{base}-{now_str}.pdf"
+    # keep filenames reasonable
+    if len(tmp_name) > 160:
+        # truncate middle
+        head, tail = tmp_name[:100], tmp_name[-55:]
+        tmp_name = head + "…" + tail
     tmp_path = REPORTS_DIR / tmp_name
 
-    # --- Try ReportLab first
+    # --- Try ReportLab (pretty PDF)
     used_reportlab = False
     try:
         from reportlab.lib.pagesizes import letter
         from reportlab.lib import colors
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
         doc = SimpleDocTemplate(str(tmp_path), pagesize=letter, title=title)
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(name="Meta", fontSize=9, leading=12, textColor=colors.grey))
         story = []
 
-        # Title
         story.append(Paragraph(title, styles["Title"]))
         story.append(Spacer(1, 6))
 
-        # Meta line
         meta_line = f"{category} • {now.isoformat(timespec='seconds')}Z"
         if tags:
             meta_line += " • " + ", ".join(tags)
+        if students:
+            meta_line += " • Students: " + ", ".join(students[:3]) + ("…" if len(students) > 3 else "")
         story.append(Paragraph(meta_line, styles["Meta"]))
         story.append(Spacer(1, 12))
 
-        # If payload (alignment result) is provided, summarize it
         if isinstance(payload, dict):
             meta = payload.get("meta", {}) or {}
             matrix = payload.get("matrix", {}) or {}
             details = payload.get("details", {}) or {}
 
-            students = list(meta.get("students", []) or matrix.get("students", []) or [])
+            students_list = list(meta.get("students", []) or matrix.get("students", []) or [])
             worksheets = list(meta.get("worksheets", []) or matrix.get("worksheets", []) or [])
             row_avgs = payload.get("row_averages", []) or []
             col_avgs = payload.get("column_averages", []) or []
 
-            # High-level summary
             hdr = (
-                f"Students: {len(students)} &nbsp;&nbsp; "
+                f"Students: {len(students_list)} &nbsp;&nbsp; "
                 f"Worksheets: {len(worksheets)} &nbsp;&nbsp; "
                 f"Row avg: {', '.join(str(int(round(x))) for x in row_avgs) or '—'} &nbsp;&nbsp; "
                 f"Column avg: {', '.join(str(int(round(x))) for x in col_avgs) or '—'}"
@@ -619,20 +668,11 @@ def _create_pdf_report(
             story.append(Paragraph(hdr, styles["Normal"]))
             story.append(Spacer(1, 10))
 
-            # If there is only one worksheet in details, make a per-student table
-            # Otherwise, just list worksheets
             if details:
-                # Pick a worksheet deterministically (first by name)
                 ws_key = sorted(details.keys())[0]
                 per_ws = details.get(ws_key, {}) or {}
-
-                # Table header
-                data = [
-                    ["Student", "Understanding", "Accessibility", "Accommodation", "Engagement", "Overall"]
-                ]
-
-                # Add rows
-                for s in students or sorted(per_ws.keys()):
+                data = [["Student", "Understanding", "Accessibility", "Accommodation", "Engagement", "Overall"]]
+                for s in students_list or sorted(per_ws.keys()):
                     d = per_ws.get(s, {}) if isinstance(per_ws.get(s, {}), dict) else {}
                     def _grab(name):
                         v = d.get(name)
@@ -648,11 +688,9 @@ def _create_pdf_report(
                         _grab("engagement_fit"),
                         _grab("overall_alignment"),
                     ])
-
                 tbl = Table(data, repeatRows=1)
                 tbl.setStyle(TableStyle([
                     ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f0f0f0")),
-                    ("TEXTCOLOR", (0,0), (-1,0), colors.black),
                     ("GRID", (0,0), (-1,-1), 0.25, colors.grey),
                     ("ALIGN", (1,1), (-1,-1), "CENTER"),
                     ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
@@ -663,55 +701,23 @@ def _create_pdf_report(
                 story.append(Paragraph(f"Worksheet: {ws_key}", styles["Heading3"]))
                 story.append(Spacer(1, 4))
                 story.append(tbl)
-                story.append(Spacer(1, 12))
 
-                # Add explanations (trimmed) if present
-                explanations = []
-                for s in students or per_ws.keys():
-                    exp = per_ws.get(s, {}).get("explanation")
-                    if isinstance(exp, str) and exp.strip():
-                        explanations.append((s, exp.strip()))
-                if explanations:
-                    story.append(Paragraph("Notes & Explanations", styles["Heading3"]))
-                    story.append(Spacer(1, 4))
-                    for s, exp in explanations:
-                        story.append(Paragraph(f"<b>{s}:</b> {exp}", styles["BodyText"]))
-                        story.append(Spacer(1, 4))
-
-            else:
-                # No details; list worksheets/students plainly
-                if worksheets:
-                    story.append(Paragraph("Worksheets", styles["Heading3"]))
-                    for w in worksheets:
-                        story.append(Paragraph(f"• {w}", styles["BodyText"]))
-                    story.append(Spacer(1, 8))
-                if students:
-                    story.append(Paragraph("Students", styles["Heading3"]))
-                    for s in students:
-                        story.append(Paragraph(f"• {s}", styles["BodyText"]))
-                    story.append(Spacer(1, 8))
         else:
-            # No payload: add a simple stub so it's still useful
             story.append(Paragraph("Summary will appear here when payload data is provided.", styles["BodyText"]))
 
-        # Finalize
         doc.build(story)
         used_reportlab = True
     except Exception as e:
         logger.warning(f"ReportLab not available or failed ({e}); using text-PDF fallback.")
-
-    if not used_reportlab:
-        # --- Fallback: build a small text PDF manually (Helvetica base font)
-        # Creates a visible page with a few lines of text; no external deps.
-        # Basic 1-page PDF with /Font resource and a content stream.
+        # Fallback text-PDF (one page, visible text)
         content_lines = [
             title,
             f"Category: {category}",
             f"Generated: {now.isoformat(timespec='seconds')}Z",
+            f"Students: {', '.join(students)}" if students else "Students: —",
             f"Tags: {', '.join(tags or [])}" if tags else "Tags: —",
         ]
         try:
-            # Build a tiny text content stream
             def _esc(s: str) -> str:
                 return s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
             y = 750
@@ -721,23 +727,15 @@ def _create_pdf_report(
                 stream += "BT /F1 10 Tf 72 {} Td ({}) Tj ET\n".format(y, _esc(line))
                 y -= 14
             stream_bytes = stream.encode("latin-1", "replace")
-            # Assemble simple PDF with 5 objects: catalog, pages, page, font, contents
             objects = []
-            # 1: Catalog
             objects.append("1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n")
-            # 2: Pages
             objects.append("2 0 obj <</Type /Pages /Count 1 /Kids [3 0 R]>> endobj\n")
-            # 3: Page
             objects.append(
                 "3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
                 "/Resources <</Font <</F1 4 0 R>>>> /Contents 5 0 R>> endobj\n"
             )
-            # 4: Font
             objects.append("4 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj\n")
-            # 5: Contents
             objects.append(f"5 0 obj <</Length {len(stream_bytes)}>> stream\n".encode("latin-1") + stream_bytes + b"\nendstream\nendobj\n")
-
-            # Write with xref
             with open(tmp_path, "wb") as f:
                 f.write(b"%PDF-1.4\n")
                 offsets = []
@@ -754,27 +752,26 @@ def _create_pdf_report(
                         "trailer <</Size {size}/Root 1 0 R>>\nstartxref\n{start}\n%%EOF"
                     ).format(size=len(objects)+1, start=xref_pos).encode("latin-1")
                 )
-        except Exception as e:
-            # As a last resort, drop back to the old minimal bytes (shouldn't happen often)
-            pdf_bytes = (
-                b"%PDF-1.4\n"
-                b"1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
-                b"2 0 obj <</Type /Pages /Count 1 /Kids [3 0 R]>> endobj\n"
-                b"3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]>> endobj\n"
-                b"xref\n0 4\n0000000000 65535 f \n0000000010 00000 n \n0000000061 00000 n \n0000000127 00000 n \n"
-                b"trailer <</Size 4/Root 1 0 R>>\nstartxref\n193\n%%EOF"
-            )
+        except Exception as e2:
             with open(tmp_path, "wb") as f:
-                f.write(pdf_bytes)
-            logger.warning(f"Text-PDF fallback also failed to render text ({e}); wrote minimal PDF.")
+                f.write(
+                    b"%PDF-1.4\n1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
+                    b"2 0 obj <</Type /Pages /Count 1 /Kids [3 0 R]>> endobj\n"
+                    b"3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]>> endobj\n"
+                    b"xref\n0 4\n0000000000 65535 f \n0000000010 00000 n \n0000000061 00000 n \n0000000127 00000 n \n"
+                    b"trailer <</Size 4/Root 1 0 R>>\nstartxref\n193\n%%EOF"
+                )
+            logger.warning(f"Text-PDF fallback also failed to render text ({e2}); wrote minimal PDF.")
 
     # --- Compute sha/id, rename to add id prefix, update index
+        # --- Compute sha/id, rename to add id prefix, update index
     sha = _sha256_file(tmp_path)
     rid = sha[:16]
     final_name = f"{rid}-{tmp_name}"
     final_path = REPORTS_DIR / final_name
     os.replace(tmp_path, final_path)
 
+    # try to reuse parsed students if available, else empty list
     idx = _load_reports_index()
     idx.setdefault("reports", {})[rid] = {
         "id": rid,
@@ -785,10 +782,13 @@ def _create_pdf_report(
         "generated_at": datetime.fromtimestamp(final_path.stat().st_mtime).isoformat(timespec="seconds") + "Z",
         "category": category,
         "tags": list(tags or []),
+        "students": students if 'students' in locals() else [],  # <— NEW
     }
     _save_reports_index(idx)
     logger.info(f"Report PDF created: {final_name} (category={category})")
     return {"id": rid, "filename": final_name}
+
+
 
 # ============================================================
 # ======================= JWT HELPERS ========================
