@@ -277,7 +277,7 @@ export default function HomePage() {
               <div
                 className="card"
                 style={{
-                  background: COLORS.cardBg,
+                  // background: COLORS.cardBg,
                   boxShadow: COLORS.shadowLight,
                   border: `1px solid ${COLORS.border}`,
                 }}
@@ -312,7 +312,7 @@ export default function HomePage() {
               <div
                 className="card"
                 style={{
-                  background: COLORS.cardBg,
+                  // background: COLORS.cardBg,
                   boxShadow: COLORS.shadowLight,
                   border: `1px solid ${COLORS.border}`,
                 }}
