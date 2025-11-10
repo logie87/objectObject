@@ -276,41 +276,6 @@ def compile_alignment_prompt(
 # ---------- Response Parsing & Normalization ----------
 
 
-def extract_json_from_text(s: str) -> Tuple[Dict, str]:
-    """
-    Try to extract the first JSON object from text.
-    Returns (json_obj_or_empty, raw_json_string_or_empty)
-    """
-    # find first { ... } balanced - naive approach
-    s = s.strip()
-    # attempt direct load first
-    try:
-        j = json.loads(s)
-        return j, s
-    except Exception:
-        pass
-    # regex to find braces - this may fail on nested braces inside strings, but it's robust enough for LLM outputs that print JSON
-    brace_stack = []
-    start = None
-    for i, ch in enumerate(s):
-        if ch == "{":
-            if start is None:
-                start = i
-            brace_stack.append(i)
-        elif ch == "}":
-            if brace_stack:
-                brace_stack.pop()
-                if not brace_stack and start is not None:
-                    candidate = s[start : i + 1]
-                    try:
-                        j = json.loads(candidate)
-                        return j, candidate
-                    except Exception:
-                        start = None
-                        continue
-    return {}, ""
-
-
 def enforce_schema_and_normalize(raw: Dict) -> Dict:
     """Ensure all expected keys exist and numeric values are ints between 0 and 100"""
     out = {}
