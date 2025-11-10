@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../lib/api";
 
 const COLORS = {
-  readingBadgeBg: "rgba(226, 255, 129, 0.45)",
+  readingBadgeBg: "rgba(245, 255, 107, 0.7)",
   readingBadgeText: "#3A3A5C",
-  timeBadgeBg: "rgba(208, 255, 179, 0.45)",
+  timeBadgeBg: "rgba(196, 255, 160, 0.7)",
   timeBadgeText: "#3A3A5C",
-  altRespBg: "rgba(97, 255, 163, 0.20)",
+  altRespBg: "rgba(148, 255, 212, 0.7)",
   altRespText: "#3A3A5C",
   pieGradientStart: "#34d399",
   pieGradientEnd: "#22c55e",
