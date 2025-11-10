@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import JobDock from "../jobs/JobDock";
 
 function Icon({d}:{d:string}) {
   return (
@@ -18,7 +19,7 @@ const items = [
 
 export default function Sidebar(){
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={{ display: "flex", flexDirection: "column" }}>
       <nav style={{display:"grid", gap:8}}>
         {items.map(it=>(
           <NavLink key={it.to} to={it.to} end>
@@ -31,6 +32,11 @@ export default function Sidebar(){
           </NavLink>
         ))}
       </nav>
+
+      {/* Job dock (persists across pages) */}
+      <div style={{ marginTop: "auto" }}>
+        <JobDock />
+      </div>
     </aside>
   );
 }

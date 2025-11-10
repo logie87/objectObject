@@ -249,14 +249,14 @@ def _student_file_for_id(sid: str) -> Path:
 def _scan_students() -> List[Tuple[str, Dict]]:
     """
     Scan /data/students for individual student JSONs.
-    Ignores aggregator/aux files like index.json and hidden/underscore files.
+    Ignores aggregator/aux files like index.json, reports.json, and hidden/underscore files.
     """
     ensure_students_dir()
     out: List[Tuple[str, Dict]] = []
     for p in sorted(STU_DIR.glob("*.json")):
         stem = p.stem.lower()
-        # Skip known non-student files
-        if stem in {"index"} or p.name.startswith("_") or p.name.startswith("."):
+        # Skip known non-student files and hidden ones
+        if stem in {"index", "reports"} or p.name.startswith("_") or p.name.startswith("."):
             continue
         try:
             with open(p, "r", encoding="utf-8") as f:
@@ -266,6 +266,7 @@ def _scan_students() -> List[Tuple[str, Dict]]:
         except Exception as e:
             logger.warning(f"Skipping student file {p.name}: {e}")
     return out
+
 
 def _badges_from_accommodations(accom_text: str) -> List[str]:
     s = accom_text.lower()
@@ -300,6 +301,53 @@ def _merge_deep(orig: Dict, patch: Dict) -> Dict:
         else:
             orig[k] = v
     return orig
+
+# ====== Student-reports store (for pie charts, latest alignment) ======
+
+STU_REPORTS_PATH = STU_DIR / "reports.json"
+
+def _load_student_reports() -> Dict[str, Dict]:
+    """
+    Shape:
+    {
+      "students": {
+        "<sid>": {
+          "updated_at": ISO,
+          "selection": {"courses": [...], "units": [...]},
+          "overall": int,
+          "metrics": {
+            "understanding": int,
+            "accessibility": int,
+            "accommodation": int,
+            "engagement": int
+          }
+        },
+        ...
+      }
+    }
+    """
+    ensure_students_dir()
+    if not STU_REPORTS_PATH.exists():
+        return {"students": {}}
+    try:
+        with open(STU_REPORTS_PATH, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+        if not isinstance(obj, dict) or "students" not in obj:
+            return {"students": {}}
+        if not isinstance(obj["students"], dict):
+            obj["students"] = {}
+        return obj
+    except Exception as e:
+        logger.warning(f"Failed loading student reports store: {e}")
+        return {"students": {}}
+
+def _save_student_reports(obj: Dict[str, Dict]) -> None:
+    ensure_students_dir()
+    tmp = str(STU_REPORTS_PATH) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, STU_REPORTS_PATH)
+
 
 # ====== Reports helpers ======
 def _sha256_file(path: Path) -> str:
@@ -743,6 +791,30 @@ async def update_student(sid: str, payload: StudentUpdate, user=Depends(verify_j
 
     logger.info(f"Student {sid} updated by {user['email']}")
     return StudentFull(id=sid, data=data)
+
+
+# ============================================================
+# ================== STUDENT REPORTS ROUTES ==================
+# ============================================================
+
+@app.get("/students/reports")
+async def get_students_reports(user=Depends(verify_jwt)):
+    """
+    Returns the latest per-student alignment snapshot used by pie charts.
+    """
+    store = _load_student_reports()
+    return store
+
+@app.get("/students/{sid}/reports")
+async def get_student_report(sid: str, user=Depends(verify_jwt)):
+    """
+    Returns one student's latest alignment snapshot (or 404 if none).
+    """
+    store = _load_student_reports()
+    rec = store.get("students", {}).get(sid)
+    if not rec:
+        raise HTTPException(status_code=404, detail="No report snapshot for this student")
+    return rec
 
 
 # ============================================================
@@ -1337,7 +1409,6 @@ async def search_suggest(s: Optional[str] = "", limit: int = 6, user=Depends(ver
     out.sort(key=lambda x: x.score, reverse=True)
     return out[:limit]
 
-
 # ============================================================
 # =================== ALIGNMENT (IEP-SELECTED) ===============
 # ============================================================
@@ -1345,17 +1416,11 @@ async def search_suggest(s: Optional[str] = "", limit: int = 6, user=Depends(ver
 @app.post("/align/iep-selected", response_model=IEPAlignResponse)
 async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt)):
     """
-    Run IEP alignment for an explicit subset:
-      - payload.student_ids: list of student file IDs (stems under /data/students/*.json)
-      - payload.courses: list of course names (dir names under /data/curriculum)
-      - payload.units: list of unit names (dir names under each course)
-
-    The API will:
-      - map student_ids -> student.student_name from each JSON
-      - build selection = { course: [units that actually exist under that course ∩ payload.units] }
-      - call pipelines.run_iep_alignment_selected(...)
+    Run IEP alignment for an explicit subset and persist:
+      - alignment_pct into each student's JSON
+      - a pie-chart-friendly breakdown into /data/students/reports.json
     """
-    # 1) Resolve student names
+    # 1) Validate + resolve student names (parallel to IDs)
     student_ids = [s for s in (payload.student_ids or []) if isinstance(s, str) and s.strip()]
     if not student_ids:
         raise HTTPException(status_code=400, detail="No students selected")
@@ -1367,29 +1432,25 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
             student_names.append(nm)
         else:
             logger.warning(f"Student ID not found or missing name: {sid}")
-
     if not student_names:
         raise HTTPException(status_code=400, detail="Selected students not found")
 
-    # 2) Build selection map {course: [units...]} filtering to existing units only
-    selection: Dict[str, List[str]] = {}
+    # 2) Course/unit selection that actually exists
     requested_courses = [c for c in (payload.courses or []) if isinstance(c, str) and c.strip()]
     requested_units   = {u for u in (payload.units or []) if isinstance(u, str) and u.strip()}
-
     if not requested_courses or not requested_units:
         raise HTTPException(status_code=400, detail="Select at least one course and one unit")
 
+    selection: Dict[str, List[str]] = {}
     for course in requested_courses:
         course_dir = CUR_DIR / course
         if not course_dir.exists() or not course_dir.is_dir():
             logger.info(f"Course not found: {course}")
             continue
-        # include only requested units that exist under this course
         existing_units = [u.name for u in course_dir.iterdir() if u.is_dir()]
         units_for_course = [u for u in existing_units if u in requested_units]
         if units_for_course:
             selection[course] = units_for_course
-
     if not selection:
         raise HTTPException(status_code=400, detail="No matching units found under selected courses")
 
@@ -1408,7 +1469,109 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
     if not result or not isinstance(result, dict):
         raise HTTPException(status_code=500, detail="No result from pipeline")
 
-    logger.info(f"Alignment done for {len(student_names)} students, {sum(len(v) for v in selection.values())} units")
+    # 4) Compute per-student overall and metric breakdowns from result.details
+    #    details shape: { worksheet: { "<Student Name>": {understanding_fit, accessibility_fit, accommodation_fit, engagement_fit, overall_alignment, ...}, ... } }
+    matrix_obj = result.get("matrix", {}) or {}
+    matrix_students: List[str] = list(matrix_obj.get("students", []) or [])
+    column_averages: List[float] = list(result.get("column_averages", []) or [])
+    details: Dict[str, Dict[str, Dict]] = result.get("details", {}) or {}
+
+    # Helper to average safely
+    def _avg_int(values: List[float]) -> int:
+        if not values:
+            return 0
+        return int(round(sum(values) / len(values)))
+
+    # Build name -> stats
+    per_student_stats: Dict[str, Dict] = {}
+    for s_name in matrix_students:
+        overall_from_cols = None
+        try:
+            s_idx = matrix_students.index(s_name)
+            if 0 <= s_idx < len(column_averages):
+                overall_from_cols = column_averages[s_idx]
+        except Exception:
+            overall_from_cols = None
+
+        u_vals, a11n_vals, acc_vals, eng_vals, overall_vals = [], [], [], [], []
+        for ws, per_ws in details.items():
+            row = per_ws.get(s_name)
+            if not isinstance(row, dict):
+                continue
+            if "understanding_fit" in row: u_vals.append(row["understanding_fit"])
+            if "accessibility_fit" in row: a11n_vals.append(row["accessibility_fit"])
+            if "accommodation_fit" in row: acc_vals.append(row["accommodation_fit"])
+            if "engagement_fit"   in row: eng_vals.append(row["engagement_fit"])
+            if "overall_alignment" in row: overall_vals.append(row["overall_alignment"])
+
+        metrics = {
+            "understanding": _avg_int(u_vals),
+            "accessibility": _avg_int(a11n_vals),
+            "accommodation": _avg_int(acc_vals),
+            "engagement":    _avg_int(eng_vals),
+        }
+
+        # Prefer pipeline's column_averages; fall back to averaging overall_alignment per worksheet
+        overall = int(round(float(overall_from_cols))) if overall_from_cols is not None else _avg_int(overall_vals)
+
+        per_student_stats[s_name] = {
+            "overall": overall,
+            "metrics": metrics,
+        }
+
+    # 5) Persist: (a) alignment_pct into student JSONs, (b) reports store for pie charts
+    name_to_sid = {name: sid for name, sid in zip(student_names, student_ids)}
+    reports_store = _load_student_reports()
+    reports_students = reports_store.setdefault("students", {})
+
+    for s_name, stats in per_student_stats.items():
+        sid = name_to_sid.get(s_name)
+        if not sid:
+            continue
+
+        # (a) write alignment_pct into the student's file
+        p = _student_file_for_id(sid)
+        if p.exists():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    s_json = json.load(f)
+            except Exception as e:
+                logger.warning(f"Could not read student {sid} to update alignment: {e}")
+                s_json = {}
+            s_json["alignment_pct"] = int(stats["overall"])
+            # optional: keep a small breadcrumb of last run
+            s_json["last_alignment"] = {
+                "updated_at": _now_iso(),
+                "overall": int(stats["overall"]),
+                "metrics": stats["metrics"],
+                "selection": {"courses": requested_courses, "units": list(requested_units)},
+            }
+            tmp = p.with_suffix(".json.tmp")
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(s_json, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, p)
+
+        # (b) update reports store (used by the UI pie charts)
+        reports_students[sid] = {
+            "updated_at": _now_iso(),
+            "overall": int(stats["overall"]),
+            "metrics": {
+                "understanding": int(stats["metrics"]["understanding"]),
+                "accessibility": int(stats["metrics"]["accessibility"]),
+                "accommodation": int(stats["metrics"]["accommodation"]),
+                "engagement":    int(stats["metrics"]["engagement"]),
+            },
+            "selection": {"courses": requested_courses, "units": list(requested_units)},
+        }
+
+    _save_student_reports(reports_store)
+
+    logger.info(
+        f"Alignment persisted for {len(per_student_stats)} students; "
+        f"courses={requested_courses}; units={list(requested_units)}"
+    )
+
+    # 6) Return the original pipeline result (frontend already expects this)
     return result
 
 
