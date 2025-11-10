@@ -1,9 +1,9 @@
 /* root theme variables (light by default) */
 :root{
-  --surface-100: #fefcfa; --surface-200: #faf7f1; --surface-300: #f8f3ea; --surface-400: #f3e9da; --surface-500: #f0e4d1; --surface-600: #dacfbe; --surface-700: #aaa294; --surface-800: #847d73; --surface-900: #656058;
+  --surface-100: #f1f3fa; --surface-200: #f1f4fa; --surface-300: #f8f3ea; --surface-400: #e4e5ec; --surface-500: #f0e4d1; --surface-600: #c7cad5; --surface-700: #aaa294; --surface-800: #969ab9; --surface-900: #656058;
   --text-100:#b5b7bc; --text-200:#92959c; --text-300:#60646e; --text-400:#414652; --text:#111827;
 
-  --panel:#fff;  --muted:#6b7280;
+  --panel:#f7f9ff;  --muted:#6b7280;
   --primaryA:#a78bfa; --primaryB:#c56e6e; --primaryC:#ec4899;
   --radius-lg:16px; --radius-xl:24px;
   --shadow-sm:0 1px 2px rgba(0,0,0,.06);
