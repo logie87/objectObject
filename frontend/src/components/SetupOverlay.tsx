@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
 const COLORS = {
-  buttonA: "#a78bfa",
-  buttonB: "#ec4899",
+  buttonA: "#3DAFBC",
+  buttonB: "#35598f",
   muted: "#6b7280",
   text: "#374151",
 };
