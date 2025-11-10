@@ -914,7 +914,7 @@ export default function StudentsPage() {
               borderRadius: 10,
               border: "none",
               cursor: "pointer",
-              background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+              background: `linear-gradient(135deg, #3DAFBC, #35598f)`,
               color: THEME_COLORS.light.surface,
               fontWeight: 650,
             }}
