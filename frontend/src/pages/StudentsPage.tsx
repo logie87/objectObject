@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { apiGet } from "../lib/api";
+import React, { useEffect, useMemo, useState } from "react"; 
+import { apiGet, apiPut } from "../lib/api";
 
 const COLORS = {
   readingBadgeBg: "rgba(251, 191, 191, 0.15)",
@@ -13,16 +13,12 @@ const COLORS = {
   pieEmpty: "#e5e7eb",
   buttonGradientStart: "#a78bfa",
   buttonGradientEnd: "#ec4899",
-  spinnerTrack: "#e5e7eb",
-  spinnerArc: "#ec4899",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
   mainText: "#374151",
   avatarBg: "#eef2ff",
   border: "#e5e7eb",
   surface: "#ffffff",
-  modalShadow: "0 20px 60px rgba(0,0,0,.25)",
-  overlayBg: "rgba(0,0,0,.45)",
 };
 
 type StudentSummary = {
@@ -39,6 +35,21 @@ type StudentFull = {
   data: any;
 };
 
+type Resource = {
+  name: string;
+  filename: string;
+  path: string;
+  size: number;
+  uploaded_at: string;
+  fit: { mean: number; spread: number; status: string };
+  issues?: string[];
+};
+
+type Curriculum = {
+  courses: Record<string, Record<string, Resource[]>>;
+};
+
+// Reusable Autocomplete multi-select input
 const AutocompleteMulti: React.FC<{
   label: string;
   options: { value: string; label: string }[];
@@ -46,7 +57,7 @@ const AutocompleteMulti: React.FC<{
   onChange: (v: string[]) => void;
   COLORS: typeof COLORS;
   onEnter?: () => void;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }> = ({ label, options, selected, onChange, COLORS, onEnter, inputRef }) => {
   const [q, setQ] = useState("");
   const filtered = options.filter((o) =>
@@ -94,7 +105,7 @@ const AutocompleteMulti: React.FC<{
               top: "100%",
               left: 0,
               right: 0,
-              background: COLORS.surface,
+              background: "#fff",
               border: `1px solid ${COLORS.border}`,
               borderRadius: 8,
               boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
@@ -166,9 +177,10 @@ const AutocompleteMulti: React.FC<{
   );
 };
 
+// Badge
 const Badge: React.FC<{ kind: string }> = ({ kind }) => {
-  let bg = COLORS.timeBadgeBg;
-  let fg = COLORS.timeBadgeText;
+  let bg = COLORS.timeBadgeBg,
+    fg = COLORS.timeBadgeText;
   if (kind === "Reading") {
     bg = COLORS.readingBadgeBg;
     fg = COLORS.readingBadgeText;
@@ -196,6 +208,7 @@ const Badge: React.FC<{ kind: string }> = ({ kind }) => {
   );
 };
 
+// Student Card
 const StudentCard: React.FC<{
   s: StudentSummary;
   onView: (id: string) => void;
@@ -230,6 +243,7 @@ const StudentCard: React.FC<{
             alignItems: "center",
             justifyContent: "center",
           }}
+          aria-hidden
         >
           <svg
             width="34"
@@ -259,8 +273,7 @@ const StudentCard: React.FC<{
             {s.name}
           </div>
           <div style={{ color: COLORS.mutedText, fontSize: 13 }}>
-            {s.grade ? `Grade ${s.grade}` : "—"}{" "}
-            {s.teacher ? `• ${s.teacher}` : ""}
+            {s.grade ? `Grade ${s.grade}` : "—"} {s.teacher ? `• ${s.teacher}` : ""}
           </div>
         </div>
         <div
@@ -282,7 +295,7 @@ const StudentCard: React.FC<{
               width: 40,
               height: 40,
               borderRadius: "50%",
-              background: COLORS.surface,
+              background: "#fff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -308,9 +321,9 @@ const StudentCard: React.FC<{
             flex: 1,
             padding: "10px 0",
             borderRadius: 12,
-            border: `1px solid ${COLORS.border}`,
-            background: COLORS.surface,
-            color: COLORS.mainText,
+            border: "1px solid #e5e7eb",
+            background: "#fff",
+            color: "#374151",
             fontWeight: 700,
             cursor: "pointer",
           }}
@@ -324,8 +337,8 @@ const StudentCard: React.FC<{
             padding: "10px 0",
             borderRadius: 12,
             border: "none",
-            background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-            color: COLORS.surface,
+            background: "linear-gradient(135deg, #a78bfa, #ec4899)",
+            color: "#fff",
             fontWeight: 700,
             cursor: "pointer",
           }}
@@ -340,7 +353,6 @@ const StudentCard: React.FC<{
   );
 };
 
-// ------------------ Spinner ------------------
 const Spinner: React.FC<{ size?: number }> = ({ size = 40 }) => (
   <svg
     width={size}
@@ -355,14 +367,14 @@ const Spinner: React.FC<{ size?: number }> = ({ size = 40 }) => (
       cy="25"
       r="20"
       fill="none"
-      stroke={COLORS.spinnerTrack}
+      stroke="#e5e7eb"
       strokeWidth="6"
       strokeLinecap="round"
     />
     <path
       d="M25 5 a20 20 0 0 1 0 40"
       fill="none"
-      stroke={COLORS.spinnerArc}
+      stroke="#ec4899"
       strokeWidth="6"
       strokeLinecap="round"
     >
@@ -388,21 +400,19 @@ export default function StudentsPage() {
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
+  const [loadingUnits, setLoadingUnits] = useState(false);
   const [unitsDropdownOpen, setUnitsDropdownOpen] = useState(false);
-
-  const studentsInputRef = React.useRef<HTMLInputElement | null>(null);
-  const coursesInputRef = React.useRef<HTMLInputElement | null>(null);
-  const unitsButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  
+  const studentsInputRef = React.useRef<HTMLInputElement>(null);
+  const coursesInputRef = React.useRef<HTMLInputElement>(null);
+  const unitsButtonRef = React.useRef<HTMLButtonElement>(null);
 
   const filtered = useMemo(
     () => all.filter((s) => s.name.toLowerCase().includes(q.toLowerCase())),
     [all, q]
   );
 
-  const courses = useMemo(
-    () => Object.keys(curriculum?.courses || {}),
-    [curriculum]
-  );
+  const courses = useMemo(() => Object.keys(curriculum?.courses || {}), [curriculum]);
 
   const units = useMemo(() => {
     if (!curriculum || selectedCourses.length === 0) return [];
@@ -410,7 +420,9 @@ export default function StudentsPage() {
     selectedCourses.forEach((courseId) => {
       const courseUnits = Object.keys(curriculum.courses[courseId] || {});
       courseUnits.forEach((unit) => {
-        if (!allUnits.includes(unit)) allUnits.push(unit);
+        if (!allUnits.includes(unit)) {
+          allUnits.push(unit);
+        }
       });
     });
     return allUnits;
@@ -433,32 +445,23 @@ export default function StudentsPage() {
   }, []);
 
   useEffect(() => {
+    // Reset selected units when courses change
     setSelectedUnits([]);
   }, [selectedCourses]);
 
   const handleGenerate = () => {
-    if (selectedUnits.length === 0) {
-      alert("Please select at least one unit before generating the report.");
-      return;
-    }
-
     setIsGenerating(true);
+    console.log({
+      students: selectedStudents,
+      courses: selectedCourses,
+      units: selectedUnits,
+    });
     setTimeout(() => {
       setIsGenerating(false);
       setShowModal(false);
       alert("Report generation complete! Your report is ready.");
     }, 3000);
   };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && showModal && !isGenerating) {
-        handleGenerate();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showModal, isGenerating, selectedUnits]);
 
   const focusCoursesInput = () => {
     setTimeout(() => coursesInputRef.current?.focus(), 100);
@@ -508,7 +511,7 @@ export default function StudentsPage() {
               border: "none",
               cursor: "pointer",
               background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              color: COLORS.surface,
+              color: "#fff",
               fontWeight: 700,
             }}
           >
@@ -522,7 +525,7 @@ export default function StudentsPage() {
               border: "none",
               cursor: "pointer",
               background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              color: COLORS.surface,
+              color: "#fff",
               fontWeight: 700,
             }}
           >
@@ -543,14 +546,13 @@ export default function StudentsPage() {
         ))}
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div
           onClick={() => !isGenerating && setShowModal(false)}
           style={{
             position: "fixed",
             inset: 0,
-            background: COLORS.overlayBg,
+            background: "rgba(0,0,0,.45)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -562,9 +564,9 @@ export default function StudentsPage() {
             style={{
               width: "min(100%, 500px)",
               padding: 24,
-              background: COLORS.surface,
+              background: "#fff",
               borderRadius: 16,
-              boxShadow: COLORS.modalShadow,
+              boxShadow: "0 20px 60px rgba(0,0,0,.25)",
               display: "flex",
               flexDirection: "column",
               gap: 18,
@@ -586,8 +588,6 @@ export default function StudentsPage() {
               selected={selectedStudents}
               onChange={setSelectedStudents}
               COLORS={COLORS}
-              onEnter={focusCoursesInput}
-              inputRef={studentsInputRef}
             />
 
             <AutocompleteMulti
@@ -596,96 +596,186 @@ export default function StudentsPage() {
               selected={selectedCourses}
               onChange={setSelectedCourses}
               COLORS={COLORS}
-              onEnter={focusUnitsDropdown}
-              inputRef={coursesInputRef}
             />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label
-                style={{ fontSize: 14, fontWeight: 600, color: COLORS.mainText }}
-              >
-                Select Units
-              </label>
-              <div style={{ position: "relative" }}>
-                <button
-                  ref={unitsButtonRef}
-                  onClick={() => setUnitsDropdownOpen(!unitsDropdownOpen)}
-                  disabled={selectedCourses.length === 0}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    border: `1px solid ${COLORS.border}`,
-                    background: "#fff",
-                    color:
-                      selectedCourses.length === 0
-                        ? COLORS.mutedText
-                        : COLORS.mainText,
-                    cursor:
-                      selectedCourses.length === 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {selectedUnits.length > 0
-                    ? `${selectedUnits.length} selected`
-                    : "Choose Units"}
-                </button>
-                {unitsDropdownOpen && (
-                  <div
+            {selectedCourses.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 14, fontWeight: 600, color: COLORS.mainText }}>
+                  Select Units
+                </label>
+                <div style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    onClick={() => setUnitsDropdownOpen(!unitsDropdownOpen)}
                     style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      right: 0,
-                      background: "#fff",
-                      border: `1px solid ${COLORS.border}`,
+                      width: "100%",
+                      padding: "10px 12px",
                       borderRadius: 8,
-                      boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                      maxHeight: 160,
-                      overflowY: "auto",
-                      zIndex: 100,
-                      marginTop: 4,
+                      border: `1px solid ${COLORS.border}`,
+                      backgroundColor: "#fff",
+                      color: COLORS.mainText,
+                      textAlign: "left",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                     }}
                   >
-                    {units.map((u) => (
+                    <span>
+                      {selectedUnits.length === 0
+                        ? "Select units..."
+                        : `${selectedUnits.length} unit${selectedUnits.length !== 1 ? 's' : ''} selected`}
+                    </span>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      style={{
+                        transform: unitsDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s ease",
+                      }}
+                    >
+                      <path
+                        d="M4 6L8 10L12 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  {unitsDropdownOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        marginTop: 4,
+                        border: `1px solid ${COLORS.border}`,
+                        borderRadius: 8,
+                        backgroundColor: "#fff",
+                        maxHeight: 200,
+                        overflowY: "auto",
+                        zIndex: 100,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      {units.map((u) => {
+                        const isSelected = selectedUnits.includes(u);
+                        return (
+                          <div
+                            key={u}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedUnits(selectedUnits.filter(unit => unit !== u));
+                              } else {
+                                setSelectedUnits([...selectedUnits, u]);
+                              }
+                            }}
+                            style={{
+                              padding: "10px 12px",
+                              cursor: "pointer",
+                              borderBottom: `1px solid ${COLORS.border}`,
+                              backgroundColor: isSelected ? COLORS.altRespBg : "transparent",
+                              color: isSelected ? COLORS.altRespText : COLORS.mainText,
+                              fontWeight: isSelected ? 600 : 400,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                              transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.backgroundColor = "#f9fafb";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.backgroundColor = "transparent";
+                              }
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: 4,
+                                border: `2px solid ${isSelected ? COLORS.altRespText : COLORS.border}`,
+                                backgroundColor: isSelected ? COLORS.altRespText : "transparent",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isSelected && (
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                  <path
+                                    d="M2 6L5 9L10 3"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                            <span>{u}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                {selectedUnits.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                    {selectedUnits.map((u) => (
                       <div
                         key={u}
-                        onClick={() => {
-                          setSelectedUnits((prev) =>
-                            prev.includes(u)
-                              ? prev.filter((x) => x !== u)
-                              : [...prev, u]
-                          );
-                        }}
                         style={{
-                          padding: "8px 12px",
-                          cursor: "pointer",
-                          background: selectedUnits.includes(u)
-                            ? COLORS.altRespBg
-                            : "#fff",
-                          color: selectedUnits.includes(u)
-                            ? COLORS.altRespText
-                            : COLORS.mainText,
+                          display: "flex",
+                          alignItems: "center",
+                          background: COLORS.altRespBg,
+                          color: COLORS.altRespText,
+                          borderRadius: 12,
+                          padding: "6px 10px",
+                          fontWeight: 600,
+                          fontSize: 13,
                         }}
                       >
                         {u}
+                        <span
+                          onClick={() => setSelectedUnits(selectedUnits.filter(unit => unit !== u))}
+                          style={{
+                            marginLeft: 8,
+                            cursor: "pointer",
+                            fontWeight: 800,
+                            lineHeight: 1,
+                          }}
+                        >
+                          ×
+                        </span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
+            )}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
               <button
                 onClick={() => setShowModal(false)}
                 disabled={isGenerating}
                 style={{
-                  padding: "10px 18px",
-                  borderRadius: 10,
+                  flex: 1,
+                  padding: "12px 0",
+                  borderRadius: 12,
                   border: `1px solid ${COLORS.border}`,
-                  background: COLORS.surface,
+                  background: "#fff",
                   color: COLORS.mainText,
+                  fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
@@ -694,31 +784,21 @@ export default function StudentsPage() {
               <button
                 onClick={handleGenerate}
                 disabled={
-                  isGenerating ||
-                  !selectedStudents.length ||
-                  !selectedUnits.length
+                  isGenerating || !selectedStudents.length || !selectedCourses.length || !selectedUnits.length
                 }
                 style={{
                   flex: 1,
                   padding: "12px 0",
                   borderRadius: 12,
                   background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                  color: COLORS.surface,
+                  color: "white",
                   fontWeight: 600,
                   border: "none",
-                  background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                  color: "#fff",
-                  fontWeight: 700,
                   cursor: "pointer",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                 }}
               >
-                {isGenerating ? (
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Spinner size={20} /> Generating…
-                  </span>
-                ) : (
-                  "Generate"
-                )}
+                {isGenerating ? "Generating..." : "Generate"}
               </button>
             </div>
           </div>
