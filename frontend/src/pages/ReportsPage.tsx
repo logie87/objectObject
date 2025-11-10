@@ -150,7 +150,7 @@ export default function ReportsPage() {
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4 }}>Reports</h1>
           <div style={{ color: COLORS.mutedText }}>
-            {reports.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
+            Generated reports • {reports.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
           </div>
         </div>
 
