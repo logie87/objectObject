@@ -10,7 +10,6 @@ Full pipeline:
 
 Usage:
   python iep_alignment_pipeline.py \
-    --model-path /path/to/phi3-mini.gguf \
     --iep-dir ./ieps \
     --worksheets-dir ./worksheets \
     --out output_scores.json
@@ -321,6 +320,7 @@ def run_llm(prompt: str, model: str = "phi3") -> str:
         ],
     )
     # ensure it's string
+    print(response)
     if isinstance(response, dict):
         return response.get("content", str(response))
     return str(response)
@@ -495,7 +495,8 @@ def collect_worksheets_texts(worksheets_dir: Path) -> Dict[str, Dict]:
 def load_ieps_from_dir(iep_dir: Path) -> List[StudentProfile]:
     profiles = []
     for p in sorted(iep_dir.iterdir()):
-        if p.suffix.lower() != ".json":
+        # print(p.name)
+        if p.suffix.lower() != ".json" or p.name == "index.json":
             continue
         raw = safe_load_json_file(p)
         profiles.append(normalize_iep(raw))

@@ -1,0 +1,861 @@
+{
+  "meta": {
+    "students": [
+      "Maya Thompson",
+      "Liam Chen",
+      "Sofia Martinez",
+      "Noah Williams",
+      "Ava Johnson",
+      "Alex Johnson",
+      "Unknown"
+    ],
+    "worksheets": [
+      "Unit 1 - Rations, Rates, Proportions_Ch2-get ready.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf",
+      "Unit 2 - Understanding Percent_Ch4-get ready.pdf",
+      "Unit 2 - Understanding Percent_Ch4.1.pdf",
+      "Unit 2 - Understanding Percent_Ch4.2.pdf",
+      "Unit 2 - Understanding Percent_Learning Guide 2 Understanding Percent.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3-get ready.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.1.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.2.pdf",
+      "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf"
+    ],
+    "generated_by": "iep_alignment_pipeline.py"
+  },
+  "matrix": {
+    "students": [
+      "Maya Thompson",
+      "Liam Chen",
+      "Sofia Martinez",
+      "Noah Williams",
+      "Ava Johnson",
+      "Alex Johnson",
+      "Unknown"
+    ],
+    "worksheets": [
+      "Unit 1 - Rations, Rates, Proportions_Ch2-get ready.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf",
+      "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf",
+      "Unit 2 - Understanding Percent_Ch4-get ready.pdf",
+      "Unit 2 - Understanding Percent_Ch4.1.pdf",
+      "Unit 2 - Understanding Percent_Ch4.2.pdf",
+      "Unit 2 - Understanding Percent_Learning Guide 2 Understanding Percent.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3-get ready.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.1.pdf",
+      "Unit 3 - Pythagorean Relationships_Ch3.2.pdf",
+      "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf"
+    ],
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "details": {
+    "Unit 1 - Rations, Rates, Proportions_Ch2-get ready.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Ch2.1.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Ch2.2.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 1 - Rations, Rates, Proportions_Learning Guide 1 Ratios, Rates, Proportions.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 2 - Understanding Percent_Ch4-get ready.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 2 - Understanding Percent_Ch4.1.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 2 - Understanding Percent_Ch4.2.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 2 - Understanding Percent_Learning Guide 2 Understanding Percent.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3-get ready.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3.1.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Ch3.2.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    },
+    "Unit 3 - Pythagorean Relationships_Learning Guide 4 Pythagorean Relationship.pdf": {
+      "Maya Thompson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Liam Chen": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Sofia Martinez": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Noah Williams": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Ava Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Alex Johnson": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      },
+      "Unknown": {
+        "understanding_fit": 0,
+        "accessibility_fit": 0,
+        "accommodation_fit": 0,
+        "engagement_fit": 0,
+        "overall_alignment": 0,
+        "explanation": ""
+      }
+    }
+  }
+}
