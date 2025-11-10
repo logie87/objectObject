@@ -49,11 +49,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 LOG_DIR = BASE_DIR / "logs"
 
-MODEL_TEMPERATURE = 0.0
-MODEL_MAX_TOKENS = 512
-MODEL_TOP_P = 1.0
-MODEL_N_CTX = 2048
-
 # Strict response schema expected from model (keys and types)
 EXPECTED_KEYS = [
     "understanding_fit",
@@ -68,7 +63,9 @@ EXPECTED_KEYS = [
 
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 logging.getLogger("httpx").setLevel(logging.ERROR)
-logger = SimpleAppLogger(str(LOG_DIR), "alignment_pipeline", logging.INFO).get_logger()
+logger = SimpleAppLogger(
+    str(LOG_DIR), "iep_alignment_pipeline", logging.INFO
+).get_logger()
 
 
 def safe_load_json_file(path: Path) -> Dict:
@@ -419,6 +416,25 @@ def collect_worksheets_texts(worksheets_dir: Path) -> Dict[str, Dict]:
     Returns dict worksheet_id -> {"text":..., "title":..., "path":...}
     """
     worksheets = {}
+    if worksheets_dir.is_file():
+        fname = worksheets_dir.name
+        if not fname.lower().endswith((".pdf", ".txt")):
+            return worksheets
+        worksheet_id = f"{fname}".strip("_")
+        title = fname
+        try:
+            text = extract_text_from_file(fpath)
+            if not text:
+                logger.warning(f"No text found in {fpath}")
+        except Exception as e:
+            logger.warning(f"Failed to extract text from {fpath}: {e}")
+            text = ""
+        worksheets[worksheet_id] = {
+            "text": text,
+            "title": title,
+            "path": str(worksheets_dir),
+        }
+        return worksheets
     for root, dirs, files in os.walk(str(worksheets_dir)):
         for fname in files:
             if not fname.lower().endswith((".pdf", ".txt")):
@@ -449,22 +465,29 @@ def collect_worksheets_texts(worksheets_dir: Path) -> Dict[str, Dict]:
 
 def load_ieps_from_dir(iep_dir: Path) -> List[StudentProfile]:
     profiles = []
-    for p in sorted(iep_dir.iterdir()):
-        # print(p.name)
-        if p.suffix.lower() != ".json" or p.name == "index.json":
-            continue
-        raw = safe_load_json_file(p)
-        profiles.append(normalize_iep(raw))
+    if iep_dir.is_dir():
+        for p in sorted(iep_dir.iterdir()):
+            # print(p.name)
+            if p.suffix.lower() != ".json" or p.name == "index.json":
+                continue
+            raw = safe_load_json_file(p)
+            profiles.append(normalize_iep(raw))
+    elif iep_dir.is_file():
+        p = iep_dir
+        if p.suffix.lower() == ".json" and p.name != "index.json":
+            raw = safe_load_json_file(p)
+            profiles.append(normalize_iep(raw))
     return profiles
 
 
-def run_pipeline(iep_dir: str, worksheets_dir: str, out_path: str):
+def run_pipeline(iep_dir: str, worksheets_dir: str):
     iep_dir_p = Path(iep_dir)
     worksheets_dir_p = Path(worksheets_dir)
-    out_p = Path(out_path)
 
     # Load IEPs
     students = load_ieps_from_dir(iep_dir_p)
+    if len(students) == 0:
+        return
     student_names = [s.student_name for s in students]
     logger.info(f"Loaded {len(students)} student profiles: {student_names}")
 
@@ -479,7 +502,7 @@ def run_pipeline(iep_dir: str, worksheets_dir: str, out_path: str):
     full_results = {wid: {} for wid in worksheet_ids}
 
     # For each worksheet and each student
-    for wid in tqdm(worksheet_ids, desc="Worksheets"):
+    for wid in worksheet_ids:  # tqdm(worksheet_ids, desc="Worksheets")
         wtext = worksheets[wid]["text"] or ""
         wtitle = worksheets[wid]["title"]
         for s in students:
@@ -497,13 +520,14 @@ def run_pipeline(iep_dir: str, worksheets_dir: str, out_path: str):
         "meta": {
             "students": student_names,
             "worksheets": worksheet_ids,
-            "generated_by": "iep_alignment_pipeline.py",
         },
         "matrix": matrix_json,
         "details": full_results,
     }
-    write_json_file(api_payload, out_p)
-    logger.info(f"[info] Wrote results to {out_p}")
+    logger.info(f"Passed down the api_payload...")
+    return api_payload
+    # write_json_file(api_payload, out_p)
+    # logger.info(f"Wrote results to {out_p}")
 
 
 # ---------- CLI ----------
