@@ -2,23 +2,23 @@ import React, { useEffect, useMemo, useState } from "react";
 import { apiGet } from "../lib/api";
 
 const COLORS = {
-  readingBadgeBg: "rgba(251, 191, 191, 0.15)",
-  readingBadgeText: "#ef4444",
-  timeBadgeBg: "rgba(253, 230, 138, 0.15)",
-  timeBadgeText: "#f59e0b",
-  altRespBg: "rgba(191, 219, 254, 0.18)",
-  altRespText: "#2563eb",
+  readingBadgeBg: "rgba(226, 255, 129, 0.45)",
+  readingBadgeText: "#3A3A5C",
+  timeBadgeBg: "rgba(208, 255, 179, 0.45)",
+  timeBadgeText: "#3A3A5C",
+  altRespBg: "rgba(97, 255, 163, 0.20)",
+  altRespText: "#3A3A5C",
   pieGradientStart: "#34d399",
   pieGradientEnd: "#22c55e",
   pieEmpty: "#e5e7eb",
-  buttonGradientStart: "#a78bfa",
-  buttonGradientEnd: "#ec4899",
+  buttonGradientStart: "#3DAFBC",
+  buttonGradientEnd: "#3DAFBC",
   spinnerTrack: "#e5e7eb",
   spinnerArc: "#ec4899",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
   mainText: "#374151",
-  avatarBg: "#eef2ff",
+  avatarBg: "#f2f3f6ff",
   border: "#e5e7eb",
   surface: "#ffffff",
   modalShadow: "0 20px 60px rgba(0,0,0,.25)",
@@ -308,10 +308,10 @@ const StudentCard: React.FC<{
             flex: 1,
             padding: "10px 0",
             borderRadius: 12,
-            border: `1px solid ${COLORS.border}`,
-            background: COLORS.surface,
-            color: COLORS.mainText,
-            fontWeight: 700,
+            border: "none",
+            background: "#e5e7eb",
+            color: "#374151",
+            fontWeight: 650,
             cursor: "pointer",
           }}
           onClick={() => onView(s.id)}
@@ -326,7 +326,7 @@ const StudentCard: React.FC<{
             border: "none",
             background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
             color: COLORS.surface,
-            fontWeight: 700,
+            fontWeight: 650,
             cursor: "pointer",
           }}
           onClick={() =>
@@ -505,11 +505,11 @@ export default function StudentsPage() {
             style={{
               padding: "10px 16px",
               borderRadius: 10,
-              border: "none",
+              border: "2px solid #3DAFBC", // blue border
+              background: "transparent",   // no fill
+              color: "#3DAFBC",            // same blue for text
               cursor: "pointer",
-              background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              color: COLORS.surface,
-              fontWeight: 700,
+              fontWeight: 600,
             }}
           >
             {busy ? "Refreshing…" : "Refresh"}
@@ -521,9 +521,9 @@ export default function StudentsPage() {
               borderRadius: 10,
               border: "none",
               cursor: "pointer",
-              background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+              background: "linear-gradient(135deg, #08debb, #35598f)",
               color: COLORS.surface,
-              fontWeight: 700,
+              fontWeight: 650,
             }}
           >
             Generate

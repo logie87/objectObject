@@ -6,7 +6,9 @@ const COLORS = {
   shadow: "0 1px 3px rgba(0,0,0,0.1)",
   shadowLight: "0 1px 2px rgba(0,0,0,0.05)",
   cardBg: "#f8fafc",
-  muted: "var(--muted)",
+  muted: "#818181ff",
+  buttonGradientStart: "#3DAFBC",
+  buttonGradientEnd: "#35598f",
 };
 
 type ReportCategory =
@@ -287,7 +289,18 @@ export default function HomePage() {
                   {new Date(latestReport.uploaded_at).toLocaleString()}
                 </div>
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <button className="btn primary" onClick={() => openReport(latestReport)}>
+                  <button
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: 10,
+                      border: "none",
+                      cursor: "pointer",
+                      background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+                      color: "#fff",
+                      fontWeight: 700,
+                    }}
+                    onClick={() => openReport(latestReport)}
+                  >
                     Open PDF
                   </button>
                   <button className="btn ghost" onClick={() => go("/app/reports")}>
