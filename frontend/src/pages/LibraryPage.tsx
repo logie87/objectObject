@@ -4,8 +4,7 @@ import { apiDelete, apiGet, apiGetBlobUrl, apiPostForm, apiPut } from "../lib/ap
 const COLORS = {
   buttonGradientStart: "#3DAFBC",
   buttonGradientEnd: "#35598f",
-  deleteGradientStart: "#c44141ff",
-  deleteGradientEnd: "#c44141ff",
+  deleteButton: "#c43b3bff",
   cardBg: "#ffffff",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
@@ -310,11 +309,11 @@ export default function LibraryPage() {
                 style={{
                   padding: "10px 16px",
                   borderRadius: 12,
-                  border: "3px solid red",
+                  border: "3px solid #ff6a59ff",
                   cursor: "pointer",
                   fontWeight: 650,
                   background: "none",
-                  color: "red",
+                  color: "#ff6a59ff",
                 }}
                 onClick={() => deleteDoc(d.id)}
                 title="Delete from library"
