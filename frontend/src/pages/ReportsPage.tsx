@@ -336,7 +336,7 @@ export default function ReportsPage() {
                   padding: "10px 0",
                   borderRadius: 12,
                   border: "none",
-                  background: `linear-gradient(135deg, ${C.buttonGradientStart}, ${C.buttonGradientEnd})`,
+                  background: `linear-gradient(135deg, #3DAFBC, #35598f)`,
                   color: "white",
                   fontWeight: 650,
                   cursor: "pointer",
