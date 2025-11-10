@@ -767,7 +767,7 @@ export default function StudentsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 28, marginBottom: 4, color: COLORS.mainText }}>students</h1>
+          <h1 style={{ fontSize: 28, marginBottom: 4, color: COLORS.mainText }}>Students</h1>
           <div style={{ color: COLORS.mutedText }}>
             manage profiles and iep details
           </div>
