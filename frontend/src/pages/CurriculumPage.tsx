@@ -386,7 +386,7 @@ export default function CurriculumPage() {
           >
             Reset Filters
           </button>
-          <button type="button" className="btn ghost" style={{ color: "green" }} onClick={handleGenerate}>
+          <button type="button" className="btn ghost" style={{ color: "white",background: `linear-gradient(135deg, #3DAFBC, #35598f)` }} onClick={handleGenerate}>
             Generate
           </button>
         </div>
@@ -436,7 +436,7 @@ export default function CurriculumPage() {
               <button
                 type="button"
                 className="btn ghost"
-                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400, color: "green" }}
+                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400, color: "white",background: `linear-gradient(135deg, #3DAFBC, #35598f)` }}
                 onClick={() => {
                   const input = document.createElement("input");
                   input.type = "file";
