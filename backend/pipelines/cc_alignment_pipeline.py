@@ -1,56 +1,20 @@
 """
-cc_alignment_pipeline.py
+core_competency_alignment_pipeline.py
+Full pipeline:
+- extract text from worksheets (PDF/text)
+- load core competencies JSON for a subject (e.g., sample_data/CCs/math.json)
+- flatten/normalize competencies for a target grade band
+- compile deterministic prompts (worksheet x competency)
+- call local LLM (llama:phi3-mini via llama-cpp-python)
+- parse, normalize model output into strict schema
+- assemble score matrix (worksheets x competencies) and write JSON for API
 
-Pipeline purpose:
-- Load Canadian curriculum core competency directives (JSON)
-- Extract text from teacher course materials (units / worksheets; PDF scanned or searchable, or .txt)
-- For each worksheet, compile an alignment prompt with all directives
-- Call local LLM (phi3-mini via llama-cpp-python) N times to obtain multiple candidate JSON evaluations
-- Compile a consensus prompt from the multiple candidate responses ("democratic" consolidation)
-- Run consensus prompt to get final per-worksheet directive alignment scores + recommendations
-- Compile an API-ready JSON data structure:
-    - matrix: worksheets x directives alignment score table
-    - details: per worksheet per directive full evaluation
-    - unit_summary: per unit averages + aggregated recommendations
-
-Final output schema (top-level):
-{
-  "meta": {
-     "directives": [directive_ids...],
-     "worksheets": [worksheet_ids...],
-     "units": [unit_ids...],
-     "generations": N
-  },
-  "matrix": {
-     "directives": [...],
-     "worksheets": [...],
-     "scores": [[int]]   # rows = worksheets, columns = directives
-  },
-  "details": {
-     "worksheet_id": {
-        "directive_id": {
-           "alignment_score": int 0-100,
-           "evidence": str,
-           "recommendation": str
-        }, ...
-     }, ...
-  },
-  "unit_summary": {
-     "unit_id": {
-        "directive_id": {
-           "average_score": int,
-           "top_recommendations": [str, ... up to 3]
-        }, ...
-     }, ...
-  }
-}
-
-CLI Usage:
-  python cc_alignment_pipeline.py \
-      --directives-json ./sample_data/CCs/math.json \
-      --coursework ./data/curriculum/Math8 \
-      --generations 3 \
-      --out output_cc_alignment.json
+Usage:
+  python iep_alignment_pipeline.py ^
+    --cc-file "./sample_data/CCs/math.json" ^
+    --grade-band "6-9" ^
+    --worksheets-dir "./worksheets" ^
+    --out "output_cc_scores.json"
 """
 
 import argparse
@@ -60,9 +24,11 @@ import re
 import logging
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
-from collections import defaultdict, Counter
+from typing import Dict, List, Any, Tuple, Optional
 
+from tqdm import tqdm
+
+# PDF & OCR libs
 from PyPDF2 import PdfReader
 from pdf2image import convert_from_path
 import pytesseract
@@ -71,231 +37,262 @@ from PIL import Image
 from llm import run_llm
 from logger import SimpleAppLogger
 
-# ---------------- Configuration ----------------
+# ---------- Configuration / Schema ----------
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
 LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+logging.getLogger("httpx").setLevel(logging.ERROR)
 logger = SimpleAppLogger(
     str(LOG_DIR), "cc_alignment_pipeline", logging.INFO
 ).get_logger()
 
-# Expected schema per directive (single evaluation)
-DIRECTIVE_EVAL_KEYS = ["alignment_score", "evidence", "recommendation"]
-
-# ---------------- Data Classes ----------------
-
-
-@dataclass
-class Directive:
-    id: str
-    title: str
-    description: str
-    grade_band: str
-    category: str
-    raw: Dict[str, Any]
+# Strict response schema expected from model (keys and types)
+CC_EXPECTED_KEYS = [
+    "alignment",  # integer 0-100
+    "explanation",  # short string
+]
 
 
-@dataclass
-class WorksheetMeta:
-    worksheet_id: str
-    title: str
-    unit_id: str
-    path: str
-    text: str
-
-
-# ---------------- JSON Helpers ----------------
-
-
-def safe_load_json(path: Path) -> Any:
+def safe_load_json_file(path: Path) -> Dict:
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def write_json(obj: Any, path: Path):
+def write_json_file(obj: Any, path: Path):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2, ensure_ascii=False)
 
 
-# ---------------- PDF / Text Extraction ----------------
+# ---------- Text Extraction ----------
 
 
 def extract_text_from_searchable_pdf(path: Path) -> str:
-    chunks = []
+    """Try to extract text using PyPDF2. Best for searchable PDFs."""
+    text_chunks = []
     try:
         reader = PdfReader(str(path))
-        for page in reader.pages:
+        for p in reader.pages:
             try:
-                txt = page.extract_text() or ""
+                txt = p.extract_text() or ""
             except Exception:
                 txt = ""
-            chunks.append(txt)
+            text_chunks.append(txt)
     except Exception as e:
         logger.warning(f"PyPDF2 failed for {path}: {e}")
-    return "\n".join(chunks).strip()
+    return "\n".join(text_chunks).strip()
 
 
 def ocr_pdf(path: Path, dpi=300, pages_limit=None) -> str:
-    ocr_chunks = []
+    """Perform OCR using pdf2image + pytesseract."""
+    text_chunks = []
     try:
         images = convert_from_path(str(path), dpi=dpi)
         if pages_limit:
             images = images[:pages_limit]
         for img in images:
             txt = pytesseract.image_to_string(img)
-            ocr_chunks.append(txt)
+            text_chunks.append(txt)
     except Exception as e:
         logger.warning(f"OCR failed for {path}: {e}")
-    return "\n".join(ocr_chunks).strip()
+    return "\n".join(text_chunks).strip()
 
 
-def extract_text_from_pdf(path: Path, ocr_if_empty=True) -> str:
+def extract_text_from_pdf(path: Path, ocr_if_empty=True, pages_limit=None) -> str:
     text = extract_text_from_searchable_pdf(path)
     if (not text or len(text) < 50) and ocr_if_empty:
-        logger.info(f"OCR fallback for scanned PDF: {path}")
-        text = ocr_pdf(path)
+        logger.info(f"Performing OCR for (probably scanned) PDF: {path}")
+        text = ocr_pdf(path, pages_limit=pages_limit)
     return text
 
 
-def extract_text_generic(path: Path) -> str:
+def extract_text_from_file(path: Path) -> str:
+    """Generic extractor: support .pdf and .txt"""
     if path.suffix.lower() == ".pdf":
         return extract_text_from_pdf(path)
-    try:
-        return path.read_text(encoding="utf-8")
-    except Exception:
-        return ""
-
-
-# ---------------- Directive Loading ----------------
-
-
-def load_directives(directives_json: Path) -> List[Directive]:
-    raw = safe_load_json(directives_json)
-    directives: List[Directive] = []
-    # Accept multiple structural variants:
-    # Option A: {"directives":[{id,title,description,...}]}
-    # Option B: curriculum schema like sample math CC
-    if "directives" in raw and isinstance(raw["directives"], list):
-        for d in raw["directives"]:
-            directives.append(
-                Directive(
-                    id=str(d.get("id") or d.get("code") or d.get("title")),
-                    title=str(d.get("title") or d.get("id")),
-                    description=str(d.get("description") or ""),
-                    grade_band=str(d.get("grade_band") or d.get("grades") or ""),
-                    category=str(d.get("category") or ""),
-                    raw=d,
-                )
-            )
-        return directives
-
-    # Parse sample BC math style for categories and grade bands
-    subject = raw.get("subject", "Unknown Subject")
-    gbands = raw.get("grade_bands", {})
-    for band_key, band_val in gbands.items():
-        categories = band_val.get("criteria_categories", {})
-        for cat_key, cat_val in categories.items():
-            cat_desc = cat_val.get("description", "")
-            grades_dict = cat_val.get("grades", {})
-            # Flatten grade-specific statements
-            for gk, statements in grades_dict.items():
-                for idx, stmt in enumerate(statements):
-                    did = f"{cat_key}_{gk}_{idx}".lower()
-                    directives.append(
-                        Directive(
-                            id=did,
-                            title=f"{subject}:{cat_key}:{gk}",
-                            description=stmt,
-                            grade_band=gk,
-                            category=cat_key,
-                            raw={"statement": stmt, "category_desc": cat_desc},
-                        )
-                    )
-    return directives
-
-
-# ---------------- Coursework Collection ----------------
-
-
-def collect_course_materials(coursework_path: Path) -> List[WorksheetMeta]:
-    """
-    Accepts:
-      - A directory containing units (subdirectories) each with worksheets
-      - A directory containing worksheets directly (no subdirectories)
-      - A single worksheet file
-    Returns list[WorksheetMeta]
-    """
-    worksheets: List[WorksheetMeta] = []
-    if coursework_path.is_file():
-        if coursework_path.suffix.lower() not in (".pdf", ".txt"):
-            return worksheets
-        wid = coursework_path.stem
-        unit_id = "single_unit"
-        text = extract_text_generic(coursework_path)
-        worksheets.append(
-            WorksheetMeta(
-                worksheet_id=wid,
-                title=coursework_path.name,
-                unit_id=unit_id,
-                path=str(coursework_path),
-                text=text,
-            )
-        )
-        return worksheets
-
-    # Directory logic
-    has_subdirs = any(p.is_dir() for p in coursework_path.iterdir())
-    if has_subdirs:
-        for unit_dir in sorted(p for p in coursework_path.iterdir() if p.is_dir()):
-            unit_id = unit_dir.name
-            for f in sorted(unit_dir.iterdir()):
-                if f.is_file() and f.suffix.lower() in (".pdf", ".txt"):
-                    wid = f"{unit_id}_{f.stem}"
-                    text = extract_text_generic(f)
-                    worksheets.append(
-                        WorksheetMeta(
-                            worksheet_id=wid,
-                            title=f.name,
-                            unit_id=unit_id,
-                            path=str(f),
-                            text=text,
-                        )
-                    )
     else:
-        unit_id = coursework_path.name
-        for f in sorted(coursework_path.iterdir()):
-            if f.is_file() and f.suffix.lower() in (".pdf", ".txt"):
-                wid = f"{unit_id}_{f.stem}"
-                text = extract_text_generic(f)
-                worksheets.append(
-                    WorksheetMeta(
-                        worksheet_id=wid,
-                        title=f.name,
-                        unit_id=unit_id,
-                        path=str(f),
-                        text=text,
-                    )
-                )
-    return worksheets
+        # fallback to read text file
+        try:
+            return path.read_text(encoding="utf-8")
+        except Exception:
+            return ""
 
 
-# ---------------- JSON Extraction ----------------
+# ---------- Core Competency Normalization ----------
 
 
-def extract_first_json(text: str) -> Tuple[Any, str]:
-    txt = text.strip()
-    # Direct attempt
+@dataclass
+class Competency:
+    competency_id: str  # e.g., "questioning_and_investigating"
+    title: str  # human readable title
+    description: str  # category description
+    indicators: List[str]  # grade-aligned indicators/descriptors
+    meta: Dict[str, Any]  # any extra metadata (subject, grade_band, etc.)
+
+
+def snake_to_title(s: str) -> str:
+    return " ".join(w.capitalize() for w in s.replace("-", "_").split("_"))
+
+
+def normalize_competencies(
+    cc_raw: Dict, grade_band: Optional[str] = None
+) -> List[Competency]:
+    """
+    Flatten a core competencies JSON (like sample_data/CCs/math.json) into a list of Competency.
+    - If grade_band provided, use that band from cc_raw["grade_bands"].
+    - If not, pick the first available grade band.
+    - Within each category, collect indicators from the 'grades' mapping:
+      - If the selected grade_band exists as a key in 'grades', use that list.
+      - Else, fallback by aggregating all available grade descriptor lists.
+    """
+    subject = cc_raw.get("subject", "Unknown Subject")
+    gb_map = cc_raw.get("grade_bands", {}) or {}
+    if not gb_map:
+        logger.warning("No grade_bands found in core competencies JSON.")
+        return []
+
+    # Pick a grade band
+    if grade_band and grade_band in gb_map:
+        gb_key = grade_band
+    else:
+        gb_key = next(iter(gb_map.keys()))
+        if grade_band:
+            logger.warning(
+                f"Requested grade band '{grade_band}' not found. Using '{gb_key}' instead."
+            )
+
+    gb = gb_map[gb_key]
+    criteria = gb.get("criteria_categories", {}) or {}
+
+    competencies: List[Competency] = []
+    for cat_key, cat in criteria.items():
+        description = cat.get("description", "")
+        grades_map: Dict[str, List[str]] = cat.get("grades", {}) or {}
+
+        # Choose indicators for this grade_band if present; otherwise aggregate all
+        if gb_key in grades_map:
+            indicators = grades_map[gb_key]
+        else:
+            # concatenate and de-duplicate while preserving order
+            seen = set()
+            indicators = []
+            for _, arr in grades_map.items():
+                for item in arr:
+                    if item not in seen:
+                        indicators.append(item)
+                        seen.add(item)
+
+        comp = Competency(
+            competency_id=str(cat_key),
+            title=snake_to_title(str(cat_key)),
+            description=str(description),
+            indicators=[str(x) for x in indicators],
+            meta={
+                "subject": subject,
+                "grade_band": gb_key,
+                "source": gb.get("source", ""),
+            },
+        )
+        competencies.append(comp)
+
+    return competencies
+
+
+# ---------- Prompt Compiler ----------
+
+ALIGNMENT_PROMPT_TEMPLATE = """
+You are an expert curriculum analyst. Evaluate how well the given worksheet aligns with ONE specific core competency.
+
+CORE COMPETENCY:
+Title: {competency_title}
+Description: {competency_description}
+Indicators (grade band {grade_band}):
+- {competency_indicators}
+
+WORKSHEET METADATA:
+Worksheet Title: {worksheet_title}
+
+WORKSHEET FULL TEXT:
+{worksheet_text}
+
+TASK:
+Rate the alignment of this worksheet to the specified core competency.
+
+RETURN A JSON OBJECT ONLY with exactly these keys:
+- alignment: integer 0-100 (overall degree of alignment to the competency and its indicators)
+- explanation: short string (1-2 brief sentences explaining the score)
+
+SCORING RULES:
+- Use 0-100 integer values.
+- Keep explanation concise.
+- Do not output ANY extra text outside the JSON.
+- Do not add ANY comments on individual JSON entries.
+
+Produce the JSON now.
+""".strip()
+
+
+def compile_alignment_prompt(
+    competency: Competency,
+    worksheet_text: str,
+    worksheet_id: str,
+    worksheet_title: str = "",
+) -> str:
+    indicators_block = (
+        "\n- ".join(competency.indicators[:8]) if competency.indicators else "N/A"
+    )
+    prompt = ALIGNMENT_PROMPT_TEMPLATE.format(
+        competency_title=competency.title or "N/A",
+        competency_description=competency.description or "N/A",
+        competency_indicators=indicators_block or "N/A",
+        grade_band=competency.meta.get("grade_band", "N/A"),
+        worksheet_title=worksheet_title or "N/A",
+        worksheet_text=(worksheet_text or "")[:2500],  # keep prompt size bounded
+    )
+    return prompt
+
+
+# ---------- Response Parsing & Normalization ----------
+
+
+def extract_json_from_text(s: str) -> Tuple[Dict, str]:
+    """
+    Try to extract the first JSON object from text.
+    Returns (json_obj_or_empty, raw_json_string_or_empty)
+    """
+    if not s:
+        return {}, ""
+    s = s.strip()
+
+    # try direct parse first
     try:
-        obj = json.loads(txt)
-        return obj, txt
+        j = json.loads(s)
+        if isinstance(j, dict):
+            return j, s
     except Exception:
         pass
-    # Braces scan
+
+    # strip common code fences
+    for fence in ("```json", "```", "~~~json", "~~~"):
+        if s.startswith(fence):
+            s = s[len(fence) :].strip()
+        if s.endswith("```") or s.endswith("~~~"):
+            s = s[:-3].strip()
+
+    # try again
+    try:
+        j = json.loads(s)
+        if isinstance(j, dict):
+            return j, s
+    except Exception:
+        pass
+
+    # scan braces
     brace_stack = []
     start = None
-    for i, ch in enumerate(txt):
+    for i, ch in enumerate(s):
         if ch == "{":
             if start is None:
                 start = i
@@ -304,514 +301,236 @@ def extract_first_json(text: str) -> Tuple[Any, str]:
             if brace_stack:
                 brace_stack.pop()
                 if not brace_stack and start is not None:
-                    candidate = txt[start : i + 1]
+                    candidate = s[start : i + 1]
                     try:
-                        obj = json.loads(candidate)
-                        return obj, candidate
+                        j = json.loads(candidate)
+                        if isinstance(j, dict):
+                            return j, candidate
                     except Exception:
                         start = None
-    # Also allow a top-level array
-    if "[" in txt and "]" in txt:
-        arr_start = txt.find("[")
-        arr_end = txt.rfind("]")
-        candidate = txt[arr_start : arr_end + 1]
-        try:
-            obj = json.loads(candidate)
-            return obj, candidate
-        except Exception:
-            pass
+                        continue
     return {}, ""
 
 
-# ---------------- Prompt Templates ----------------
-
-INITIAL_ALIGNMENT_PROMPT = """
-You are a Canadian curriculum alignment analyst.
-Given a worksheet TEXT and a list of DIRECTIVES (curriculum competency statements),
-produce a JSON array. Each array element corresponds to one directive and must have:
-
-{
-  "id": "<directive_id>",
-  "alignment_score": <integer 0-100>,
-  "evidence": "<concise (<=160 chars) justification referencing worksheet themes or tasks>",
-  "recommendation": "<concise (<=160 chars) actionable improvement to better align>"
-}
-
-Rules:
-- alignment_score: judge how strongly the worksheet supports or evidences the directive.
-- Use only integer scores 0-100.
-- evidence must NOT invent content absent from text.
-- recommendation must be actionable and specific.
-- Return ONLY valid JSON array. No extra commentary.
-
-WORKSHEET:
-ID: {worksheet_id}
-Title: {worksheet_title}
-Text (truncated):
-{worksheet_text}
-
-DIRECTIVES:
-{directives_block}
-
-Produce JSON array now.
-"""
-
-CONSENSUS_PROMPT_TEMPLATE = """
-You are consolidating multiple candidate JSON evaluations for worksheet alignment to curriculum directives.
-
-Worksheet ID: {worksheet_id}
-Title: {worksheet_title}
-
-DIRECTIVES LIST (reference):
-{directives_block}
-
-CANDIDATE RESPONSES (each is a JSON array of directive evaluations):
-{candidate_json_blobs}
-
-TASK:
-Produce ONE consolidated JSON array (same schema) where:
-- alignment_score is a reasoned consensus (e.g., median or trimmed mean) and coherent across directives.
-- Select the most precise evidence (avoid repetition).
-- Recommendation should combine best actionable suggestion (do not merge conflicting ones; pick most practical).
-- Keep evidence and recommendation <=160 chars each.
-- Maintain original directive ids.
-Return ONLY the JSON array.
-"""
-
-# FINAL_API_PROMPT_TEMPLATE = """
-# You are preparing an API payload summarizing curriculum alignment.
-
-# Input: CONSENSUS EVALUATIONS for ALL worksheets (JSON mapping worksheet_id -> [directive evaluations]) and directives list.
-
-# You must output a JSON object with this schema:
-
-# {
-#   "meta": {
-#      "directives": [ ...directive_ids ],
-#      "worksheets": [ ...worksheet_ids ],
-#      "units": [ ...unit_ids ],
-#      "generations": <int>
-#   },
-#   "matrix": {
-#      "directives": [...],
-#      "worksheets": [...],
-#      "scores": [[int]]  // rows correspond to worksheets in same order
-#   },
-#   "details": {
-#      "worksheet_id": {
-#         "directive_id": {
-#           "alignment_score": int,
-#           "evidence": str,
-#           "recommendation": str
-#         }
-#      }
-#   },
-#   "unit_summary": {
-#      "unit_id": {
-#         "directive_id": {
-#            "average_score": int,
-#            "top_recommendations": [str, ... up to 3]
-#         }
-#      }
-#   }
-# }
-
-# Constraints:
-# - average_score must be integer (rounded).
-# - top_recommendations: choose top distinct actionable recommendations seen in that unit for the directive (up to 3).
-# - Do not hallucinate directives or worksheets.
-
-# DATA:
-# Directives IDs:
-# {directive_ids}
-
-# Worksheet Consensus Map (JSON):
-# {consensus_map_json}
-
-# Units Map (worksheet_id -> unit_id):
-# {worksheet_unit_map}
-
-# Return ONLY the JSON object.
-# """
-
-# ---------------- Prompt Compilation ----------------
-
-
-def compile_initial_prompt(
-    worksheet: WorksheetMeta, directives: List[Directive], max_chars=3000
-) -> str:
-    directives_block = []
-    for d in directives:
-        directives_block.append(
-            f"- {d.id}: {d.description} (grade_band={d.grade_band}, category={d.category})"
-        )
-    wtext = (worksheet.text or "")[:max_chars]
-    return INITIAL_ALIGNMENT_PROMPT.format(
-        worksheet_id=worksheet.worksheet_id,
-        worksheet_title=worksheet.title,
-        worksheet_text=wtext,
-        directives_block="\n".join(directives_block),
-    )
-
-
-def compile_consensus_prompt(
-    worksheet: WorksheetMeta,
-    directives: List[Directive],
-    candidate_json_blobs: List[str],
-) -> str:
-    directives_block = "\n".join([f"- {d.id}: {d.description}" for d in directives])
-    combined_blob = "\n\n".join(candidate_json_blobs)
-    return CONSENSUS_PROMPT_TEMPLATE.format(
-        worksheet_id=worksheet.worksheet_id,
-        worksheet_title=worksheet.title,
-        directives_block=directives_block,
-        candidate_json_blobs=combined_blob,
-    )
-
-
-# def compile_final_api_prompt(
-#     consensus_map: Dict[str, List[Dict[str, Any]]],
-#     directives: List[Directive],
-#     worksheets: List[WorksheetMeta],
-#     generations: int,
-# ) -> str:
-#     directive_ids = [d.id for d in directives]
-#     consensus_map_json = json.dumps(consensus_map, ensure_ascii=False, indent=2)
-#     worksheet_unit_map = {w.worksheet_id: w.unit_id for w in worksheets}
-#     return FINAL_API_PROMPT_TEMPLATE.format(
-#         directive_ids=", ".join(directive_ids),
-#         consensus_map_json=consensus_map_json,
-#         worksheet_unit_map=json.dumps(worksheet_unit_map, ensure_ascii=False, indent=2),
-#     )
-
-
-# ---------------- Evaluation Normalization ----------------
-
-
-def normalize_directive_eval(entry: Dict[str, Any]) -> Dict[str, Any]:
-    norm = {}
-    # id
-    norm_id = str(entry.get("id", "")).strip()
-    norm["id"] = norm_id
-    # alignment_score
-    try:
-        score = int(round(float(entry.get("alignment_score", 0))))
-    except Exception:
-        digits = re.findall(r"\d+", str(entry.get("alignment_score", "")))
-        score = int(digits[0]) if digits else 0
-    score = max(0, min(100, score))
-    norm["alignment_score"] = score
-    # evidence
-    ev = str(entry.get("evidence", "")).strip()
-    norm["evidence"] = (" ".join(ev.split()))[:160]
-    # recommendation
-    rec = str(entry.get("recommendation", "")).strip()
-    norm["recommendation"] = (" ".join(rec.split()))[:160]
-    return norm
-
-
-def normalize_response_array(raw: Any) -> List[Dict[str, Any]]:
-    if not isinstance(raw, list):
-        return []
-    out = []
-    for e in raw:
-        if isinstance(e, dict):
-            out.append(normalize_directive_eval(e))
+def enforce_cc_schema_and_normalize(raw: Dict) -> Dict:
+    """Ensure keys exist and numeric values are ints between 0 and 100."""
+    out = {}
+    # alignment
+    if "alignment" in raw:
+        try:
+            v = int(round(float(raw["alignment"])))
+        except Exception:
+            digits = re.findall(r"\d+", str(raw["alignment"]))
+            v = int(digits[0]) if digits else 0
+        out["alignment"] = max(0, min(100, v))
+    else:
+        out["alignment"] = 0
+    # explanation
+    ex = str(raw.get("explanation", "")).strip()
+    out["explanation"] = (" ".join(ex.split()))[:260]
     return out
 
 
-# ---------------- LLM Call Wrappers ----------------
+# ---------- Pipeline: worksheet x competency ----------
 
 
-def llm_json_attempt(prompt: str) -> Any:
-    raw = run_llm(prompt=prompt)
-    print(raw)
-    cleaned = raw.strip()
-    # Remove possible markdown fences
-    cleaned = cleaned.strip("```").strip()
-    # Try direct or extraction
-    obj, _ = extract_first_json(cleaned)
-    return obj
-
-
-def multi_generate_alignment(
-    worksheet: WorksheetMeta, directives: List[Directive], generations: int
-) -> List[List[Dict[str, Any]]]:
-    candidates = []
-    prompt = compile_initial_prompt(worksheet, directives)
-    for i in range(generations):
-        logger.info(
-            f"LLM initial generation {i+1}/{generations} for worksheet {worksheet.worksheet_id}"
-        )
-        obj = llm_json_attempt(prompt)
-        norm = normalize_response_array(obj)
-        candidates.append(norm)
-    return candidates
-
-
-def build_consensus_via_llm(
-    worksheet: WorksheetMeta,
-    directives: List[Directive],
-    candidates: List[List[Dict[str, Any]]],
-) -> List[Dict[str, Any]]:
-    # Prepare candidate blobs (raw JSON string of each normalized candidate)
-    candidate_blobs = [json.dumps(c, ensure_ascii=False) for c in candidates]
-    consensus_prompt = compile_consensus_prompt(worksheet, directives, candidate_blobs)
-    logger.info(
-        f"Requesting consensus LLM output for worksheet {worksheet.worksheet_id}"
+def evaluate_alignment_for_pair(
+    competency: Competency,
+    worksheet_text: str,
+    worksheet_id: str,
+    worksheet_title: str = "",
+) -> Dict:
+    prompt = compile_alignment_prompt(
+        competency, worksheet_text, worksheet_id, worksheet_title
     )
-    obj = llm_json_attempt(consensus_prompt)
-    consensus = normalize_response_array(obj)
-    # Fallback: if consensus missing entries, fill using median of candidates
-    directive_ids = [d.id for d in directives]
-    got_ids = {e["id"] for e in consensus}
-    if got_ids != set(directive_ids):
+    raw_output = run_llm(prompt=prompt)
+
+    parsed, raw_json = extract_json_from_text(raw_output or "")
+    if not parsed:
         logger.warning(
-            f"Consensus missing directives for {worksheet.worksheet_id}, applying fallback merge."
+            f"Failed to extract JSON from LLM for {worksheet_id} x {competency.competency_id}. Raw: {str(raw_output)[:160]}"
         )
-        # Build score map per id
-        score_map = defaultdict(list)
-        ev_map = defaultdict(list)
-        rec_map = defaultdict(list)
-        for cand in candidates:
-            for e in cand:
-                score_map[e["id"]].append(e["alignment_score"])
-                ev_map[e["id"]].append(e["evidence"])
-                rec_map[e["id"]].append(e["recommendation"])
-        merged = []
-        for did in directive_ids:
-            scores = score_map.get(did, [0])
-            # median
-            scores_sorted = sorted(scores)
-            med = scores_sorted[len(scores_sorted) // 2]
-            # pick most common short evidence
-            evidences = [x for x in ev_map.get(did, []) if x]
-            evidence = evidences[0] if evidences else ""
-            # pick most common recommendation
-            recs = [x for x in rec_map.get(did, []) if x]
-            recommendation = recs[0] if recs else ""
-            merged.append(
-                {
-                    "id": did,
-                    "alignment_score": med,
-                    "evidence": evidence[:160],
-                    "recommendation": recommendation[:160],
-                }
+        parsed = None
+
+    if parsed is None or set(parsed.keys()) != set(CC_EXPECTED_KEYS):
+        normalized = evaluate_alignment_for_pair(
+            competency, worksheet_text, worksheet_id, worksheet_title
+        )
+    else:
+        normalized = enforce_cc_schema_and_normalize(parsed)
+    logger.info(
+        f"LLM Output [{worksheet_title} x {competency.title}]: "
+        f"{json.dumps(normalized, ensure_ascii=False)}"
+    )
+    return normalized
+
+
+# ---------- Worksheets collection ----------
+
+
+def collect_worksheets_texts(worksheets_dir: Path) -> Dict[str, Dict]:
+    """
+    Walk worksheets_dir; expects structure optionally with units:
+      worksheets_dir/unit1/worksheet1.pdf
+      worksheets_dir/unit1/worksheet2.pdf
+    If a file is passed, treat it as a single worksheet.
+    Returns dict worksheet_id -> {"text":..., "title":..., "path":...}
+    """
+    worksheets: Dict[str, Dict[str, str]] = {}
+
+    if worksheets_dir.is_file():
+        fname = worksheets_dir.name
+        if not fname.lower().endswith((".pdf", ".txt")):
+            return {}
+        worksheet_id = f"{fname}".strip("_")
+        title = fname
+        try:
+            text = extract_text_from_file(worksheets_dir)
+            if not text:
+                logger.warning(f"No text found in {worksheets_dir}")
+        except Exception as e:
+            logger.warning(f"Failed to extract text from {worksheets_dir}: {e}")
+            text = ""
+        worksheets[worksheet_id] = {
+            "text": text,
+            "title": title,
+            "path": str(worksheets_dir),
+        }
+        return worksheets
+
+    for root, dirs, files in os.walk(str(worksheets_dir)):
+        for fname in files:
+            if not fname.lower().endswith((".pdf", ".txt")):
+                continue
+            fpath = Path(root) / fname
+            rel = (
+                Path(root).relative_to(worksheets_dir)
+                if Path(root) != worksheets_dir
+                else Path(".")
             )
-        consensus = merged
-    return consensus
-
-
-# def build_final_api_payload_via_llm(
-#     consensus_map: Dict[str, List[Dict[str, Any]]],
-#     directives: List[Directive],
-#     worksheets: List[WorksheetMeta],
-#     generations: int,
-# ) -> Dict[str, Any]:
-#     final_prompt = compile_final_api_prompt(
-#         consensus_map, directives, worksheets, generations
-#     )
-#     logger.info("Requesting final API payload LLM compilation.")
-#     obj = llm_json_attempt(final_prompt)
-#     # basic validation
-#     if not isinstance(obj, dict):
-#         logger.warning(
-#             "Final API LLM response not a dict; constructing programmatic fallback."
-#         )
-#         return programmatic_api_payload(
-#             consensus_map, directives, worksheets, generations
-#         )
-#     # Ensure required top-level keys exist
-#     required_top = {"meta", "matrix", "details", "unit_summary"}
-#     if not required_top.issubset(set(obj.keys())):
-#         logger.warning("Final API LLM response missing keys; using fallback builder.")
-#         return programmatic_api_payload(
-#             consensus_map, directives, worksheets, generations
-#         )
-#     return obj
-
-
-# ---------------- Programmatic Fallback API ----------------
-
-
-def programmatic_api_payload(
-    consensus_map: Dict[str, List[Dict[str, Any]]],
-    directives: List[Directive],
-    worksheets: List[WorksheetMeta],
-    generations: int,
-) -> Dict[str, Any]:
-    directive_ids = [d.id for d in directives]
-    worksheet_ids = [w.worksheet_id for w in worksheets]
-    unit_ids = sorted({w.unit_id for w in worksheets})
-
-    # Matrix scores
-    scores_matrix = []
-    details = {}
-    for w in worksheets:
-        evals = consensus_map.get(w.worksheet_id, [])
-        eval_map = {e["id"]: e for e in evals}
-        row = []
-        details[w.worksheet_id] = {}
-        for did in directive_ids:
-            entry = eval_map.get(
-                did, {"alignment_score": 0, "evidence": "", "recommendation": ""}
-            )
-            row.append(int(entry["alignment_score"]))
-            details[w.worksheet_id][did] = {
-                "alignment_score": int(entry["alignment_score"]),
-                "evidence": entry["evidence"],
-                "recommendation": entry["recommendation"],
+            worksheet_id = f"{rel.as_posix().replace('/', '_')}_{fname}".strip("_")
+            title = fname
+            try:
+                text = extract_text_from_file(fpath)
+                if not text:
+                    logger.warning(f"No text found in {fpath}")
+            except Exception as e:
+                logger.warning(f"Failed to extract text from {fpath}: {e}")
+                text = ""
+            worksheets[worksheet_id] = {
+                "text": text,
+                "title": title,
+                "path": str(fpath),
             }
-        scores_matrix.append(row)
-
-    # Unit summary aggregation
-    unit_summary: Dict[str, Dict[str, Dict[str, Any]]] = {}
-    # Accumulate per unit per directive
-    acc_scores = defaultdict(list)
-    acc_recs = defaultdict(list)
-    for w in worksheets:
-        for did, dv in details[w.worksheet_id].items():
-            acc_scores[(w.unit_id, did)].append(dv["alignment_score"])
-            if dv["recommendation"]:
-                acc_recs[(w.unit_id, did)].append(dv["recommendation"])
-
-    for unit in unit_ids:
-        unit_summary[unit] = {}
-        for did in directive_ids:
-            scores = acc_scores.get((unit, did), [])
-            if scores:
-                avg = int(round(sum(scores) / len(scores)))
-            else:
-                avg = 0
-            # top 3 distinct recommendations
-            recs = acc_recs.get((unit, did), [])
-            # simple frequency ordering
-            top = []
-            if recs:
-                freq = Counter(recs)
-                for r, _cnt in freq.most_common():
-                    if r not in top:
-                        top.append(r)
-                    if len(top) >= 3:
-                        break
-            unit_summary[unit][did] = {"average_score": avg, "top_recommendations": top}
-
-    payload = {
-        "meta": {
-            "directives": directive_ids,
-            "worksheets": worksheet_ids,
-            "units": unit_ids,
-            "generations": generations,
-        },
-        "matrix": {
-            "directives": directive_ids,
-            "worksheets": worksheet_ids,
-            "scores": scores_matrix,
-        },
-        "details": details,
-        "unit_summary": unit_summary,
-    }
-    return payload
+    return worksheets
 
 
-# ---------------- High-Level Worksheet Evaluation ----------------
+# ---------- Assemble score table ----------
 
 
-def evaluate_worksheet(
-    worksheet: WorksheetMeta,
-    directives: List[Directive],
-    generations: int,
-) -> List[Dict[str, Any]]:
-    candidates = multi_generate_alignment(worksheet, directives, generations)
-    consensus = build_consensus_via_llm(worksheet, directives, candidates)
-    return consensus
+def assemble_score_matrix(
+    results: Dict[str, Dict[str, int]], competencies: List[str], worksheets: List[str]
+) -> Dict:
+    """
+    results: mapping worksheet_id -> mapping competency_id -> score (alignment)
+    """
+    matrix = []
+    for wid in worksheets:
+        row = []
+        for c in competencies:
+            row.append(results.get(wid, {}).get(c, 0))
+        matrix.append(row)
+    return {"competencies": competencies, "worksheets": worksheets, "matrix": matrix}
 
 
-# ---------------- Pipeline Runner ----------------
+# ---------- High level run ----------
 
 
 def run_pipeline(
-    directives_json: str,
-    coursework: str,
-    generations: int,
-    out_path: str,
-) -> Dict[str, Any]:
-    directives = load_directives(Path(directives_json))
-    if not directives:
-        logger.error("No directives loaded; aborting.")
-        return {}
-    logger.info(f"Loaded {len(directives)} directives.")
+    cc_file: str,
+    worksheets_dir: str,
+    out_path: Optional[str] = None,
+    grade_band: Optional[str] = None,
+):
+    cc_raw = safe_load_json_file(Path(cc_file))
+    competencies = normalize_competencies(cc_raw, grade_band=grade_band)
+    if len(competencies) == 0:
+        logger.warning("No competencies available. Exiting.")
+        return
 
-    worksheets = collect_course_materials(Path(coursework))
-    if not worksheets:
-        logger.error("No worksheets found in coursework path.")
-        return {}
-    logger.info(f"Collected {len(worksheets)} worksheets.")
+    comp_ids = [c.competency_id for c in competencies]
+    logger.info(f"Loaded {len(competencies)} competencies: {comp_ids}")
 
-    # Per worksheet consensus evaluations
-    consensus_map: Dict[str, List[Dict[str, Any]]] = {}
-    for w in worksheets:
-        consensus = evaluate_worksheet(w, directives, generations)
-        # Filter invalid directive ids (should be in loaded directives)
-        valid_ids = {d.id for d in directives}
-        filtered = [e for e in consensus if e.get("id") in valid_ids]
-        if len(filtered) != len(consensus):
-            logger.warning(
-                f"Filtered out entries with invalid directive ids for worksheet {w.worksheet_id}."
+    worksheets = collect_worksheets_texts(Path(worksheets_dir))
+    worksheet_ids = list(worksheets.keys())
+    logger.info(f"Found {len(worksheets)} worksheet files.")
+
+    # Results map: worksheet_id -> competency_id -> score
+    results_alignment: Dict[str, Dict[str, int]] = {wid: {} for wid in worksheet_ids}
+    # And store per-pair details as well
+    full_results: Dict[str, Dict[str, Dict[str, Any]]] = {
+        wid: {} for wid in worksheet_ids
+    }
+
+    for wid in tqdm(worksheet_ids, desc="Worksheets"):
+        wtext = worksheets[wid]["text"] or ""
+        wtitle = worksheets[wid]["title"]
+        for comp in competencies:
+            eval_result = evaluate_alignment_for_pair(
+                comp, wtext, worksheet_id=wid, worksheet_title=wtitle
             )
-        consensus_map[w.worksheet_id] = filtered
+            results_alignment[wid][comp.competency_id] = int(eval_result["alignment"])
+            full_results[wid][comp.competency_id] = eval_result
 
-    payload = programmatic_api_payload(
-        consensus_map, directives, worksheets, generations
-    )
-    # else:
-    #     payload = build_final_api_payload_via_llm(
-    #         consensus_map, directives, worksheets, generations
-    #     )
-    #     # If LLM produced but lacks some entries, ensure completeness by merging fallback
-    #     fallback = programmatic_api_payload(
-    #         consensus_map, directives, worksheets, generations
-    #     )
-    #     # Merge only missing parts
-    #     for key in ["meta", "matrix", "details", "unit_summary"]:
-    #         if key not in payload:
-    #             payload[key] = fallback[key]
+    # Build matrix
+    matrix_json = assemble_score_matrix(results_alignment, comp_ids, worksheet_ids)
+    # Save outputs
+    api_payload = {
+        "meta": {
+            "subject": cc_raw.get("subject", "Unknown"),
+            "grade_band": competencies[0].meta.get("grade_band"),
+            "competencies": comp_ids,
+            "worksheets": worksheet_ids,
+        },
+        "matrix": matrix_json,
+        "details": full_results,
+    }
 
-    # Persist
-    out_p = Path(out_path)
-    write_json(payload, out_p)
-    logger.info(f"Wrote curriculum alignment payload to {out_p}")
-    return payload
+    if out_path:
+        out_p = Path(out_path)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        write_json_file(api_payload, out_p)
+        logger.info(f"Wrote results to {out_p}")
+
+    return api_payload
 
 
-# ---------------- CLI ----------------
+# ---------- CLI ----------
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Canadian Curriculum Alignment Pipeline")
+    p = argparse.ArgumentParser(description="Core Competency Alignment Pipeline")
     p.add_argument(
-        "--directives-json", required=True, help="Path to directives JSON file"
-    )
-    p.add_argument(
-        "--coursework",
+        "--cc-file",
         required=True,
-        help="Path to coursework (dir with units, single unit dir, or worksheet file)",
+        help="Path to core competencies JSON (e.g., sample_data/CCs/math.json)",
     )
     p.add_argument(
-        "--generations",
-        type=int,
-        default=3,
-        help="Number of LLM generations per worksheet for democratic consensus",
+        "--grade-band",
+        required=False,
+        help="Grade band key to use (e.g., '6-9', '8-9'). Defaults to first in file.",
     )
-    p.add_argument("--out", required=True, help="Output JSON file path")
+    p.add_argument(
+        "--worksheets-dir",
+        required=True,
+        help="Directory (or single file) for worksheets (PDF/TXT). Subdirs retained as units.",
+    )
+    p.add_argument("--out", required=True, help="Path to output JSON file")
     return p.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
     run_pipeline(
-        directives_json=args.directives_json,
-        coursework=args.coursework,
-        generations=args.generations,
-        out_path=args.out,
+        args.cc_file, args.worksheets_dir, args.out, grade_band=args.grade_band
     )
