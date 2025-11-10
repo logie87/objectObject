@@ -868,13 +868,33 @@ export default function StudentsPage() {
               generate report
             </h3>
 
-            <AutocompleteMulti
-              label="select students"
-              options={all.map((s) => ({ value: s.id, label: s.name }))}
-              selected={selectedStudents}
-              onChange={setSelectedStudents}
-              COLORS={COLORS}
-            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+  <button
+    type="button"
+    onClick={() => setSelectedStudents(all.map((s) => s.id))}
+    style={{
+      fontSize: 12,
+      padding: "4px 8px",
+      borderRadius: 6,
+      border: `1px solid ${COLORS.border}`,
+      background: COLORS.surface,
+      color: COLORS.mainText,
+      cursor: "pointer",
+    }}
+  >
+    Select all students
+  </button>
+</div>
+
+<AutocompleteMulti
+  label="select students"
+  options={all.map((s) => ({ value: s.id, label: s.name }))}
+  selected={selectedStudents}
+  onChange={setSelectedStudents}
+  COLORS={COLORS}
+/>
+
+
 
             <AutocompleteMulti
               label="select courses"
