@@ -13,12 +13,16 @@ const COLORS = {
   pieEmpty: "#e5e7eb",
   buttonGradientStart: "#a78bfa",
   buttonGradientEnd: "#ec4899",
+  spinnerTrack: "#e5e7eb",
+  spinnerArc: "#ec4899",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
   mainText: "#374151",
   avatarBg: "#eef2ff",
   border: "#e5e7eb",
   surface: "#ffffff",
+  modalShadow: "0 20px 60px rgba(0,0,0,.25)",
+  overlayBg: "rgba(0,0,0,.45)",
 };
 
 type StudentSummary = {
@@ -35,21 +39,6 @@ type StudentFull = {
   data: any;
 };
 
-type Resource = {
-  name: string;
-  filename: string;
-  path: string;
-  size: number;
-  uploaded_at: string;
-  fit: { mean: number; spread: number; status: string };
-  issues?: string[];
-};
-
-type Curriculum = {
-  courses: Record<string, Record<string, Resource[]>>;
-};
-
-// ------------------ AutocompleteMulti ------------------
 const AutocompleteMulti: React.FC<{
   label: string;
   options: { value: string; label: string }[];
@@ -105,7 +94,7 @@ const AutocompleteMulti: React.FC<{
               top: "100%",
               left: 0,
               right: 0,
-              background: "#fff",
+              background: COLORS.surface,
               border: `1px solid ${COLORS.border}`,
               borderRadius: 8,
               boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
@@ -177,10 +166,9 @@ const AutocompleteMulti: React.FC<{
   );
 };
 
-// ------------------ Badge ------------------
 const Badge: React.FC<{ kind: string }> = ({ kind }) => {
-  let bg = COLORS.timeBadgeBg,
-    fg = COLORS.timeBadgeText;
+  let bg = COLORS.timeBadgeBg;
+  let fg = COLORS.timeBadgeText;
   if (kind === "Reading") {
     bg = COLORS.readingBadgeBg;
     fg = COLORS.readingBadgeText;
@@ -208,7 +196,6 @@ const Badge: React.FC<{ kind: string }> = ({ kind }) => {
   );
 };
 
-// ------------------ StudentCard ------------------
 const StudentCard: React.FC<{
   s: StudentSummary;
   onView: (id: string) => void;
@@ -295,7 +282,7 @@ const StudentCard: React.FC<{
               width: 40,
               height: 40,
               borderRadius: "50%",
-              background: "#fff",
+              background: COLORS.surface,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -321,9 +308,9 @@ const StudentCard: React.FC<{
             flex: 1,
             padding: "10px 0",
             borderRadius: 12,
-            border: "1px solid #e5e7eb",
-            background: "#fff",
-            color: "#374151",
+            border: `1px solid ${COLORS.border}`,
+            background: COLORS.surface,
+            color: COLORS.mainText,
             fontWeight: 700,
             cursor: "pointer",
           }}
@@ -337,8 +324,8 @@ const StudentCard: React.FC<{
             padding: "10px 0",
             borderRadius: 12,
             border: "none",
-            background: "linear-gradient(135deg, #a78bfa, #ec4899)",
-            color: "#fff",
+            background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+            color: COLORS.surface,
             fontWeight: 700,
             cursor: "pointer",
           }}
@@ -368,14 +355,14 @@ const Spinner: React.FC<{ size?: number }> = ({ size = 40 }) => (
       cy="25"
       r="20"
       fill="none"
-      stroke="#e5e7eb"
+      stroke={COLORS.spinnerTrack}
       strokeWidth="6"
       strokeLinecap="round"
     />
     <path
       d="M25 5 a20 20 0 0 1 0 40"
       fill="none"
-      stroke="#ec4899"
+      stroke={COLORS.spinnerArc}
       strokeWidth="6"
       strokeLinecap="round"
     >
@@ -456,12 +443,6 @@ export default function StudentsPage() {
     }
 
     setIsGenerating(true);
-    console.log({
-      students: selectedStudents,
-      courses: selectedCourses,
-      units: selectedUnits,
-    });
-
     setTimeout(() => {
       setIsGenerating(false);
       setShowModal(false);
@@ -527,7 +508,7 @@ export default function StudentsPage() {
               border: "none",
               cursor: "pointer",
               background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              color: "#fff",
+              color: COLORS.surface,
               fontWeight: 700,
             }}
           >
@@ -541,7 +522,7 @@ export default function StudentsPage() {
               border: "none",
               cursor: "pointer",
               background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              color: "#fff",
+              color: COLORS.surface,
               fontWeight: 700,
             }}
           >
@@ -569,7 +550,7 @@ export default function StudentsPage() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,.45)",
+            background: COLORS.overlayBg,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -581,9 +562,9 @@ export default function StudentsPage() {
             style={{
               width: "min(100%, 500px)",
               padding: 24,
-              background: "#fff",
+              background: COLORS.surface,
               borderRadius: 16,
-              boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+              boxShadow: COLORS.modalShadow,
               display: "flex",
               flexDirection: "column",
               gap: 18,
@@ -703,8 +684,7 @@ export default function StudentsPage() {
                   padding: "10px 18px",
                   borderRadius: 10,
                   border: `1px solid ${COLORS.border}`,
-                  background: "#fff",
-                  fontWeight: 700,
+                  background: COLORS.surface,
                   color: COLORS.mainText,
                   cursor: "pointer",
                 }}
@@ -713,10 +693,18 @@ export default function StudentsPage() {
               </button>
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating}
+                disabled={
+                  isGenerating ||
+                  !selectedStudents.length ||
+                  !selectedUnits.length
+                }
                 style={{
-                  padding: "10px 18px",
-                  borderRadius: 10,
+                  flex: 1,
+                  padding: "12px 0",
+                  borderRadius: 12,
+                  background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
+                  color: COLORS.surface,
+                  fontWeight: 600,
                   border: "none",
                   background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
                   color: "#fff",

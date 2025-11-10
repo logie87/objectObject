@@ -1,13 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPost, apiGetBlobUrl } from "../lib/api";
 
+const COLORS = {
+  good: "#16a34a",
+  warn: "#f59e0b",
+  bad: "#ef4444",
+  graySub: "#6b7280",
+  border: "#e5e7eb",
+  headerBg: "#f8fafc",
+  divider: "#eef2f7",
+  focusBg: "#fafafa",
+  link: "#4f46e5",
+  muted: "var(--muted)",
+};
+
 type FitStatus = "good" | "warn" | "bad";
 type Resource = {
   name: string;
   filename: string;
-  path: string;          // course/unit/filename.pdf
+  path: string;
   size: number;
-  uploaded_at: string;   // ISO
+  uploaded_at: string;
   fit: { mean: number; spread: number; status: FitStatus };
   issues?: string[];
 };
@@ -20,7 +33,7 @@ const ISSUE_OPTIONS = ["Reading", "Modality", "Time", "Assessment", "Exec-Fx", "
 function statusBadge({ mean, spread, status }: Resource["fit"]) {
   const symbol = status === "good" ? "▲" : status === "warn" ? "■" : "●";
   const color =
-    status === "good" ? "#16a34a" : status === "warn" ? "#f59e0b" : "#ef4444";
+    status === "good" ? COLORS.good : status === "warn" ? COLORS.warn : COLORS.bad;
   return (
     <span
       title={`Mean ${mean}% • Spread ${spread}`}
@@ -60,9 +73,7 @@ export default function CurriculumPage() {
           const firstUnit = Object.keys(d.courses[firstCourse])[0];
           if (firstUnit) setActiveUnit(firstUnit);
         }
-      } catch {
-        // demo: ignore
-      }
+      } catch {}
     })();
   }, []);
 
@@ -108,9 +119,7 @@ export default function CurriculumPage() {
       await apiPost(`/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`, {
         order: newOrder.map((r) => r.filename),
       });
-    } catch {
-      // demo: ignore
-    }
+    } catch {}
   };
 
   const onDragStart = (i: number) => setDragIdx(i);
@@ -154,23 +163,30 @@ export default function CurriculumPage() {
     try {
       const url = await apiGetBlobUrl(`/curriculum/${r.path}`);
       window.open(url, "_blank", "noopener,noreferrer");
-    } catch {
-      // demo: ignore
-    }
+    } catch {}
   }
 
   if (!data) return <div className="card">Loading curriculum…</div>;
 
   return (
-    <div>
-      <div className="header">
-        <h1>Curriculum</h1>
-        <div className="sub" style={{ color: "#6b7280" }}>
-          Units • Resources • Alignment Overview
+    <div style={{ padding: 24 }}>
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: 28, marginBottom: 4 }}>Curriculum</h1>
+          <div style={{ color: COLORS.graySub }}>
+            Units • Resources • Alignment Overview
+          </div>
         </div>
       </div>
 
-      {/* Controls */}
       <div
         className="card"
         style={{
@@ -196,7 +212,7 @@ export default function CurriculumPage() {
           style={{
             padding: "8px 10px",
             borderRadius: 8,
-            border: "1px solid #e5e7eb",
+            border: `1px solid ${COLORS.border}`,
           }}
         >
           {courses.map((c) => (
@@ -210,7 +226,7 @@ export default function CurriculumPage() {
           style={{
             padding: "8px 10px",
             borderRadius: 8,
-            border: "1px solid #e5e7eb",
+            border: `1px solid ${COLORS.border}`,
           }}
         >
           <option>All Issues</option>
@@ -220,7 +236,7 @@ export default function CurriculumPage() {
         </select>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <label style={{ fontSize: 12, color: "var(--muted)" }}>
+          <label style={{ fontSize: 12, color: COLORS.muted }}>
             Min fit {minFit}%
           </label>
           <input
@@ -254,9 +270,7 @@ export default function CurriculumPage() {
         </div>
       </div>
 
-      {/* Workspace */}
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 380px", gap: 20 }}>
-        {/* Units */}
         <aside className="card" style={{ padding: 12 }}>
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Units</div>
           <div style={{ display: "grid", gap: 8 }}>
@@ -279,13 +293,12 @@ export default function CurriculumPage() {
           </div>
         </aside>
 
-        {/* Resource table */}
         <section className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "2fr 1fr 1fr 160px",
-              background: "#f8fafc",
+              background: COLORS.headerBg,
               padding: "10px 16px",
               fontWeight: 700,
             }}
@@ -306,9 +319,9 @@ export default function CurriculumPage() {
                 display: "grid",
                 gridTemplateColumns: "2fr 1fr 1fr 160px",
                 padding: "10px 16px",
-                borderTop: "1px solid #eef2f7",
+                borderTop: `1px solid ${COLORS.divider}`,
                 alignItems: "center",
-                background: focused?.path === r.path ? "#fafafa" : "transparent",
+                background: focused?.path === r.path ? COLORS.focusBg : "transparent",
                 cursor: "grab",
               }}
             >
@@ -319,7 +332,7 @@ export default function CurriculumPage() {
                   background: "none",
                   border: "none",
                   padding: 0,
-                  color: "#4f46e5",
+                  color: COLORS.link,
                   fontWeight: 600,
                   cursor: "pointer",
                   overflow: "hidden",
@@ -360,25 +373,24 @@ export default function CurriculumPage() {
           ))}
 
           {!resources.length && (
-            <div style={{ padding: 16, color: "var(--muted)" }}>
+            <div style={{ padding: 16, color: COLORS.muted }}>
               No PDFs match current filters.
             </div>
           )}
         </section>
 
-        {/* Right: Analysis panel (kept, but no extra hint box) */}
         <aside className="card" style={{ padding: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>
             {focused ? focused.name : "Select a resource to analyze"}
           </div>
           {focused && (
             <>
-              <div className="card" style={{ background: "#f8fafc" }}>
+              <div className="card" style={{ background: COLORS.headerBg }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ fontWeight: 700 }}>Group Fit</div>
                   {statusBadge(focused.fit)}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                <div style={{ fontSize: 12, color: COLORS.muted }}>
                   Modified: {focused.uploaded_at.split("T")[0]} • Size: {(focused.size / 1024).toFixed(1)} KB
                 </div>
                 {(focused.issues || []).length > 0 && (
@@ -392,7 +404,7 @@ export default function CurriculumPage() {
 
               <div className="card" style={{ marginTop: 10 }}>
                 <div style={{ fontWeight: 700, marginBottom: 6 }}>Affected students</div>
-                <div style={{ color: "var(--muted)" }}>
+                <div style={{ color: COLORS.muted }}>
                   {analysis?.affected?.length
                     ? analysis.affected.join(", ")
                     : busyAnalyze
@@ -406,7 +418,7 @@ export default function CurriculumPage() {
                   Consensus adaptation
                 </div>
                 {busyAnalyze && !analysis ? (
-                  <div style={{ color: "var(--muted)" }}>Analyzing…</div>
+                  <div style={{ color: COLORS.muted }}>Analyzing…</div>
                 ) : (
                   <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
                     {(analysis?.consensus || []).map((c, i) => (
@@ -414,7 +426,7 @@ export default function CurriculumPage() {
                     ))}
                   </ul>
                 )}
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
+                <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 8 }}>
                   Evidence: {analysis?.evidence || (busyAnalyze ? "…" : "—")}
                 </div>
               </div>
