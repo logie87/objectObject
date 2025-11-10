@@ -444,14 +444,16 @@ export default function Topbar(){
                 right: 0,
                 marginTop: 8,
                 width: 260,
-                background: '#fff',
-                border: '1px solid #e5e7eb',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)', // safari
+                border: '1px solid #dacfbe',
                 borderRadius: 16,
                 boxShadow: '0 18px 40px rgba(0,0,0,.12)',
                 padding: 12,
                 zIndex: 50,
               }}
             >
+
               
               <div style={{ padding: 8, borderBottom: '1px solid #f1f5f9', marginBottom: 8 }}>
                 <div style={{ fontWeight: 800 }}>{me?.name || 'User'}</div>
@@ -464,7 +466,7 @@ export default function Topbar(){
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr', // Defines 3 equal-width columns
               }}>
-                Theme
+                Night Mode
                 <ThemeSwitch />
               </div>
               
@@ -485,7 +487,7 @@ export default function Topbar(){
                   padding: '10px 12px',
                   borderRadius: 12,
                   border: '1px solid #e5e7eb',
-                  background: '#fff',
+                  // background: '#fff',
                   marginBottom: 8
                 }}
               >
