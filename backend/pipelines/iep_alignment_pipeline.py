@@ -270,42 +270,6 @@ def compile_alignment_prompt(
 # ---------- LLM Call ----------
 
 
-# class LLMClient:
-#     def __init__(
-#         self, model_path: str, n_ctx: int = MODEL_N_CTX, temp: float = MODEL_TEMPERATURE
-#     ):
-#         self.model_path = model_path
-#         self.temp = temp
-#         self.n_ctx = n_ctx
-#         self._client = None
-#         self._init_client()
-
-#     def _init_client(self):
-#         # Initialize llama-cpp model
-#         print(f"[info] Initializing Llama model from: {self.model_path}")
-#         self._client = Llama(model_path=self.model_path, n_ctx=self.n_ctx)
-
-#     def call(
-#         self, prompt: str, max_tokens: int = MODEL_MAX_TOKENS, temperature: float = None
-#     ) -> str:
-#         temperature = self.temp if temperature is None else temperature
-#         # deterministic-ish: temperature 0.0
-#         resp = self._client(
-#             prompt,
-#             max_tokens=max_tokens,
-#             temperature=temperature,
-#             top_p=MODEL_TOP_P,
-#             echo=False,
-#         )
-#         # llama-cpp returns dict; text is in 'choices' or 'text' depending on version
-#         text = (
-#             resp.get("choices")[0].get("text")
-#             if "choices" in resp
-#             else resp.get("text", "")
-#         )
-#         return text
-
-
 def run_llm(prompt: str, model: str = "phi3") -> str:
     """
     Use ollama Python client if installed. API may change; this is a best-effort wrapper.
@@ -320,10 +284,10 @@ def run_llm(prompt: str, model: str = "phi3") -> str:
         ],
     )
     # ensure it's string
-    print(response)
-    if isinstance(response, dict):
-        return response.get("content", str(response))
-    return str(response)
+    # print(response)
+
+    return response.message.content
+    # return str(response)
 
 
 # ---------- Response Parsing & Normalization ----------
@@ -418,7 +382,9 @@ def evaluate_alignment_for_pair(
         student, worksheet_text, worksheet_id, worksheet_title
     )
     raw_output = run_llm(prompt=prompt)
-    parsed_json, raw_json_text = extract_json_from_text(raw_output)
+    cleaned_output = raw_output.strip("```json").strip()
+    parsed_json = json.loads(cleaned_output)
+    # parsed_json, raw_json_text = extract_json_from_text(raw_output)
     if not parsed_json:
         # Attempt a second pass: ask the model to respond in JSON only (rare)
         # But since we must not do followups asynchronously, we'll try to salvage:
@@ -571,8 +537,6 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     run_pipeline(args.iep_dir, args.worksheets_dir, args.out)
-
-
 
 
 # OUTPUT:
