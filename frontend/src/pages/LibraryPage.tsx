@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiDelete, apiGet, apiGetBlobUrl, apiPostForm, apiPut } from "../lib/api";
 
-/* light & dark palettes keyed off :root[data-theme] or the 'dark' class */
 const LIGHT = {
   buttonGradientStart: "#3DAFBC",
   buttonGradientEnd: "#35598f",
@@ -20,7 +19,7 @@ const DARK = {
   buttonGradientStart: "#3DAFBC",
   buttonGradientEnd: "#35598f",
   deleteButton: "#ff8b7f",
-  cardBg: "#0f172a", // deep slate
+  cardBg: "#0f172a",
   cardShadow: "0 8px 20px rgba(0,0,0,0.35)",
   mutedText: "#9aa3b2",
   mainText: "#e5e7eb",
@@ -31,7 +30,6 @@ const DARK = {
   pageBg: "#0b1020",
 };
 
-/* read current theme from :root */
 type Theme = "light" | "dark";
 function readRootTheme(): Theme {
   if (typeof document === "undefined") return "light";
@@ -41,7 +39,6 @@ function readRootTheme(): Theme {
   return "light";
 }
 
-/* react to outside theme changes (existing toggle updates :root) */
 function usePalette() {
   const [theme, setTheme] = useState<Theme>(readRootTheme());
   useEffect(() => {
@@ -60,7 +57,6 @@ function usePalette() {
   return theme === "dark" ? DARK : LIGHT;
 }
 
-/* icons inherit color via currentColor */
 const Icons = {
   Document: () => (
     <svg
@@ -90,6 +86,118 @@ type DocMeta = {
   source?: string | null;
 };
 
+type ParsedQuery = {
+  terms: string[];
+  tags: string[];
+  file?: string;
+  title?: string;
+  source?: string;
+  sha?: string;
+  after?: Date;
+  before?: Date;
+  sizeGt?: number;
+  sizeLt?: number;
+  isUntagged?: boolean;
+};
+
+function parseSize(v: string): number | null {
+  const m = v.trim().toLowerCase().match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  const unit = m[2] || "b";
+  if (unit === "gb") return n * 1024 * 1024 * 1024;
+  if (unit === "mb") return n * 1024 * 1024;
+  if (unit === "kb") return n * 1024;
+  return n;
+}
+
+function parseDate(v: string): Date | null {
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function parseQuery(q: string): ParsedQuery {
+  const out: ParsedQuery = { terms: [], tags: [] };
+  const parts = q
+    .trim()
+    .match(/("[^"]+"|\S+)/g)
+    ?.map((p) => p.replace(/^"(.+)"$/, "$1")) || [];
+  for (const raw of parts) {
+    const p = raw.trim();
+    const [k, ...rest] = p.split(":");
+    const val = rest.join(":");
+    if (rest.length) {
+      const v = val.trim();
+      if (k === "tag" && v) out.tags.push(v.toLowerCase());
+      else if (k === "file" && v) out.file = v.toLowerCase();
+      else if (k === "title" && v) out.title = v.toLowerCase();
+      else if (k === "source" && v) out.source = v.toLowerCase();
+      else if (k === "sha" && v) out.sha = v.toLowerCase();
+      else if (k === "after") {
+        const d = parseDate(v);
+        if (d) out.after = d;
+      } else if (k === "before") {
+        const d = parseDate(v);
+        if (d) out.before = d;
+      } else if (k === "size>") {
+        const n = parseSize(v);
+        if (n != null) out.sizeGt = n;
+      } else if (k === "size<") {
+        const n = parseSize(v);
+        if (n != null) out.sizeLt = n;
+      } else {
+        out.terms.push(p.toLowerCase());
+      }
+    } else if (p === "is:untagged") {
+      out.isUntagged = true;
+    } else {
+      out.terms.push(p.toLowerCase());
+    }
+  }
+  return out;
+}
+
+function includes(hay: string | null | undefined, needle: string) {
+  return (hay || "").toLowerCase().includes(needle);
+}
+
+function matchDoc(d: DocMeta, pq: ParsedQuery) {
+  if (pq.tags.length && !pq.tags.every((t) => (d.tags || []).some((x) => x.toLowerCase().includes(t)))) return false;
+  if (pq.isUntagged && (d.tags && d.tags.length)) return false;
+  if (pq.file && !includes(d.filename, pq.file)) return false;
+  if (pq.title && !includes(d.title, pq.title)) return false;
+  if (pq.source && !includes(d.source || "", pq.source)) return false;
+  if (pq.sha && !includes(d.sha256, pq.sha)) return false;
+  if (pq.after && new Date(d.uploaded_at) < pq.after) return false;
+  if (pq.before && new Date(d.uploaded_at) > pq.before) return false;
+  if (pq.sizeGt != null && d.size <= pq.sizeGt) return false;
+  if (pq.sizeLt != null && d.size >= pq.sizeLt) return false;
+  if (pq.terms.length) {
+    const hay =
+      `${d.title} ${d.filename} ${(d.tags || []).join(" ")} ${d.source || ""} ${d.sha256}`.toLowerCase();
+    for (const term of pq.terms) {
+      if (!hay.includes(term)) return false;
+    }
+  }
+  return true;
+}
+
+function highlight(text: string, needles: string[], color: string) {
+  if (!needles.length) return text;
+  const uniq = Array.from(new Set(needles.filter(Boolean))).sort((a, b) => b.length - a.length);
+  if (!uniq.length) return text;
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rx = new RegExp(`(${uniq.map(esc).join("|")})`, "ig");
+  const parts = text.split(rx);
+  return parts.map((part, i) =>
+    uniq.some((n) => part.toLowerCase() === n.toLowerCase()) ? (
+      <mark key={i} style={{ background: "transparent", color, fontWeight: 700 }}>{part}</mark>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default function LibraryPage() {
   const C = usePalette();
 
@@ -101,15 +209,12 @@ export default function LibraryPage() {
 
   const totalSize = useMemo(() => docs.reduce((s, d) => s + (d.size || 0), 0), [docs]);
 
+  const parsed = useMemo(() => parseQuery(search), [search]);
+
   const filteredDocs = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return docs;
-    return docs.filter(
-      (d) =>
-        d.title.toLowerCase().includes(q) ||
-        d.tags?.some((t) => t.toLowerCase().includes(q))
-    );
-  }, [docs, search]);
+    if (!search.trim()) return docs;
+    return docs.filter((d) => matchDoc(d, parsed));
+  }, [docs, search, parsed]);
 
   function tell(msg: string) {
     setNotice(msg);
@@ -180,13 +285,21 @@ export default function LibraryPage() {
     }
   }
 
-  // neutral button colors that read well in both themes
   const neutralBtnBg = readRootTheme() === "dark" ? "#1f2937" : "#e5e7eb";
   const neutralBtnFg = readRootTheme() === "dark" ? C.mainText : "#374151";
 
+  const highlightTerms = useMemo(() => {
+    const t = [...parsed.terms];
+    if (parsed.title) t.push(parsed.title);
+    if (parsed.file) t.push(parsed.file);
+    if (parsed.source) t.push(parsed.source);
+    if (parsed.sha) t.push(parsed.sha);
+    t.push(...parsed.tags);
+    return t.filter(Boolean);
+  }, [parsed]);
+
   return (
     <div style={{ padding: 24, color: C.mainText, minHeight: "100vh" }}>
-      {/* Header */}
       <div
         style={{
           marginBottom: 16,
@@ -200,12 +313,9 @@ export default function LibraryPage() {
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4, color: C.mainText }}>Library</h1>
           <div style={{ color: C.mutedText }}>
-            Ingested curriculum & guidance documents • {docs.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
-
+            Ingested curriculum & guidance documents • {filteredDocs.length}/{docs.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
           </div>
         </div>
-
-        {/* Upload Button */}
         <div style={{ display: "flex", gap: 8 }}>
           <input
             ref={inputRef}
@@ -238,13 +348,12 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      {/* Search bar */}
       <div style={{ marginBottom: 20 }}>
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search documents by title or tag..."
+          placeholder='Filter by title'
           style={{
             width: "100%",
             padding: "12px 16px",
@@ -258,7 +367,6 @@ export default function LibraryPage() {
         />
       </div>
 
-      {/* Notices */}
       {notice && (
         <div
           style={{
@@ -274,7 +382,6 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {/* Document grid */}
       <div
         style={{
           display: "grid",
@@ -282,7 +389,7 @@ export default function LibraryPage() {
           gap: 24,
         }}
       >
-        {docs.map((d) => (
+        {filteredDocs.map((d) => (
           <div
             key={d.id}
             style={{
@@ -324,10 +431,10 @@ export default function LibraryPage() {
                   }}
                   title={d.title}
                 >
-                  {d.title}
+                  {highlight(d.title, highlightTerms, C.buttonGradientEnd)}
                 </div>
                 <div style={{ color: C.mutedText, fontSize: 13, marginTop: 4 }}>
-                {(d.size / 1024 / 1024).toFixed(2)} MB • {new Date(d.uploaded_at).toLocaleString()}
+                  {(d.size / 1024 / 1024).toFixed(2)} MB • {new Date(d.uploaded_at).toLocaleString()}
                 </div>
                 {d.tags?.length ? (
                   <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -343,9 +450,17 @@ export default function LibraryPage() {
                           border: `1px solid ${C.border}`,
                         }}
                       >
-                        {t}
+                        {highlight(t, highlightTerms, C.buttonGradientEnd)}
                       </span>
                     ))}
+                  </div>
+                ) : null}
+                <div style={{ color: C.mutedText, fontSize: 12, marginTop: 6, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                  {highlight(d.filename, highlightTerms, C.buttonGradientEnd)}
+                </div>
+                {d.source ? (
+                  <div style={{ color: C.mutedText, fontSize: 12, marginTop: 2, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                    {highlight(d.source, highlightTerms, C.buttonGradientEnd)}
                   </div>
                 ) : null}
               </div>
@@ -402,9 +517,9 @@ export default function LibraryPage() {
         ))}
       </div>
 
-      {!docs.length && !busy && (
+      {!filteredDocs.length && !busy && (
         <div style={{ marginTop: 24, color: C.mutedText }}>
-          No documents yet. Click “Upload PDFs” to add files.
+          No results.
         </div>
       )}
     </div>

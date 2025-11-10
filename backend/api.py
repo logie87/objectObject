@@ -111,9 +111,9 @@ class MeSettings(BaseModel):
 
 # Reports
 REPORT_CATEGORIES = [
-    "Class Alignment Snapshot — Today’s Fire Map",
-    "Activity Fit Rollup — Worksheets Hurting the Group",
-    "Accommodation Compliance Summary — Check against core competencies and other requirements",
+    "Class Alignment",
+    "Activity Fit",
+    "Accommodation Compliance",
 ]
 
 class ReportMeta(BaseModel):
@@ -549,6 +549,246 @@ def _rebuild_reports_index() -> Dict[str, Dict]:
     idx["reports"] = existing
     _save_reports_index(idx)
     return idx
+
+
+def _create_pdf_report(
+    title: str,
+    category: str,
+    tags: Optional[List[str]] = None,
+    payload: Optional[dict] = None,  # OPTIONAL: pass the alignment result dict for richer content
+) -> Dict[str, str]:
+    """
+    Write a readable PDF into /data/reports and upsert /data/reports/index.json.
+    If ReportLab is available, render a proper report with tables/paragraphs.
+    Otherwise, fall back to a simple text PDF (still non-empty & viewable).
+
+    Returns: {"id": rid, "filename": filename}
+    """
+    ensure_reports_dir()
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # --- Build a safe, human-readable base filename
+    now = datetime.now()
+    now_str = now.strftime("%Y%m%d-%H%M%S")
+    safe_title = _safe_filename(title) or "report"
+    tmp_name = f"{safe_title}-{now_str}.pdf"
+    tmp_path = REPORTS_DIR / tmp_name
+
+    # --- Try ReportLab first
+    used_reportlab = False
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+
+        doc = SimpleDocTemplate(str(tmp_path), pagesize=letter, title=title)
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name="Meta", fontSize=9, leading=12, textColor=colors.grey))
+        story = []
+
+        # Title
+        story.append(Paragraph(title, styles["Title"]))
+        story.append(Spacer(1, 6))
+
+        # Meta line
+        meta_line = f"{category} • {now.isoformat(timespec='seconds')}Z"
+        if tags:
+            meta_line += " • " + ", ".join(tags)
+        story.append(Paragraph(meta_line, styles["Meta"]))
+        story.append(Spacer(1, 12))
+
+        # If payload (alignment result) is provided, summarize it
+        if isinstance(payload, dict):
+            meta = payload.get("meta", {}) or {}
+            matrix = payload.get("matrix", {}) or {}
+            details = payload.get("details", {}) or {}
+
+            students = list(meta.get("students", []) or matrix.get("students", []) or [])
+            worksheets = list(meta.get("worksheets", []) or matrix.get("worksheets", []) or [])
+            row_avgs = payload.get("row_averages", []) or []
+            col_avgs = payload.get("column_averages", []) or []
+
+            # High-level summary
+            hdr = (
+                f"Students: {len(students)} &nbsp;&nbsp; "
+                f"Worksheets: {len(worksheets)} &nbsp;&nbsp; "
+                f"Row avg: {', '.join(str(int(round(x))) for x in row_avgs) or '—'} &nbsp;&nbsp; "
+                f"Column avg: {', '.join(str(int(round(x))) for x in col_avgs) or '—'}"
+            )
+            story.append(Paragraph(hdr, styles["Normal"]))
+            story.append(Spacer(1, 10))
+
+            # If there is only one worksheet in details, make a per-student table
+            # Otherwise, just list worksheets
+            if details:
+                # Pick a worksheet deterministically (first by name)
+                ws_key = sorted(details.keys())[0]
+                per_ws = details.get(ws_key, {}) or {}
+
+                # Table header
+                data = [
+                    ["Student", "Understanding", "Accessibility", "Accommodation", "Engagement", "Overall"]
+                ]
+
+                # Add rows
+                for s in students or sorted(per_ws.keys()):
+                    d = per_ws.get(s, {}) if isinstance(per_ws.get(s, {}), dict) else {}
+                    def _grab(name):
+                        v = d.get(name)
+                        try:
+                            return int(round(float(v)))
+                        except Exception:
+                            return ""
+                    data.append([
+                        s,
+                        _grab("understanding_fit"),
+                        _grab("accessibility_fit"),
+                        _grab("accommodation_fit"),
+                        _grab("engagement_fit"),
+                        _grab("overall_alignment"),
+                    ])
+
+                tbl = Table(data, repeatRows=1)
+                tbl.setStyle(TableStyle([
+                    ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f0f0f0")),
+                    ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+                    ("GRID", (0,0), (-1,-1), 0.25, colors.grey),
+                    ("ALIGN", (1,1), (-1,-1), "CENTER"),
+                    ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0,0), (-1,0), 9),
+                    ("FONTSIZE", (0,1), (-1,-1), 9),
+                    ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#fafafa")]),
+                ]))
+                story.append(Paragraph(f"Worksheet: {ws_key}", styles["Heading3"]))
+                story.append(Spacer(1, 4))
+                story.append(tbl)
+                story.append(Spacer(1, 12))
+
+                # Add explanations (trimmed) if present
+                explanations = []
+                for s in students or per_ws.keys():
+                    exp = per_ws.get(s, {}).get("explanation")
+                    if isinstance(exp, str) and exp.strip():
+                        explanations.append((s, exp.strip()))
+                if explanations:
+                    story.append(Paragraph("Notes & Explanations", styles["Heading3"]))
+                    story.append(Spacer(1, 4))
+                    for s, exp in explanations:
+                        story.append(Paragraph(f"<b>{s}:</b> {exp}", styles["BodyText"]))
+                        story.append(Spacer(1, 4))
+
+            else:
+                # No details; list worksheets/students plainly
+                if worksheets:
+                    story.append(Paragraph("Worksheets", styles["Heading3"]))
+                    for w in worksheets:
+                        story.append(Paragraph(f"• {w}", styles["BodyText"]))
+                    story.append(Spacer(1, 8))
+                if students:
+                    story.append(Paragraph("Students", styles["Heading3"]))
+                    for s in students:
+                        story.append(Paragraph(f"• {s}", styles["BodyText"]))
+                    story.append(Spacer(1, 8))
+        else:
+            # No payload: add a simple stub so it's still useful
+            story.append(Paragraph("Summary will appear here when payload data is provided.", styles["BodyText"]))
+
+        # Finalize
+        doc.build(story)
+        used_reportlab = True
+    except Exception as e:
+        logger.warning(f"ReportLab not available or failed ({e}); using text-PDF fallback.")
+
+    if not used_reportlab:
+        # --- Fallback: build a small text PDF manually (Helvetica base font)
+        # Creates a visible page with a few lines of text; no external deps.
+        # Basic 1-page PDF with /Font resource and a content stream.
+        content_lines = [
+            title,
+            f"Category: {category}",
+            f"Generated: {now.isoformat(timespec='seconds')}Z",
+            f"Tags: {', '.join(tags or [])}" if tags else "Tags: —",
+        ]
+        try:
+            # Build a tiny text content stream
+            def _esc(s: str) -> str:
+                return s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+            y = 750
+            stream = "BT /F1 14 Tf 72 {} Td ({}) Tj ET\n".format(y, _esc(content_lines[0]))
+            y -= 20
+            for line in content_lines[1:]:
+                stream += "BT /F1 10 Tf 72 {} Td ({}) Tj ET\n".format(y, _esc(line))
+                y -= 14
+            stream_bytes = stream.encode("latin-1", "replace")
+            # Assemble simple PDF with 5 objects: catalog, pages, page, font, contents
+            objects = []
+            # 1: Catalog
+            objects.append("1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n")
+            # 2: Pages
+            objects.append("2 0 obj <</Type /Pages /Count 1 /Kids [3 0 R]>> endobj\n")
+            # 3: Page
+            objects.append(
+                "3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                "/Resources <</Font <</F1 4 0 R>>>> /Contents 5 0 R>> endobj\n"
+            )
+            # 4: Font
+            objects.append("4 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj\n")
+            # 5: Contents
+            objects.append(f"5 0 obj <</Length {len(stream_bytes)}>> stream\n".encode("latin-1") + stream_bytes + b"\nendstream\nendobj\n")
+
+            # Write with xref
+            with open(tmp_path, "wb") as f:
+                f.write(b"%PDF-1.4\n")
+                offsets = []
+                for obj in objects:
+                    offsets.append(f.tell())
+                    f.write(obj if isinstance(obj, bytes) else obj.encode("latin-1"))
+                xref_pos = f.tell()
+                f.write(f"xref\n0 {len(objects)+1}\n".encode("latin-1"))
+                f.write(b"0000000000 65535 f \n")
+                for off in offsets:
+                    f.write(f"{off:010d} 00000 n \n".encode("latin-1"))
+                f.write(
+                    (
+                        "trailer <</Size {size}/Root 1 0 R>>\nstartxref\n{start}\n%%EOF"
+                    ).format(size=len(objects)+1, start=xref_pos).encode("latin-1")
+                )
+        except Exception as e:
+            # As a last resort, drop back to the old minimal bytes (shouldn't happen often)
+            pdf_bytes = (
+                b"%PDF-1.4\n"
+                b"1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
+                b"2 0 obj <</Type /Pages /Count 1 /Kids [3 0 R]>> endobj\n"
+                b"3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]>> endobj\n"
+                b"xref\n0 4\n0000000000 65535 f \n0000000010 00000 n \n0000000061 00000 n \n0000000127 00000 n \n"
+                b"trailer <</Size 4/Root 1 0 R>>\nstartxref\n193\n%%EOF"
+            )
+            with open(tmp_path, "wb") as f:
+                f.write(pdf_bytes)
+            logger.warning(f"Text-PDF fallback also failed to render text ({e}); wrote minimal PDF.")
+
+    # --- Compute sha/id, rename to add id prefix, update index
+    sha = _sha256_file(tmp_path)
+    rid = sha[:16]
+    final_name = f"{rid}-{tmp_name}"
+    final_path = REPORTS_DIR / final_name
+    os.replace(tmp_path, final_path)
+
+    idx = _load_reports_index()
+    idx.setdefault("reports", {})[rid] = {
+        "id": rid,
+        "filename": final_name,
+        "title": title,
+        "size": final_path.stat().st_size,
+        "sha256": sha,
+        "generated_at": datetime.fromtimestamp(final_path.stat().st_mtime).isoformat(timespec="seconds") + "Z",
+        "category": category,
+        "tags": list(tags or []),
+    }
+    _save_reports_index(idx)
+    logger.info(f"Report PDF created: {final_name} (category={category})")
+    return {"id": rid, "filename": final_name}
 
 # ============================================================
 # ======================= JWT HELPERS ========================
@@ -1725,16 +1965,13 @@ async def search_suggest(s: Optional[str] = "", limit: int = 6, user=Depends(ver
 # ============================================================
 # =================== ALIGNMENT (IEP-SELECTED) ===============
 # ============================================================
-
-@app.post("/align/iep-selected", response_model=IEPAlignResponse)
 @app.post("/align/iep-selected", response_model=IEPAlignResponse)
 async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt)):
     """
     Run IEP alignment for an explicit subset and persist:
       - alignment_pct into each student's JSON
       - a pie-chart-friendly breakdown into /data/students/reports.json
-      - per-worksheet overall fit into /data/curriculum/index.json
-      - analyze-pane history into /data/curriculum/history.json using course|unit|filename keys
+      - a minimal PDF report into /data/reports (indexed for /reports UI)
     """
     # 1) Validate + resolve student names (parallel to IDs)
     student_ids = [s for s in (payload.student_ids or []) if isinstance(s, str) and s.strip()]
@@ -1807,7 +2044,7 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
             overall_from_cols = None
 
         u_vals, a11n_vals, acc_vals, eng_vals, overall_vals = [], [], [], [], []
-        for _, per_ws in details.items():
+        for ws, per_ws in details.items():
             row = per_ws.get(s_name)
             if not isinstance(row, dict):
                 continue
@@ -1824,6 +2061,7 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
             "engagement":    _avg_int(eng_vals),
         }
         overall = int(round(float(overall_from_cols))) if overall_from_cols is not None else _avg_int(overall_vals)
+
         per_student_stats[s_name] = {"overall": overall, "metrics": metrics}
 
     # 5) Persist: (a) alignment_pct into student JSONs, (b) reports store for pie charts
@@ -1831,13 +2069,12 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
     reports_store = _load_student_reports()
     reports_students = reports_store.setdefault("students", {})
 
-    now_iso = _now_iso()
     for s_name, stats in per_student_stats.items():
         sid = name_to_sid.get(s_name)
         if not sid:
             continue
 
-        # (a) write alignment_pct into the student's file
+        # (a) student file
         p = _student_file_for_id(sid)
         if p.exists():
             try:
@@ -1848,7 +2085,7 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
                 s_json = {}
             s_json["alignment_pct"] = int(stats["overall"])
             s_json["last_alignment"] = {
-                "updated_at": now_iso,
+                "updated_at": _now_iso(),
                 "overall": int(stats["overall"]),
                 "metrics": stats["metrics"],
                 "selection": {"courses": requested_courses, "units": list(requested_units)},
@@ -1858,9 +2095,9 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
                 json.dump(s_json, f, ensure_ascii=False, indent=2)
             os.replace(tmp, p)
 
-        # (b) update reports store (used by the UI pie charts)
+        # (b) pie-chart store
         reports_students[sid] = {
-            "updated_at": now_iso,
+            "updated_at": _now_iso(),
             "overall": int(stats["overall"]),
             "metrics": {
                 "understanding": int(stats["metrics"]["understanding"]),
@@ -1873,102 +2110,28 @@ async def align_iep_selected(payload: IEPAlignRequest, user=Depends(verify_jwt))
 
     _save_student_reports(reports_store)
 
-    # 6) Persist per-worksheet overall into curriculum root index.json + analyze history
-    # Build filename -> (course, unit) lookup from the root index constrained to the current selection
-    idx = _load_curriculum_root_index()
-    fname_to_course_unit: Dict[str, Tuple[str, str]] = {}
-    for course, units in selection.items():
-        cobj = (idx.get("courses", {}) or {}).get(course, {}) if isinstance(idx.get("courses"), dict) else {}
-        for unit in units:
-            for rec in cobj.get(unit, []) or []:
-                fn = _normalize_fname(rec.get("filename", ""))
-                if fn:
-                    fname_to_course_unit[fn] = (course, unit)
-
-    # Compute worksheet overall means and write history with exact course|unit keys
-    hist = _load_align_history()
-    per_course_overall: Dict[str, Dict[str, int]] = {}  # course -> {fname: mean}
-    for ws_fname, per_ws in (details or {}).items():
-        norm = _normalize_fname(ws_fname)
-        vals_overall, u_vals, a11n_vals, acc_vals, eng_vals = [], [], [], [], []
-        affected = []
-        for s_name, d in (per_ws or {}).items():
-            if not isinstance(d, dict):
-                continue
-            o = int(d.get("overall_alignment", 0))
-            u = int(d.get("understanding_fit", 0))
-            a = int(d.get("accessibility_fit", 0))
-            ac = int(d.get("accommodation_fit", 0))
-            e = int(d.get("engagement_fit", 0))
-            vals_overall.append(o)
-            u_vals.append(u); a11n_vals.append(a); acc_vals.append(ac); eng_vals.append(e)
-            if o < 70:
-                affected.append(s_name)
-
-        mean_overall = _avg_int(vals_overall)
-        # Attribute to the correct course/unit if we can, else skip index update but still store 'Multiple'
-        course_unit = fname_to_course_unit.get(norm)
-        if course_unit:
-            c, u = course_unit
-            per_course_overall.setdefault(c, {})[norm] = mean_overall
-
-            # History key uses exact course|unit|filename so /align/history works for the unit pane
-            metrics_sorted = sorted(
-                [("Understanding", _avg_int(u_vals)),
-                 ("Accessibility", _avg_int(a11n_vals)),
-                 ("Accommodation", _avg_int(acc_vals)),
-                 ("Engagement", _avg_int(eng_vals))],
-                key=lambda kv: kv[1]
-            )
-            consensus = []
-            for label, _score in metrics_sorted[:2]:
-                if label == "Accessibility":
-                    consensus.append("Provide captions/large-print & guided notes.")
-                elif label == "Accommodation":
-                    consensus.append("Offer scribe/reader and 1.5× time with chunking.")
-                elif label == "Understanding":
-                    consensus.append("Add step-by-step worked examples before tasks.")
-                elif label == "Engagement":
-                    consensus.append("Include choice of modality and shorter tasks.")
-            if not consensus:
-                consensus = ["Keep as-is; provide optional visual supports."]
-
-            evidence = (f"Overall {mean_overall}%. "
-                        f"U {_avg_int(u_vals)}%, Acc {_avg_int(a11n_vals)}%, "
-                        f"Accom {_avg_int(acc_vals)}%, Eng {_avg_int(eng_vals)}%.")
-            key = f"{c}|{u}|{norm}"
-            hist[key] = {"affected": affected, "consensus": consensus, "evidence": evidence}
-        else:
-            # If we can't resolve unit, store under 'Multiple' for visibility
-            evidence = (f"Overall {mean_overall}%. "
-                        f"U {_avg_int(u_vals)}%, Acc {_avg_int(a11n_vals)}%, "
-                        f"Accom {_avg_int(acc_vals)}%, Eng {_avg_int(eng_vals)}%.")
-            # Attribute to the first selected course for determinism
-            first_course = next(iter(selection.keys()))
-            key = f"{first_course}|Multiple|{norm}"
-            hist[key] = {"affected": affected, "consensus": ["Keep as-is; provide optional visual supports."], "evidence": evidence}
-
-    _save_align_history(hist)
-
-    # Push worksheet means into both per-unit sidecars and ROOT index.json
-    for course, units in selection.items():
-        ws_overall = per_course_overall.get(course, {})
-        if ws_overall:
-            _apply_course_fit_overrides(course, units, ws_overall)
-            # Also persist raw per-student details snapshot for Analyze modal browsing
-            try:
-                _persist_analysis_details(course, units, details)
-            except Exception as e:
-                logger.warning(f"Persist analysis details failed for {course}: {e}")
-
     logger.info(
         f"Alignment persisted for {len(per_student_stats)} students; "
-        f"courses={requested_courses}; units={list(requested_units)}; "
-        f"updated curriculum index for {sum(len(v) for v in per_course_overall.values())} worksheets."
+        f"courses={requested_courses}; units={list(requested_units)}"
     )
 
-    # 7) Return the original pipeline result (frontend already expects this)
+    # 6) Emit a minimal PDF into /data/reports and index it
+    try:
+        title = f"IEP Alignment — {len(per_student_stats)} students • {', '.join(sorted(requested_courses))}"
+        # Use the 'snapshot' category so it groups under your first bucket in UI
+        _create_pdf_report(
+            title=f"IEP Alignment — {len(per_student_stats)} students • {', '.join(sorted(requested_courses))}",
+            category=REPORT_CATEGORIES[0],
+            tags=["auto", "iep-selected"],
+            payload=result,
+        )
+
+    except Exception as e:
+        logger.warning(f"Failed to create IEP-selected PDF: {e}")
+
+    # 7) Return original pipeline result
     return result
+
 
 
 
@@ -2184,6 +2347,12 @@ async def align_course_selected(payload: CourseAlignRequest, user=Depends(verify
         f"Course alignment persisted: course={course}, units={sorted(list(requested_units))}, "
         f"students={students_count}, worksheets={worksheets_count}, overall={overall}"
     )
+
+    try:
+        title = f"Activity Fit Rollup — {course} • {len(requested_units)} unit(s) • {students_count} student(s)"
+        _create_pdf_report(title=title, category=REPORT_CATEGORIES[1], tags=["auto", "course-selected", course], payload=result)
+    except Exception as e:
+        logger.warning(f"Failed to create course-selected PDF: {e}")
 
     return result
 
