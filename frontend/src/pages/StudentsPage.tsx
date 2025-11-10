@@ -546,7 +546,7 @@ const StudentCard: React.FC<{
           }}
           onClick={() => onView(s.id)}
         >
-          open
+          Open
         </button>
         <button
           style={{
@@ -563,7 +563,7 @@ const StudentCard: React.FC<{
             alert("reports: quick-generate/view for this student (coming soon)")
           }
         >
-          reports
+          Reports
         </button>
       </div>
     </div>
@@ -1280,14 +1280,14 @@ export default function StudentsPage() {
                     }}
                   >
                     {t === "profile"
-                      ? "profile"
+                      ? "Profile"
                       : t === "goals"
-                      ? "iep goals"
+                      ? "Iep goals"
                       : t === "accom"
-                      ? "accommodations"
+                      ? "Accommodations"
                       : t === "notes"
-                      ? "notes & assessments"
-                      : "participants"}
+                      ? "Notes & assessments"
+                      : "Participants"}
                   </button>
                 ))}
               </div>
@@ -1635,7 +1635,7 @@ export default function StudentsPage() {
                           cursor: "pointer",
                         }}
                       >
-                        remove
+                        Remove
                       </button>
                     </div>
                   ))}
