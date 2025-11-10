@@ -571,3 +571,9 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     run_pipeline(args.iep_dir, args.worksheets_dir, args.out)
+
+
+
+
+# OUTPUT:
+# model='phi3' created_at='2025-11-10T01:43:13.0348531Z' done=True done_reason='stop' total_duration=3825816000 load_duration=1180650700 prompt_eval_count=1960 prompt_eval_duration=531637000 eval_count=164 eval_duration=2039309500 message=Message(role='assistant', content='```json\n{\n  "understanding_fit": 80,\n  "accessibility_fit": 95,\n  "accommodation_fit": 90,\n  "engagement_fit": 75,\n  "overall_alignment": 85,\n  "explanation": "The worksheet meets Maya\'s academic understanding goals by focusing on ratios and proportions within visual context. Accessibility is high due to clear instructions and choice in demonstrating learning that align with sensory needs. The provided accommodations are appropriate for her challenges, ensuring success potential. However, the engagement could be enhanced by integrating Maya\'s interests more directly into tasks."\n}\n```', thinking=None, images=None, tool_name=None, tool_calls=None)
