@@ -342,7 +342,7 @@ export default function CurriculumPage() {
                 padding: "10px 16px",
                 borderTop: `1px solid ${COLORS.divider}`,
                 alignItems: "center",
-                background: focused?.path === r.path ? COLORS.focusBg : "transparent",
+                // background: focused?.path === r.path ? COLORS.focusBg : "transparent",
                 cursor: "grab",
               }}
             >
@@ -406,7 +406,7 @@ export default function CurriculumPage() {
           </div>
           {focused && (
             <>
-              <div className="card" style={{ background: COLORS.headerBg }}>
+              <div className="card" style={{}}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ fontWeight: 700 }}>Group Fit</div>
                   {statusBadge(focused.fit)}
