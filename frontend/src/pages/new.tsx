@@ -84,9 +84,7 @@ export default function CurriculumPage() {
   );
 
   const allResources: Resource[] =
-    (data && activeCourse && activeUnit
-      ? data.courses[activeCourse][activeUnit]
-      : []) || [];
+    (data && activeCourse && activeUnit ? data.courses[activeCourse][activeUnit] : []) || [];
 
   const resources = useMemo(() => {
     let items = allResources;
@@ -116,9 +114,12 @@ export default function CurriculumPage() {
     };
     setData(next);
     try {
-      await apiPost(`/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`, {
-        order: newOrder.map((r) => r.filename),
-      });
+      await apiPost(
+        `/curriculum/${encodeURIComponent(activeCourse)}/${encodeURIComponent(activeUnit)}/reorder`,
+        {
+          order: newOrder.map((r) => r.filename),
+        }
+      );
     } catch {}
   };
 
@@ -181,9 +182,7 @@ export default function CurriculumPage() {
       >
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4 }}>Curriculum</h1>
-          <div style={{ color: COLORS.graySub }}>
-            Units • Resources • Alignment Overview
-          </div>
+          <div style={{ color: COLORS.graySub }}>Units • Resources • Alignment Overview</div>
         </div>
       </div>
 
@@ -229,16 +228,14 @@ export default function CurriculumPage() {
             border: `1px solid ${COLORS.border}`,
           }}
         >
-          <option>All Issues</option>
+          <option key="all">All Issues</option>
           {ISSUE_OPTIONS.map((i) => (
             <option key={i}>{i}</option>
           ))}
         </select>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <label style={{ fontSize: 12, color: COLORS.muted }}>
-            Min fit {minFit}%
-          </label>
+          <label style={{ fontSize: 12, color: COLORS.muted }}>Min fit {minFit}%</label>
           <input
             type="range"
             min={0}
@@ -274,22 +271,37 @@ export default function CurriculumPage() {
         <aside className="card" style={{ padding: 12 }}>
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Units</div>
           <div style={{ display: "grid", gap: 8 }}>
-            {units.map((u) => (
-              <button
-                key={u}
-                className={`unit-btn ${u === activeUnit ? "active" : ""}`}
-                onClick={() => {
-                  setActiveUnit(u);
-                  setFocused(null);
-                  setAnalysis(null);
-                }}
-              >
-                <span aria-hidden className="unit-dot" />
-                <span className="nav-label" style={{ color: "inherit" }}>
-                  {u}
-                </span>
-              </button>
-            ))}
+            {units.map((u) => {
+              const unitResources = data?.courses[activeCourse]?.[u] || [];
+              const minAlignment = Math.min(...unitResources.map((r) => r.fit.mean || 0));
+
+              let unitColor = "transparent";
+              if (minAlignment < 40) unitColor = COLORS.bad; // orange/red for below 40%
+              else if (minAlignment < 70) unitColor = COLORS.warn; // yellow for below 70%
+
+              return (
+                <button
+                  key={u}
+                  className={`unit-btn ${u === activeUnit ? "active" : ""}`}
+                  onClick={() => {
+                    setActiveUnit(u);
+                    setFocused(null);
+                    setAnalysis(null);
+                  }}
+                  style={{
+                    backgroundColor: unitColor,
+                    color: unitColor !== "transparent" ? "black" : "inherit",
+                    borderRadius: 6,
+                    padding: "6px 8px",
+                    textAlign: "left",
+                    border: "none",
+                  }}
+                >
+                  <span aria-hidden className="unit-dot" />
+                  <span className="nav-label">{u}</span>
+                </button>
+              );
+            })}
           </div>
         </aside>
 
@@ -306,7 +318,9 @@ export default function CurriculumPage() {
             <div>Resource</div>
             <div>Size</div>
             <div>Alignment</div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            >
               <span>Actions</span>
               <button
                 className="btn ghost"
@@ -342,7 +356,7 @@ export default function CurriculumPage() {
                 padding: "10px 16px",
                 borderTop: `1px solid ${COLORS.divider}`,
                 alignItems: "center",
-                // background: focused?.path === r.path ? COLORS.focusBg : "transparent",
+                background: focused?.path === r.path ? COLORS.focusBg : "transparent",
                 cursor: "grab",
               }}
             >
@@ -394,9 +408,7 @@ export default function CurriculumPage() {
           ))}
 
           {!resources.length && (
-            <div style={{ padding: 16, color: COLORS.muted }}>
-              No PDFs match current filters.
-            </div>
+            <div style={{ padding: 16, color: COLORS.muted }}>No PDFs match current filters.</div>
           )}
         </section>
 
@@ -406,7 +418,7 @@ export default function CurriculumPage() {
           </div>
           {focused && (
             <>
-              <div className="card" style={{}}>
+              <div className="card" style={{ background: COLORS.headerBg }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ fontWeight: 700 }}>Group Fit</div>
                   {statusBadge(focused.fit)}
@@ -417,7 +429,9 @@ export default function CurriculumPage() {
                 {(focused.issues || []).length > 0 && (
                   <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {(focused.issues || []).map((iss) => (
-                      <span key={iss} className="badge warn">■ {iss}</span>
+                      <span key={iss} className="badge warn">
+                        ■ {iss}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -435,9 +449,7 @@ export default function CurriculumPage() {
               </div>
 
               <div className="card" style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                  Consensus adaptation
-                </div>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Consensus adaptation</div>
                 {busyAnalyze && !analysis ? (
                   <div style={{ color: COLORS.muted }}>Analyzing…</div>
                 ) : (

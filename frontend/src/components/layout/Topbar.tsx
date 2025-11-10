@@ -255,8 +255,8 @@ export default function Topbar(){
     >
       <style>{`
         /* show the correct logo based on the theme set by ThemeSwitch */
-        .logo-img { display: inline-block; height: auto; }
-        .logo-img--dark { display: none; }
+        .logo-img { display: inline-block; height: auto; border-radius: 10px; }
+        .logo-img--dark { display: none; border-radius: 10px ; }
         :root[data-theme="dark"] .logo-img--light { display: none; }
         :root[data-theme="dark"] .logo-img--dark { display: inline-block; }
       `}</style>
@@ -306,7 +306,7 @@ export default function Topbar(){
               transform: 'translateY(-50%)',
               width: 32,
               height: 32,
-              borderRadius: '50%',
+              borderRadius: '15px',
               border: '1px solid #e5e7eb',
               background: '#fff',
               display: 'flex',
@@ -409,7 +409,7 @@ export default function Topbar(){
               alignItems: 'center',
               gap: 10,
               padding: '6px 10px',
-              borderRadius: 999,
+              borderRadius: "16px",
             }}
             onClick={() => setMenuOpen(v => !v)}
           >

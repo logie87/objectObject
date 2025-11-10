@@ -1,19 +1,82 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiDelete, apiGet, apiGetBlobUrl, apiPostForm, apiPut } from "../lib/api";
 
-const COLORS = {
+/* light & dark palettes keyed off :root[data-theme] or the 'dark' class */
+const LIGHT = {
   buttonGradientStart: "#3DAFBC",
   buttonGradientEnd: "#35598f",
-  deleteButton: "#c43b3bff",
+  deleteButton: "#ff6a59",
   cardBg: "#ffffff",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
   mutedText: "#6b7280",
-  mainText: "#374151",
-  avatarBg: "#f2f3f6ff",
+  mainText: "#111827",
+  avatarBg: "#f2f3f6",
   tagBg: "#f3f4f6",
   border: "#e5e7eb",
   noticeBg: "#f8fafc",
-  white: "#fff",
+  pageBg: "#ffffff",
+};
+const DARK = {
+  buttonGradientStart: "#35A2AF",
+  buttonGradientEnd: "#2C8E9A",
+  deleteButton: "#ff8b7f",
+  cardBg: "#0f172a", // deep slate
+  cardShadow: "0 8px 20px rgba(0,0,0,0.35)",
+  mutedText: "#9aa3b2",
+  mainText: "#e5e7eb",
+  avatarBg: "#111827",
+  tagBg: "#0b1222",
+  border: "#1f2937",
+  noticeBg: "#0b1222",
+  pageBg: "#0b1020",
+};
+
+/* read current theme from :root */
+type Theme = "light" | "dark";
+function readRootTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  const root = document.documentElement;
+  const attr = root.getAttribute("data-theme");
+  if (attr === "dark" || root.classList.contains("dark")) return "dark";
+  return "light";
+}
+
+/* react to outside theme changes (existing toggle updates :root) */
+function usePalette() {
+  const [theme, setTheme] = useState<Theme>(readRootTheme());
+  useEffect(() => {
+    const root = document.documentElement;
+    const mo = new MutationObserver(() => setTheme(readRootTheme()));
+    mo.observe(root, { attributes: true, attributeFilter: ["data-theme", "class"] });
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "theme") setTheme(readRootTheme());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      mo.disconnect();
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+  return theme === "dark" ? DARK : LIGHT;
+}
+
+/* icons inherit color via currentColor */
+const Icons = {
+  Document: () => (
+    <svg
+      width="40"
+      height="40"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  ),
 };
 
 type DocMeta = {
@@ -27,25 +90,9 @@ type DocMeta = {
   source?: string | null;
 };
 
-const Icons = {
-  Document: () => (
-    <svg
-      width="40"
-      height="40"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={COLORS.mainText}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  ),
-};
-
 export default function LibraryPage() {
+  const C = usePalette();
+
   const [docs, setDocs] = useState<DocMeta[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -122,8 +169,12 @@ export default function LibraryPage() {
     }
   }
 
+  // neutral button colors that read well in both themes
+  const neutralBtnBg = readRootTheme() === "dark" ? "#1f2937" : "#e5e7eb";
+  const neutralBtnFg = readRootTheme() === "dark" ? C.mainText : "#374151";
+
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, color: C.mainText, minHeight: "100vh" }}>
       <div
         style={{
           marginBottom: 16,
@@ -133,10 +184,9 @@ export default function LibraryPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 28, marginBottom: 4 }}>Library</h1>
-          <div style={{ color: COLORS.mutedText }}>
-            Ingested curriculum & guidance documents • {docs.length} files •{" "}
-            {(totalSize / 1024 / 1024).toFixed(1)} MB
+          <h1 style={{ fontSize: 28, marginBottom: 4, color: C.mainText }}>Library</h1>
+          <div style={{ color: C.mutedText }}>
+            Ingested curriculum & guidance documents • {docs.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
           </div>
         </div>
 
@@ -156,13 +206,13 @@ export default function LibraryPage() {
             style={{
               padding: "14px 20px",
               borderRadius: 12,
-              border: "none",
+              border: `1px solid ${C.border}`,
               fontWeight: 600,
               fontSize: 16,
               cursor: "pointer",
-              color: COLORS.white,
-              background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-              boxShadow: "0 4px 12px rgba(168,85,247,0.3)",
+              color: "#fff",
+              background: `linear-gradient(135deg, ${C.buttonGradientStart}, ${C.buttonGradientEnd})`,
+              boxShadow: C.cardShadow,
             }}
             onClick={() => inputRef.current?.click()}
             disabled={busy}
@@ -178,9 +228,9 @@ export default function LibraryPage() {
             marginBottom: 16,
             padding: "10px 12px",
             borderRadius: 12,
-            border: `1px solid ${COLORS.border}`,
-            background: COLORS.noticeBg,
-            color: COLORS.mainText,
+            border: `1px solid ${C.border}`,
+            background: C.noticeBg,
+            color: C.mainText,
           }}
         >
           {notice}
@@ -200,11 +250,13 @@ export default function LibraryPage() {
             style={{
               padding: 24,
               borderRadius: 16,
-              backgroundColor: COLORS.cardBg,
-              boxShadow: COLORS.cardShadow,
+              backgroundColor: C.cardBg,
+              boxShadow: C.cardShadow,
               display: "flex",
               flexDirection: "column",
               gap: 16,
+              border: `1px solid ${C.border}`,
+              color: C.mainText,
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -213,11 +265,12 @@ export default function LibraryPage() {
                   width: 64,
                   height: 64,
                   borderRadius: "50%",
-                  backgroundColor: COLORS.avatarBg,
+                  backgroundColor: C.avatarBg,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
+                  color: C.mainText,
                 }}
               >
                 <Icons.Document />
@@ -227,7 +280,6 @@ export default function LibraryPage() {
                   style={{
                     fontWeight: 700,
                     fontSize: 18,
-                    color: COLORS.mainText,
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
                     overflow: "hidden",
@@ -236,25 +288,11 @@ export default function LibraryPage() {
                 >
                   {d.title}
                 </div>
-                <div
-                  style={{
-                    color: COLORS.mutedText,
-                    fontSize: 13,
-                    marginTop: 4,
-                  }}
-                >
-                  {(d.size / 1024 / 1024).toFixed(2)} MB •{" "}
-                  {new Date(d.uploaded_at).toLocaleString()}
+                <div style={{ color: C.mutedText, fontSize: 13, marginTop: 4 }}>
+                  {(d.size / 1024 / 1024).toFixed(2)} MB • {new Date(d.uploaded_at).toLocaleString()}
                 </div>
                 {d.tags?.length ? (
-                  <div
-                    style={{
-                      marginTop: 6,
-                      display: "flex",
-                      gap: 6,
-                      flexWrap: "wrap",
-                    }}
-                  >
+                  <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {d.tags.map((t) => (
                       <span
                         key={t}
@@ -262,8 +300,9 @@ export default function LibraryPage() {
                           fontSize: 12,
                           padding: "3px 8px",
                           borderRadius: 999,
-                          background: COLORS.tagBg,
-                          color: COLORS.mainText,
+                          background: C.tagBg,
+                          color: C.mainText,
+                          border: `1px solid ${C.border}`,
                         }}
                       >
                         {t}
@@ -281,8 +320,8 @@ export default function LibraryPage() {
                   padding: "10px 0",
                   borderRadius: 12,
                   border: "none",
-                  background: "#e5e7eb",
-                  color: "#374151",
+                  background: neutralBtnBg,
+                  color: neutralBtnFg,
                   fontWeight: 650,
                   cursor: "pointer",
                 }}
@@ -296,7 +335,7 @@ export default function LibraryPage() {
                   padding: "10px 0",
                   borderRadius: 12,
                   border: "none",
-                  background: COLORS.buttonGradientStart,
+                  background: `linear-gradient(135deg, ${C.buttonGradientStart}, ${C.buttonGradientEnd})`,
                   color: "white",
                   fontWeight: 650,
                   cursor: "pointer",
@@ -309,11 +348,11 @@ export default function LibraryPage() {
                 style={{
                   padding: "10px 16px",
                   borderRadius: 12,
-                  border: "3px solid #ff6a59ff",
+                  border: `2px solid ${C.deleteButton}`,
                   cursor: "pointer",
                   fontWeight: 650,
-                  background: "none",
-                  color: "#ff6a59ff",
+                  background: "transparent",
+                  color: C.deleteButton,
                 }}
                 onClick={() => deleteDoc(d.id)}
                 title="Delete from library"
@@ -326,7 +365,7 @@ export default function LibraryPage() {
       </div>
 
       {!docs.length && !busy && (
-        <div style={{ marginTop: 24, color: COLORS.mutedText }}>
+        <div style={{ marginTop: 24, color: C.mutedText }}>
           No documents yet. Click “Upload PDFs” to add files.
         </div>
       )}
