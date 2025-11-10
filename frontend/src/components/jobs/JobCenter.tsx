@@ -1,3 +1,4 @@
+// components/jobs/jobCenter.tsx
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { apiPost } from "../../lib/api";
 
@@ -9,8 +10,8 @@ export type AlignPayload = {
 
 export type AlignResultMeta = {
   jobId: string;
-  startedAt: number;   // epoch ms
-  finishedAt?: number; // epoch ms
+  startedAt: number;
+  finishedAt?: number;
   summary?: {
     studentCount: number;
     worksheetCount: number;
@@ -81,26 +82,33 @@ export const JobCenterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isModalOpen, setIsModalOpen] = useState(false);
   const inflight = useRef<AbortController | null>(null);
 
-  // persist
+  // when true, a completed job will be cleared on modal close (used when opened via dock)
+  const [clearOnClose, setClearOnClose] = useState(false);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(job));
   }, [job]);
 
-  // if reloaded with "running", degrade gracefully: mark as idle-but-reopenable
   useEffect(() => {
     if (job.status === "running" && !inflight.current) {
-      // We don't actually know if a request was mid-flight; keep it "running"
-      // but allow user to reopen; if they re-run, we’ll start fresh.
-      // No auto-retry here to avoid double work.
+      // keep "running" visual state; no auto-retry
     }
   }, [job.status]);
 
   const open = useCallback(() => setIsModalOpen(true), []);
-  const close = useCallback(() => setIsModalOpen(false), []);
+
+  const close = useCallback(() => {
+    setIsModalOpen(false);
+    if (clearOnClose && job.status === "done") {
+      setClearOnClose(false);
+      setJob({ status: "idle", jobId: null, payload: null, meta: null, result: null, error: null });
+    }
+  }, [clearOnClose, job.status]);
 
   const clear = useCallback(() => {
     if (inflight.current) inflight.current.abort();
     inflight.current = null;
+    setClearOnClose(false);
     setJob({ status: "idle", jobId: null, payload: null, meta: null, result: null });
   }, []);
 
@@ -110,10 +118,8 @@ export const JobCenterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     let result: AlignResult | null = null;
     try {
-      // NOTE: backend is synchronous; this returns the full alignment object
       result = await apiPost<AlignResult>("/align/iep-selected", payload, { signal });
 
-      // compute summary
       const avgPerWorksheet: Record<string, number> = {};
       const avgPerStudent: Record<string, number> = {};
       const students = (result.matrix?.students ?? []) as string[];
@@ -151,7 +157,7 @@ export const JobCenterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         action: () => setIsModalOpen(true),
       });
     } catch (e: any) {
-      if (signal.aborted) return; // user aborted/cleared
+      if (signal.aborted) return;
       setJob(prev => ({ ...prev, status: "error", error: String(e?.message || e) }));
       toast({ title: "Alignment failed — click to retry", action: () => setIsModalOpen(true) });
     } finally {
@@ -164,12 +170,16 @@ export const JobCenterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const ctrl = new AbortController();
     inflight.current = ctrl;
     const jobId = `${Date.now()}`;
+    setClearOnClose(false);
     setJob({ status: "running", jobId, payload: p, meta: { jobId, startedAt: Date.now() }, result: null, error: null });
     setIsModalOpen(true);
     void runAlignment(p, jobId, ctrl.signal);
   }, [runAlignment]);
 
-  const reopenFromSidebar = useCallback(() => setIsModalOpen(true), []);
+  const reopenFromSidebar = useCallback(() => {
+    setIsModalOpen(true);
+    if (job.status === "done") setClearOnClose(true);
+  }, [job.status]);
 
   const ctx: Ctx = useMemo(() => ({
     job, start, open, close, clear, isModalOpen, reopenFromSidebar

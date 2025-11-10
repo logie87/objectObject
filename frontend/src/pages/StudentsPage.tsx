@@ -1,3 +1,4 @@
+// pages/StudentsPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../lib/api";
 import { useJobCenter } from "../components/jobs/JobCenter";
@@ -370,6 +371,9 @@ export default function StudentsPage() {
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [unitsDropdownOpen, setUnitsDropdownOpen] = useState(false);
 
+  // raw JSON local toggle
+  const [showRaw, setShowRaw] = useState(false);
+
   // refs
   const coursesInputRef = React.useRef<HTMLInputElement>(null);
   const unitsButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -410,7 +414,7 @@ export default function StudentsPage() {
   }
   const openEdit = openView;
 
-    function mutateActive(path: string[], value: any) {
+  function mutateActive(path: string[], value: any) {
     if (!active) return;
     const next: StudentFull = JSON.parse(JSON.stringify(active));
     if (!next.data) next.data = {};
@@ -456,14 +460,28 @@ export default function StudentsPage() {
     setActive({ ...active, data: { ...active.data, participants: arr } });
   }
 
-
-  // generate handler -> starts persistent job, modal stays closable
   const handleGenerate = () => {
     if (!selectedStudents.length || !selectedCourses.length || !selectedUnits.length) return;
     start({ students: selectedStudents, courses: selectedCourses, units: selectedUnits });
   };
 
-  // ===== render =====
+  function truncate(s: string, n: number) {
+    if (!s) return "";
+    return s.length > n ? s.slice(0, n - 1) + "…" : s;
+  }
+
+  function openRawInNewTab() {
+    try {
+      const raw = JSON.stringify(job.result, null, 2);
+      const blob = new Blob([raw], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      // no-op
+    }
+  }
+
   return (
     <div style={{ padding: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
@@ -496,14 +514,12 @@ export default function StudentsPage() {
         {filtered.map((s) => (<StudentCard key={s.id} s={s} onView={openView} onEdit={openEdit} COLORS={COLORS} />))}
       </div>
 
-      {/* ===== Persistent Generate/Result Modal (uses JobCenter state) ===== */}
       <ModalShell open={isModalOpen} onClose={closeJobModal} COLORS={COLORS}>
         <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
           <h3 style={{ fontSize: 20, fontWeight: 800, color: COLORS.mainText }}>
             {job.status === "running" ? "Generating report…" : job.status === "done" ? "Alignment result" : "Generate report"}
           </h3>
 
-          {/* If no job yet or prior error: show selectors */}
           {(job.status === "idle" || job.status === "error") && (
             <>
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
@@ -643,7 +659,6 @@ export default function StudentsPage() {
             </>
           )}
 
-          {/* Running state */}
           {job.status === "running" && (
             <div style={{ display: "grid", gap: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -671,7 +686,6 @@ export default function StudentsPage() {
             </div>
           )}
 
-          {/* Done state: compact summary + raw/open */}
           {job.status === "done" && (
             <div style={{ display: "grid", gap: 16 }}>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -679,17 +693,65 @@ export default function StudentsPage() {
                 <Stat title="Students" value={String(job.meta?.summary?.studentCount ?? 0)} COLORS={COLORS} />
                 <Stat title="Worksheets" value={String(job.meta?.summary?.worksheetCount ?? 0)} COLORS={COLORS} />
               </div>
+
               <SectionCard title="Per student average" COLORS={COLORS}>
                 <ListKV obj={job.meta?.summary?.avgPerStudent || {}} COLORS={COLORS} />
               </SectionCard>
+
               <SectionCard title="Per worksheet average" COLORS={COLORS}>
                 <ListKV obj={job.meta?.summary?.avgPerWorksheet || {}} COLORS={COLORS} />
               </SectionCard>
-              <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={closeJobModal}
-                  style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: `1px solid ${COLORS.border}`,
+
+              <SectionCard title="Worksheet alignment breakdown" COLORS={COLORS}>
+                <div style={{ display: "grid", gap: 10 }}>
+                  {(job.result?.matrix?.worksheets || []).map((w: string, idx: number) => {
+                    const rowAvg = Array.isArray(job.result?.row_averages) ? job.result.row_averages[idx] : undefined;
+                    const students: string[] = job.result?.matrix?.students || [];
+                    return (
+                      <div key={w} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                          <div style={{ fontWeight: 800, color: COLORS.mainText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w}</div>
+                          <div style={{ fontWeight: 900, color: COLORS.mainText }}>{rowAvg != null ? `${Math.round(rowAvg)}%` : "—"}</div>
+                        </div>
+                        <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                          {students.map((stu) => {
+                            const detail = job.result?.details?.[w]?.[stu] || {};
+                            const u = detail.understanding_fit, a = detail.accessibility_fit, ac = detail.accommodation_fit, e = detail.engagement_fit, o = detail.overall_alignment;
+                            return (
+                              <div key={stu} style={{ display: "grid", gap: 6 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                  <div style={{ color: COLORS.mutedText, fontSize: 12 }}>{stu}</div>
+                                  <div style={{ fontWeight: 700, color: COLORS.mainText }}>{o != null ? `${o}%` : "—"}</div>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 6 }}>
+                                  <MiniMetric label="Understanding" value={u} COLORS={COLORS} />
+                                  <MiniMetric label="Accessibility" value={a} COLORS={COLORS} />
+                                  <MiniMetric label="Accommodation" value={ac} COLORS={COLORS} />
+                                  <MiniMetric label="Engagement" value={e} COLORS={COLORS} />
+                                </div>
+                                {!!detail.explanation && (
+                                  <div style={{ fontSize: 12, color: COLORS.mutedText }}>{truncate(String(detail.explanation), 220)}</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button onClick={() => setShowRaw(!showRaw)}
+                  style={{ flex: "0 0 auto", padding: "12px 14px", borderRadius: 12, border: `1px solid ${COLORS.border}`,
                            background: "transparent", color: COLORS.mainText, fontWeight: 600, cursor: "pointer" }}>
-                  Close
+                  {showRaw ? "Hide raw JSON" : "View raw JSON"}
+                </button>
+                <button onClick={openRawInNewTab}
+                  style={{ flex: "0 0 auto", padding: "12px 14px", borderRadius: 12, border: `1px solid ${COLORS.border}`,
+                           background: "transparent", color: COLORS.mainText, fontWeight: 600, cursor: "pointer" }}>
+                  Open raw JSON
                 </button>
                 <button
                   onClick={() => {
@@ -703,10 +765,33 @@ export default function StudentsPage() {
                   style={{
                     flex: 1, padding: "12px 0", borderRadius: 12,
                     background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-                    color: "white", fontWeight: 700, border: "none", cursor: "pointer"
+                    color: "white", fontWeight: 700, border: "none", cursor: "pointer", minWidth: 220
                   }}
                 >
                   Download raw JSON
+                </button>
+              </div>
+
+              {showRaw && (
+                <div style={{
+                  border: `1px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden",
+                  background: isDark ? "#0a0f1f" : "#0b1020"
+                }}>
+                  <div style={{ padding: 10, fontSize: 12, color: "#fff", background: isDark ? "#111827" : "#1f2937" }}>Raw JSON (read-only)</div>
+                  <pre style={{
+                    margin: 0, padding: 12, maxHeight: 280, overflow: "auto",
+                    color: "#e5e7eb", fontSize: 12, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word"
+                  }}>
+{JSON.stringify(job.result, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={closeJobModal}
+                  style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: `1px solid ${COLORS.border}`,
+                           background: "transparent", color: COLORS.mainText, fontWeight: 600, cursor: "pointer" }}>
+                  Close
                 </button>
               </div>
             </div>
@@ -714,15 +799,13 @@ export default function StudentsPage() {
         </div>
       </ModalShell>
 
-      {/* full student modal*/}
-        <ModalShell
+      <ModalShell
         open={!!(modalOpen && active)}
         onClose={() => setModalOpen(false)}
         COLORS={COLORS}
         width="min(100%, 980px)"
         height="82vh"
       >
-        {/* header */}
         <div
           style={{
             padding: 18,
@@ -764,7 +847,6 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          {/* tabs */}
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             {["profile", "goals", "accom", "notes", "people"].map((t) => (
               <button
@@ -794,7 +876,6 @@ export default function StudentsPage() {
           </div>
         </div>
 
-        {/* scrollable content */}
         <div
           style={{
             padding: 18,
@@ -1020,6 +1101,14 @@ function ListKV({ obj, COLORS }: { obj: Record<string, number>; COLORS: typeof T
           <span style={{ fontWeight: 700, color: COLORS.mainText }}>{Math.round((v ?? 0) * 10) / 10}%</span>
         </div>
       ))}
+    </div>
+  );
+}
+function MiniMetric({ label, value, COLORS }: { label: string; value: number | undefined; COLORS: typeof THEME_COLORS.light }) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "8px 10px" }}>
+      <div style={{ fontSize: 11, color: COLORS.mutedText, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontWeight: 800, color: COLORS.mainText }}>{value != null ? `${Math.round(value)}%` : "—"}</div>
     </div>
   );
 }
