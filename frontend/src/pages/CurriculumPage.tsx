@@ -310,7 +310,7 @@ export default function CurriculumPage() {
               <span>Actions</span>
               <button
                 className="btn ghost"
-                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400 }}
+                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400 , color: "green",}}
                 onClick={() => {
                   const input = document.createElement("input");
                   input.type = "file";
@@ -347,6 +347,7 @@ export default function CurriculumPage() {
               }}
             >
               <button
+                className="btn resources"
                 onClick={() => openResource(r)}
                 style={{
                   textAlign: "left",
