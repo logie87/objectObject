@@ -21,6 +21,7 @@ import os
 import re
 import sys
 import tempfile
+import logging
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
@@ -32,12 +33,19 @@ from pdf2image import convert_from_path
 import pytesseract
 from PIL import Image
 
+
+from llm import run_llm
+from logger import SimpleAppLogger
+
 # LLM bindings
 # from llama_cpp import Llama
 
-import ollama
 
 # ---------- Configuration / Schema ----------
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+LOG_DIR = BASE_DIR / "logs"
 
 MODEL_TEMPERATURE = 0.0
 MODEL_MAX_TOKENS = 512
@@ -55,6 +63,9 @@ EXPECTED_KEYS = [
 ]
 
 # ---------- Helpers ----------
+
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+logger = SimpleAppLogger(str(LOG_DIR), "alignment_pipeline", logging.INFO).get_logger()
 
 
 def safe_load_json_file(path: Path) -> Dict:
@@ -82,7 +93,7 @@ def extract_text_from_searchable_pdf(path: Path) -> str:
                 txt = ""
             text_chunks.append(txt)
     except Exception as e:
-        print(f"[warn] PyPDF2 failed for {path}: {e}")
+        logger.warning(f"PyPDF2 failed for {path}: {e}")
     return "\n".join(text_chunks).strip()
 
 
@@ -97,14 +108,14 @@ def ocr_pdf(path: Path, dpi=300, pages_limit=None) -> str:
             txt = pytesseract.image_to_string(img)
             text_chunks.append(txt)
     except Exception as e:
-        print(f"[warn] OCR failed for {path}: {e}")
+        logger.warning(f"OCR failed for {path}: {e}")
     return "\n".join(text_chunks).strip()
 
 
 def extract_text_from_pdf(path: Path, ocr_if_empty=True, pages_limit=None) -> str:
     text = extract_text_from_searchable_pdf(path)
     if (not text or len(text) < 50) and ocr_if_empty:
-        print(f"[info] Performing OCR for (probably scanned) PDF: {path}")
+        logger.info(f"Performing OCR for (probably scanned) PDF: {path}")
         text = ocr_pdf(path, pages_limit=pages_limit)
     return text
 
@@ -267,29 +278,6 @@ def compile_alignment_prompt(
     return prompt
 
 
-# ---------- LLM Call ----------
-
-
-def run_llm(prompt: str, model: str = "phi3") -> str:
-    """
-    Use ollama Python client if installed. API may change; this is a best-effort wrapper.
-    """
-    response = ollama.chat(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-    )
-    # ensure it's string
-    # print(response)
-
-    return response.message.content
-    # return str(response)
-
-
 # ---------- Response Parsing & Normalization ----------
 
 
@@ -382,8 +370,15 @@ def evaluate_alignment_for_pair(
         student, worksheet_text, worksheet_id, worksheet_title
     )
     raw_output = run_llm(prompt=prompt)
-    print(raw_output)
-    parsed_json = json.loads(raw_output)
+    # print(raw_output)
+    logger.info(
+        f"LLM Output for {student}, {worksheet_title} [{worksheet_text[:30]}]: {raw_output}"
+    )
+    try:
+        parsed_json = json.loads(raw_output.strip("`json").strip())
+    except Exception as e:
+        parsed_json = None
+        logger.warning(f"Failed to parse JSON from LLM [Output: {raw_output}]: {e}")
     # parsed_json, raw_json_text = extract_json_from_text(raw_output)
     if not parsed_json:
         # Attempt a second pass: ask the model to respond in JSON only (rare)
@@ -446,9 +441,9 @@ def collect_worksheets_texts(worksheets_dir: Path) -> Dict[str, Dict]:
             try:
                 text = extract_text_from_file(fpath)
                 if not text:
-                    print(f"[warn] No text found in {fpath}")
+                    logger.warning(f"No text found in {fpath}")
             except Exception as e:
-                print(f"[warn] Failed to extract text from {fpath}: {e}")
+                logger.warning(f"Failed to extract text from {fpath}: {e}")
                 text = ""
             worksheets[worksheet_id] = {
                 "text": text,
@@ -477,12 +472,12 @@ def run_pipeline(iep_dir: str, worksheets_dir: str, out_path: str):
     # Load IEPs
     students = load_ieps_from_dir(iep_dir_p)
     student_names = [s.student_name for s in students]
-    print(f"[info] Loaded {len(students)} student profiles: {student_names}")
+    logger.info(f"Loaded {len(students)} student profiles: {student_names}")
 
     # Extract worksheets
     worksheets = collect_worksheets_texts(worksheets_dir_p)
     worksheet_ids = list(worksheets.keys())
-    print(f"[info] Found {len(worksheets)} worksheet files")
+    logger.info(f"Found {len(worksheets)} worksheet files")
 
     # Results map: worksheet_id -> student -> overall score
     results_overall = {wid: {} for wid in worksheet_ids}
@@ -514,7 +509,7 @@ def run_pipeline(iep_dir: str, worksheets_dir: str, out_path: str):
         "details": full_results,
     }
     write_json_file(api_payload, out_p)
-    print(f"[info] Wrote results to {out_p}")
+    logger.info(f"[info] Wrote results to {out_p}")
 
 
 # ---------- CLI ----------
