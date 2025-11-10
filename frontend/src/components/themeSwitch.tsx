@@ -219,12 +219,3 @@ export default function ThemeSwitch() {
     </>
   );
 }
-
-/*
-  usage:
-  - import ThemeSwitch from "./themeSwitch";
-  - drop <ThemeSwitch /> into your header/nav.
-  - style your app using tailwind's `dark:` or via [data-theme="dark"].
-  - no external css is required, but you can move these styles to a css/module if you prefer.
-  note: comments are kept in lowercase per user preference.
-*/
