@@ -1,49 +1,88 @@
 // themeSwitch.tsx
 // a self-contained, accessible theme switch component
 // stores user preference, respects system preference, and toggles both `document.documentElement.classList` (for tailwind) and `data-theme` (for plain css)
+(() => {
+  try {
+    const root = document.documentElement;
+    const stored = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
+    const theme = stored === "light" || stored === "dark"
+      ? stored
+      : (prefersDark ? "dark" : "light");
 
-import { useEffect, useMemo, useState } from "react";
+    root.classList.toggle("dark", theme === "dark"); // tailwind
+    root.setAttribute("data-theme", theme);          // plain css
+  } catch {
+    // ignore (private mode / disabled storage)
+  }
+})();
+
+
+import { useEffect, useState } from "react";
+
+// keep keys/types in one place
+type Theme = "light" | "dark";
+const THEME_KEY = "theme";
+
+// apply the theme to :root and persist it
+function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+  const isDark = theme === "dark";
+  // tailwind's dark mode uses a class on the root element
+  root.classList.toggle("dark", isDark);
+  // expose to plain css as well
+  root.setAttribute("data-theme", theme);
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // ignore write errors (private mode, etc.)
+  }
+}
+
+// read initial theme preference from storage or system
+function getInitialTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    // ignore read errors
+  }
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return "light";
+}
 
 export default function ThemeSwitch() {
-  // figure out initial theme once (localstorage > system preference > light)
-  const initialTheme = useMemo<"light" | "dark">(() => {
-    try {
-      const stored = localStorage.getItem("theme");
-      if (stored === "light" || stored === "dark") return stored;
-    } catch {}
-    if (typeof window !== "undefined" && window.matchMedia) {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-    }
-    return "light";
-  }, []);
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
 
-  const [theme, setTheme] = useState<"light" | "dark">(initialTheme);
-
-  // apply theme to <html>
+  // when this component mounts, make sure the theme matches our state
   useEffect(() => {
-    const root = document.documentElement;
-    const isDark = theme === "dark";
+    applyTheme(theme);
+  }, []); // run once; mainlayout also applies pre-paint
 
-    // toggle tailwind's dark class (if you're using it)
-    root.classList.toggle("dark", isDark);
-
-    // set a helpful attribute for plain css
-    root.setAttribute("data-theme", theme);
-
-    // persist between visits
-    try {
-      localStorage.setItem("theme", theme);
-    } catch {}
-  }, [theme]);
+  // respond to cross-tab changes so the toggle stays in sync
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === THEME_KEY && (e.newValue === "light" || e.newValue === "dark")) {
+        setTheme(e.newValue);
+        applyTheme(e.newValue);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // accessible label + pressed state
   const label = theme === "dark" ? "switch to light mode" : "switch to dark mode";
 
-  function toggleTheme() {
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
-  }
+  const toggleTheme = () => {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    applyTheme(next);
+  };
 
   return (
     <>
