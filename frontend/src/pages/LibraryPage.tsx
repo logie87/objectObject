@@ -17,8 +17,8 @@ const LIGHT = {
   pageBg: "#ffffff",
 };
 const DARK = {
-  buttonGradientStart: "#35A2AF",
-  buttonGradientEnd: "#2C8E9A",
+  buttonGradientStart: "#3DAFBC",
+  buttonGradientEnd: "#35598f",
   deleteButton: "#ff8b7f",
   cardBg: "#0f172a", // deep slate
   cardShadow: "0 8px 20px rgba(0,0,0,0.35)",

@@ -16,7 +16,7 @@ const COLORS = {
   pieGradientEnd: "#22c55e",
   pieEmpty: "#e5e7eb",
   buttonGradientStart: "#3DAFBC",
-  buttonGradientEnd: "#3DAFBC",
+  buttonGradientEnd: "#35598f",
   spinnerTrack: "#e5e7eb",
   spinnerArc: "#ec4899",
   cardShadow: "0 6px 18px rgba(0,0,0,0.08)",
