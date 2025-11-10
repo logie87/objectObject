@@ -1,0 +1,8 @@
+pypdf2>=3.0.0
+pdf2image>=1.16.0
+pytesseract>=0.3.10
+pillow>=9.0.0
+tqdm>=4.64.0
+python-multipart>=0.0.5
+
+ollama

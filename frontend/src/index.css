@@ -1,7 +1,8 @@
+/* root theme variables (light by default) */
 :root{
-  --surface-100: #fefcfa;--surface-200: #faf7f1; --surface-300: #f8f3ea; --surface-400: #f3e9da; --surface-500: #f0e4d1; --surface-600: #dacfbe; --surface-700: #aaa294; --surface-800: #847d73; --surface-900: #656058;
+  --surface-100: #fefcfa; --surface-200: #faf7f1; --surface-300: #f8f3ea; --surface-400: #f3e9da; --surface-500: #f0e4d1; --surface-600: #dacfbe; --surface-700: #aaa294; --surface-800: #847d73; --surface-900: #656058;
   --text-100:#b5b7bc; --text-200:#92959c; --text-300:#60646e; --text-400:#414652; --text:#111827;
-  
+
   --panel:#fff;  --muted:#6b7280;
   --primaryA:#a78bfa; --primaryB:#c56e6e; --primaryC:#ec4899;
   --radius-lg:16px; --radius-xl:24px;
@@ -10,6 +11,7 @@
   --shadow-lg:0 18px 40px rgba(0,0,0,.12);
 }
 
+/* reset + globals */
 *{box-sizing:border-box}
 html,body,#root{height:100%}
 html,body{
@@ -21,8 +23,8 @@ html,body{
 }
 
 a{color:inherit;text-decoration:none}
-button,input{font:inherit ; transition-duration: 0.15s;}
-button:hover {
+button,input{font:inherit; transition-duration: 0.15s;}
+button:hover{
   background:var(--surface-100);
   transition-duration: 0.15s;
   transform:scale(1.05);
@@ -30,6 +32,7 @@ button:hover {
   box-shadow:var(--shadow-md);
 }
 
+/* layout */
 .app-shell{
   display:grid;
   grid-template-columns:260px 1fr;
@@ -40,18 +43,17 @@ button:hover {
   height:100%;
 }
 
-/* Sidebar: keep icons strictly white, no color */
+/* sidebar: keep icons strictly white, no color */
 .sidebar{
   grid-area:sidebar;
   background:linear-gradient(135deg,var(--surface-100),var(--surface-100) 50%,var(--surface-100));
   border: 1px solid var(--surface-400);
   padding:20px 14px; overflow:auto; margin: .5rem; border-radius: 15px;
   box-shadow: 3px 5px 5px rgba(0,0,0,.06);
-
 }
 
-/* Topbar full width above sidebar */
-.topbar {
+/* topbar full width above sidebar */
+.topbar{
   grid-area: topbar;
   position: sticky;
   top: 0;
@@ -59,7 +61,7 @@ button:hover {
   background: var(--panel);
   border-bottom: 1px solid #e5e7eb;
   display: flex;
-  justify-content: center; /* centers items horizontally */
+  justify-content: center;
   align-items: center;
   height: 72px;
   padding: 0 20px;
@@ -68,18 +70,19 @@ button:hover {
 
 .content{grid-area:content; overflow:auto; padding:24px}
 
+/* buttons */
 .btn{
   display:inline-flex; align-items:center; gap:10px;
   background:#111827; color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer;
   box-shadow:var(--shadow-sm);
 }
-
 .btn.ghost{background:#f3f4f6;color:#111827}
 .btn.flat{background:#fff;border:1px solid #e5e7eb;color:#111827}
 .btn.primary{background:linear-gradient(135deg,var(--primaryA),var(--primaryC))}
 .btn:focus-visible{outline:3px solid rgba(167,139,250,.5)}
 
-.search {
+/* search */
+.search{
   display: flex;
   align-items: center;
   gap: 10px;
@@ -89,15 +92,14 @@ button:hover {
   margin: 2rem;
   padding: 10px 14px;
   width: 100%;
-  /* max-width: 600px; optional: controls search bar width */
 }
 .search input{flex:1;border:none;background:transparent;outline:none}
 
-.logo{
-  display:flex; align-items:center; gap:10px; font-weight:800;
-}
-.logo-badge{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--primaryA),var(--primaryC));box-shadow:var(--shadow-md)}
+/* logo */
+.logo{ display:flex; align-items:center; gap:10px; font-weight:800; }
+.logo-badge{ width:36px; height:36px; border-radius:12px; background:linear-gradient(135deg,var(--primaryA),var(--primaryC)); box-shadow:var(--shadow-md); }
 
+/* nav */
 .nav-btn{
   transition-duration: 0.15s;
   width:100%; display:flex; align-items:center; gap:12px;
@@ -117,24 +119,28 @@ button:hover {
 }
 .nav-label{font-weight:600}
 
+/* headers */
 .header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:4px 0 18px}
 .header h1{margin:0;font-size:32px;font-weight:800}
 .header .sub{color:var(--muted)}
 
+/* panels/cards/grid */
 .panel{background:var(--panel);border-radius:var(--radius-xl);box-shadow:var(--shadow-md)}
 .grid{display:grid;gap:16px}
 .grid.files{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .card{background:var(--panel);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);transition:transform .15s,box-shadow .15s,background .15s}
 .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
 
+/* badges */
 .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
 .badge.good{background:#e8fff3;color:#0f766e}
 .badge.warn{background:#fff7e6;color:#a16207}
 .badge.bad{background:#ffecec;color:#b91c1c}
 
-/* Minimal white icon containers */
+/* minimal white icon containers */
 .icon-24{width:24px;height:24px;display:inline-block}
 
+/* unit buttons */
 .unit-btn{
   display:flex; align-items:center; gap:10px; justify-content:flex-start;
   width:100%; padding:10px 12px; border-radius:12px; border:1px solid #e5e7eb;
@@ -150,17 +156,106 @@ button:hover {
 .unit-btn.active{ background:#eef2ff; border-color:#c7d2fe }
 .unit-dot{ width:8px; height:8px; border-radius:999px; background:#6366f1 }
 
-.curric-btn {
-  margin: 1rem;
-  
+/* misc */
+.curric-btn { margin: 1rem; }
+.curpanel { min-height: 80vh; }
+.logo-img{ width:36px; height:36px; object-fit:cover; box-shadow: var(--shadow-md); }
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* dark theme overrides (activated by <html data-theme="dark">) */
+/* these swap variables so the rest of the ui updates automatically */
+:root[data-theme="dark"]{
+  /* surfaces: darkest -> lightest */
+  --surface-100:#0b0f14;
+  --surface-200:#0f141b;
+  --surface-300:#121923;
+  --surface-400:#17202c;
+  --surface-500:#1d2735;
+  --surface-600:#273246;
+  --surface-700:#3b465a;
+  --surface-800:#505d76;
+  --surface-900:#6b7792;
+
+  /* text (light on dark) */
+  --text-100:#8d98aa;
+  --text-200:#a6b0bf;
+  --text-300:#c1c8d4;
+  --text-400:#d6dce6;
+  --text:#e9edf4;
+
+  /* panels + subtle accents */
+  --panel:#111723;
+  --muted:#9aa3b2;
+
+  /* brand can stay the same; tweak if you want deeper tones */
+  --primaryA:#a78bfa;
+  --primaryB:#c56e6e;
+  --primaryC:#ec4899;
+
+  /* shadows tuned for dark */
+  --shadow-sm:0 1px 2px rgba(0,0,0,.5);
+  --shadow-md:0 8px 20px rgba(0,0,0,.35);
+  --shadow-lg:0 18px 40px rgba(0,0,0,.4);
 }
 
-.curpanel {
-  min-height: 80vh;
+/* dark: base background + text */
+:root[data-theme="dark"] body{
+  background:var(--surface-100);
+  color:var(--text);
 }
 
-
-.logo-img{
-  width:36px; height:36px; object-fit:cover;
-  box-shadow: var(--shadow-md);
+/* dark: sidebar */
+:root[data-theme="dark"] .sidebar{
+  background:linear-gradient(135deg,var(--surface-100),var(--surface-100) 50%,var(--surface-100));
+  border-color: var(--surface-400);
+  box-shadow: 3px 5px 5px rgba(0,0,0,.4);
 }
+
+/* dark: topbar */
+:root[data-theme="dark"] .topbar{
+  background: var(--panel);
+  border-bottom:1px solid var(--surface-400);
+  box-shadow:0 2px 10px rgba(0,0,0,.5);
+}
+
+/* dark: buttons */
+:root[data-theme="dark"] .btn{
+  background:#e5e7eb;
+  color:#111827;
+}
+:root[data-theme="dark"] .btn.ghost{
+  background:var(--surface-300);
+  color:var(--text);
+}
+:root[data-theme="dark"] .btn.flat{
+  background:var(--panel);
+  border:1px solid var(--surface-400);
+  color:var(--text-400);
+}
+
+/* dark: search */
+:root[data-theme="dark"] .search{
+  background: var(--surface-300);
+  border:1px solid var(--surface-400);
+}
+
+/* dark: nav hover */
+:root[data-theme="dark"] .nav-btn:hover{
+  background:var(--surface-400);
+}
+
+/* dark: unit buttons */
+:root[data-theme="dark"] .unit-btn{
+  background:var(--surface-300);
+  border-color:var(--surface-400);
+  color:var(--text);
+}
+:root[data-theme="dark"] .unit-btn.active{
+  background:#1b2240; /* subtle indigo highlight */
+  border-color:#334155;
+}
+
+/* dark: badges for readability */
+:root[data-theme="dark"] .badge.good{background:#0a2a22;color:#49d2b8}
+:root[data-theme="dark"] .badge.warn{background:#2a220a;color:#facc15}
+:root[data-theme="dark"] .badge.bad{background:#2b0e0e;color:#fb7185}

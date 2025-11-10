@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPut, apiGetBlobUrl } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import ThemeSwitch from "../themeSwitch";
 
 type Me = {
   id: number;
@@ -451,10 +452,22 @@ export default function Topbar(){
                 zIndex: 50,
               }}
             >
+              
               <div style={{ padding: 8, borderBottom: '1px solid #f1f5f9', marginBottom: 8 }}>
                 <div style={{ fontWeight: 800 }}>{me?.name || 'User'}</div>
                 <div style={{ color: '#6b7280', fontSize: 12 }}>{me?.email}</div>
               </div>
+              
+              {/* theme switch */}
+              <div style={{
+                margin: 10, 
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr', // Defines 3 equal-width columns
+              }}>
+                Theme
+                <ThemeSwitch />
+              </div>
+              
 
               <button
                 className="btn flat"
