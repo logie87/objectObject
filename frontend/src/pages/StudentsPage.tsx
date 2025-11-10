@@ -352,7 +352,7 @@ const AutocompleteMulti: React.FC<{
               ))
             ) : (
               <div style={{ padding: "8px 12px", color: COLORS.mutedText }}>
-                no match
+                No match
               </div>
             )}
           </div>
@@ -998,7 +998,7 @@ export default function StudentsPage() {
                   color: COLORS.mainText,
                 }}
               >
-                select units
+                Select units
               </label>
               <div style={{ position: "relative" }}>
                 <button
@@ -1197,7 +1197,7 @@ export default function StudentsPage() {
                     marginBottom: 4,
                   }}
                 >
-                  generating your report...
+                  Generating your report...
                 </div>
                 <div
                   style={{
@@ -1205,7 +1205,7 @@ export default function StudentsPage() {
                     color: COLORS.mutedText,
                   }}
                 >
-                  this will take a few minutes. feel free to continue working.
+                  This will take a few minutes. Feel free to continue working.
                 </div>
               </div>
             </div>
@@ -1233,7 +1233,7 @@ export default function StudentsPage() {
                 opacity: isGenerating ? 0.5 : 1,
               }}
             >
-              cancel
+              Cancel
             </button>
             <button
               onClick={handleGenerate}
@@ -1316,7 +1316,7 @@ export default function StudentsPage() {
                   cursor: "pointer",
                 }}
               >
-                close
+                Close
               </button>
               <button
                 onClick={saveActive}
@@ -1330,7 +1330,7 @@ export default function StudentsPage() {
                   fontWeight: 800,
                 }}
               >
-                save
+                Save
               </button>
             </div>
           </div>
@@ -1663,7 +1663,7 @@ export default function StudentsPage() {
                     cursor: "pointer",
                   }}
                 >
-                  add
+                  Add
                 </button>
               </div>
               {(active?.data?.participants || []).map((p: any, i: number) => (
@@ -1722,7 +1722,7 @@ export default function StudentsPage() {
               ))}
               {!active?.data?.participants?.length && (
                 <div style={{ color: COLORS.mutedText, fontSize: 13 }}>
-                  no participants yet.
+                  No participants yet.
                 </div>
               )}
             </div>
