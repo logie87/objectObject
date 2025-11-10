@@ -236,11 +236,12 @@ You must RETURN a JSON object only with these keys:
 - overall_alignment: integer 0-100 (summary alignment)
 - explanation: short string (1-3 brief sentences explaining top reasons behind the scores)
 
-Scoring rules:
+SCORING RULES:
 - Use 0-100 integer values.
 - overall_alignment should be close to the average of the four numeric scores (allow 5 points tolerance).
 - explanation must be concise.
 - Do not output ANY extra text outside the JSON.
+- Do not add ANY comments on individual JSON entries.
 
 Produce the JSON now.
 """
@@ -367,27 +368,23 @@ def evaluate_alignment_for_pair(
         student, worksheet_text, worksheet_id, worksheet_title
     )
     raw_output = run_llm(prompt=prompt)
+    cleaned_output = raw_output.strip("```json").strip().replace("\n", "")
     # print(raw_output)
     logger.info(
-        f"LLM Output for {student.student_name}, {worksheet_title}: {raw_output[:150]}"
+        f"LLM Output for {student.student_name}, {worksheet_title}: {cleaned_output[:150]}"
     )
     try:
-        parsed_json = json.loads(raw_output.strip("`json").strip())
+        parsed_json = json.loads(cleaned_output)
     except Exception as e:
+        logger.warning(f"Failed to parse JSON from LLM: {e}")
         parsed_json = None
-        logger.warning(f"Failed to parse JSON from LLM [Output: {raw_output}]: {e}")
-    # parsed_json, raw_json_text = extract_json_from_text(raw_output)
-    if not parsed_json:
-        # Attempt a second pass: ask the model to respond in JSON only (rare)
-        # But since we must not do followups asynchronously, we'll try to salvage:
-        # Try to parse key:value lines into dict
-        parsed = {}
-        for line in raw_output.splitlines():
-            if ":" in line:
-                k, v = line.split(":", 1)
-                parsed[k.strip().lower()] = v.strip()
-        parsed_json = parsed
-    normalized = enforce_schema_and_normalize(parsed_json)
+
+    if not parsed_json or set(parsed_json.keys()) != EXPECTED_KEYS:
+        normalized = evaluate_alignment_for_pair(
+            student, worksheet_text, worksheet_id, worksheet_title
+        )
+    else:
+        normalized = enforce_schema_and_normalize(parsed_json)
     return normalized
 
 
