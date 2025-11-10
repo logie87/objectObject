@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../lib/api";
 
 const COLORS = {
-  readingBadgeBg: "rgba(245, 255, 107, 0.7)",
+  readingBadgeBg: "rgba(240, 246, 157, 1)",
   readingBadgeText: "#3A3A5C",
-  timeBadgeBg: "rgba(196, 255, 160, 0.7)",
+  timeBadgeBg: "rgba(206, 246, 182, 1)",
   timeBadgeText: "#3A3A5C",
-  altRespBg: "rgba(148, 255, 212, 0.7)",
+  altRespBg: "rgba(158, 238, 206, 1)",
   altRespText: "#3A3A5C",
   pieGradientStart: "#34d399",
   pieGradientEnd: "#22c55e",
@@ -20,7 +20,7 @@ const COLORS = {
   mainText: "#374151",
   avatarBg: "#f2f3f6ff",
   border: "#e5e7eb",
-  surface: "#ffffff",
+  surface: "rgba(255, 255, 255, 1)",
 };
 
 type StudentSummary = {
@@ -341,7 +341,7 @@ const StudentCard: React.FC<{
             borderRadius: 12,
             border: "none",
             background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
-            color: COLORS.surface,
+            color: "white",
             fontWeight: 650,
             cursor: "pointer",
           }}
