@@ -9,6 +9,7 @@ import StudentsPage from './pages/StudentsPage';
 import ReportsPage from './pages/ReportsPage';
 import LibraryPage from './pages/LibraryPage';
 import MainLayout from './components/layout/MainLayout';
+import ChatBot from './components/ChatBot'; // ✅ Add this import
 
 const App: React.FC = () => {
   return (
@@ -29,6 +30,9 @@ const App: React.FC = () => {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        {/* ✅ ChatBot will now appear on every page */}
+        <ChatBot />
       </AuthProvider>
     </Router>
   );
