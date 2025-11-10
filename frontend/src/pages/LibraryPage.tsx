@@ -96,9 +96,20 @@ export default function LibraryPage() {
   const [docs, setDocs] = useState<DocMeta[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const totalSize = useMemo(() => docs.reduce((s, d) => s + (d.size || 0), 0), [docs]);
+
+  const filteredDocs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return docs;
+    return docs.filter(
+      (d) =>
+        d.title.toLowerCase().includes(q) ||
+        d.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [docs, search]);
 
   function tell(msg: string) {
     setNotice(msg);
@@ -175,21 +186,26 @@ export default function LibraryPage() {
 
   return (
     <div style={{ padding: 24, color: C.mainText, minHeight: "100vh" }}>
+      {/* Header */}
       <div
         style={{
           marginBottom: 16,
           display: "flex",
+          flexWrap: "wrap",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 12,
         }}
       >
         <div>
           <h1 style={{ fontSize: 28, marginBottom: 4, color: C.mainText }}>Library</h1>
           <div style={{ color: C.mutedText }}>
             Ingested curriculum & guidance documents • {docs.length} files • {(totalSize / 1024 / 1024).toFixed(1)} MB
+
           </div>
         </div>
 
+        {/* Upload Button */}
         <div style={{ display: "flex", gap: 8 }}>
           <input
             ref={inputRef}
@@ -222,6 +238,27 @@ export default function LibraryPage() {
         </div>
       </div>
 
+      {/* Search bar */}
+      <div style={{ marginBottom: 20 }}>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search documents by title or tag..."
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            borderRadius: 12,
+            border: `1px solid ${C.border}`,
+            background: C.cardBg,
+            color: C.mainText,
+            fontSize: 15,
+            boxShadow: C.cardShadow,
+          }}
+        />
+      </div>
+
+      {/* Notices */}
       {notice && (
         <div
           style={{
@@ -237,6 +274,7 @@ export default function LibraryPage() {
         </div>
       )}
 
+      {/* Document grid */}
       <div
         style={{
           display: "grid",
@@ -289,7 +327,7 @@ export default function LibraryPage() {
                   {d.title}
                 </div>
                 <div style={{ color: C.mutedText, fontSize: 13, marginTop: 4 }}>
-                  {(d.size / 1024 / 1024).toFixed(2)} MB • {new Date(d.uploaded_at).toLocaleString()}
+                {(d.size / 1024 / 1024).toFixed(2)} MB • {new Date(d.uploaded_at).toLocaleString()}
                 </div>
                 {d.tags?.length ? (
                   <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
