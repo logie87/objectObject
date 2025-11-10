@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react"; 
+import React, { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../lib/api";
 
 const COLORS = {
@@ -391,7 +391,6 @@ const Spinner: React.FC<{ size?: number }> = ({ size = 40 }) => (
   </svg>
 );
 
-// Simple input + textarea wrapper for the profile modal
 const Field: React.FC<{
   label: string;
   value: string;
@@ -450,14 +449,14 @@ export default function StudentsPage() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Full student profile modal state
+  // Profile modal
   const [modalOpen, setModalOpen] = useState(false);
   const [active, setActive] = useState<StudentFull | null>(null);
   const [tab, setTab] = useState<
     "profile" | "goals" | "accom" | "notes" | "people"
   >("profile");
 
-  // Generate Report modal state
+  // Generate Report modal
   const [showModal, setShowModal] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -511,7 +510,6 @@ export default function StudentsPage() {
   }, []);
 
   useEffect(() => {
-    // Reset selected units when courses change
     setSelectedUnits([]);
   }, [selectedCourses]);
 
@@ -539,8 +537,6 @@ export default function StudentsPage() {
       setUnitsDropdownOpen(true);
     }, 100);
   };
-
-  // ───────── Profile helpers (all local to this file) ─────────
 
   async function openView(id: string) {
     try {
@@ -595,7 +591,7 @@ export default function StudentsPage() {
 
     const saved = await apiPut<StudentFull>(`/students/${active.id}`, payload);
     setActive(saved);
-    await load(); // refresh summaries
+    await load();
   }
 
   function addParticipant() {
@@ -622,7 +618,13 @@ export default function StudentsPage() {
     });
   }
 
-  // ───────── Render ─────────
+  const generateDisabled =
+    isGenerating ||
+    !selectedStudents.length ||
+    !selectedCourses.length ||
+    !selectedUnits.length;
+
+  // ───────── render ─────────
 
   return (
     <div style={{ padding: 24 }}>
@@ -659,10 +661,11 @@ export default function StudentsPage() {
               padding: "10px 16px",
               borderRadius: 10,
               border: "none",
-              cursor: "pointer",
+              cursor: busy ? "default" : "pointer",
               background: `linear-gradient(135deg, ${COLORS.buttonGradientStart}, ${COLORS.buttonGradientEnd})`,
               color: "#fff",
               fontWeight: 700,
+              opacity: busy ? 0.6 : 1,
             }}
           >
             {busy ? "Refreshing…" : "Refresh"}
@@ -692,12 +695,7 @@ export default function StudentsPage() {
         }}
       >
         {filtered.map((s) => (
-          <StudentCard
-            key={s.id}
-            s={s}
-            onView={openView}
-            onEdit={openEdit}
-          />
+          <StudentCard key={s.id} s={s} onView={openView} onEdit={openEdit} />
         ))}
       </div>
 
@@ -739,10 +737,7 @@ export default function StudentsPage() {
 
             <AutocompleteMulti
               label="Select Students"
-              options={all.map((s) => ({
-                value: s.id,
-                label: s.name,
-              }))}
+              options={all.map((s) => ({ value: s.id, label: s.name }))}
               selected={selectedStudents}
               onChange={setSelectedStudents}
               COLORS={COLORS}
@@ -750,10 +745,7 @@ export default function StudentsPage() {
 
             <AutocompleteMulti
               label="Select Courses"
-              options={courses.map((c) => ({
-                value: c,
-                label: c,
-              }))}
+              options={courses.map((c) => ({ value: c, label: c }))}
               selected={selectedCourses}
               onChange={setSelectedCourses}
               COLORS={COLORS}
@@ -779,6 +771,7 @@ export default function StudentsPage() {
                 <div style={{ position: "relative" }}>
                   <button
                     type="button"
+                    ref={unitsButtonRef}
                     onClick={() =>
                       setUnitsDropdownOpen(!unitsDropdownOpen)
                     }
@@ -939,6 +932,7 @@ export default function StudentsPage() {
                     </div>
                   )}
                 </div>
+
                 {selectedUnits.length > 0 && (
                   <div
                     style={{
@@ -987,6 +981,44 @@ export default function StudentsPage() {
               </div>
             )}
 
+            {/* Generating status block (from team version) */}
+            {isGenerating && (
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 12,
+                  background:
+                    "linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(236, 72, 153, 0.1))",
+                  border: `1px solid ${COLORS.altRespBg}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Spinner size={24} />
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: COLORS.mainText,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Generating your report...
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: COLORS.mutedText,
+                    }}
+                  >
+                    This will take a few minutes. Feel free to
+                    continue working.
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div
               style={{
                 display: "flex",
@@ -1005,19 +1037,17 @@ export default function StudentsPage() {
                   background: "#fff",
                   color: COLORS.mainText,
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: isGenerating
+                    ? "default"
+                    : "pointer",
+                  opacity: isGenerating ? 0.5 : 1,
                 }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleGenerate}
-                disabled={
-                  isGenerating ||
-                  !selectedStudents.length ||
-                  !selectedCourses.length ||
-                  !selectedUnits.length
-                }
+                disabled={generateDisabled}
                 style={{
                   flex: 1,
                   padding: "12px 0",
@@ -1026,9 +1056,12 @@ export default function StudentsPage() {
                   color: "white",
                   fontWeight: 600,
                   border: "none",
-                  cursor: "pointer",
+                  cursor: generateDisabled
+                    ? "default"
+                    : "pointer",
                   boxShadow:
                     "0 4px 8px rgba(0,0,0,0.1)",
+                  opacity: generateDisabled ? 0.5 : 1,
                 }}
               >
                 {isGenerating
@@ -1090,7 +1123,8 @@ export default function StudentsPage() {
                       color: COLORS.mainText,
                     }}
                   >
-                    {active.data?.student?.student_name || active.id}
+                    {active.data?.student?.student_name ||
+                      active.id}
                   </div>
                   <div
                     style={{
@@ -1184,7 +1218,7 @@ export default function StudentsPage() {
               </div>
             </div>
 
-            {/* Content */}
+            {/* Scrollable content */}
             <div
               style={{
                 padding: 18,
