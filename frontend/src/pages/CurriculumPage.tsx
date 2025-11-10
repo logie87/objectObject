@@ -306,7 +306,28 @@ export default function CurriculumPage() {
             <div>Resource</div>
             <div>Size</div>
             <div>Alignment</div>
-            <div>Actions</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Actions</span>
+              <button
+                className="btn ghost"
+                style={{ padding: "4px 8px", fontSize: 13, fontWeight: 400 }}
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = ".pdf";
+                  input.multiple = true;
+                  input.onchange = async (e) => {
+                    const files = (e.target as HTMLInputElement).files;
+                    if (!files) return;
+                    // Handle upload logic here
+                    console.log("Upload files:", files);
+                  };
+                  input.click();
+                }}
+              >
+                + Upload
+              </button>
+            </div>
           </div>
 
           {resources.map((r, i) => (
