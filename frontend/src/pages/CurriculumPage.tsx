@@ -298,7 +298,7 @@ export default function CurriculumPage() {
             style={{
               display: "grid",
               gridTemplateColumns: "2fr 1fr 1fr 160px",
-              background: COLORS.headerBg,
+              // background: COLORS.headerBg,
               padding: "10px 16px",
               fontWeight: 700,
             }}

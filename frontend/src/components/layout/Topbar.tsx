@@ -255,8 +255,18 @@ export default function Topbar(){
     >
       {/* Left: logo */}
       <div className="logo" style={{ minWidth: 180, cursor: 'pointer' }} onClick={() => window.location.assign('/app')}>
-        <img src="/icon.png" alt="instructive logo" className="logo-img" />
+        <img src="/icon.png" alt="instructive logo" className="logo-img logo-img--light" />
+        <img src="/iconNight.png" alt="instructive logo (dark)" className="logo-img logo-img--dark" />
         <div>Instructive</div>
+
+        <style>{`
+          /* show the correct logo based on the theme set by ThemeSwitch */
+          .logo-img { display: inline-block; height: auto; }
+          .logo-img--dark { display: none; }
+          :root[data-theme="dark"] .logo-img--light { display: none; }
+          :root[data-theme="dark"] .logo-img--dark { display: inline-block; }
+        `}</style>
+
       </div>
 
       {/* Right: search + user menu */}
