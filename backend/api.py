@@ -837,6 +837,8 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:3000",
         "https://instructive-ui.vercel.app",
+        "https://www.instructive.ca",
+        "https://instructive.ca",
     ],
     allow_methods=["*"],
     allow_headers=["*"],
